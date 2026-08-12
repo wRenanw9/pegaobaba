@@ -4,8 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sorteador do Baba (Nuvem & Posições)</title>
-    <!-- Adicionando a biblioteca do Supabase via CDN -->
+    <!-- Biblioteca do Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- ARQUIVO DE CONFIGURAÇÃO EXTERNO -->
+    <!-- Ele vai puxar suas chaves do config.js automaticamente -->
+    <script src="config.js"></script>
+
     <style>
         :root {
             --primary: #10b981;
@@ -47,30 +52,48 @@
             box-sizing: border-box;
             width: 100%;
         }
-        .form-group {
+        
+        /* NOVO LAYOUT DO FORMULÁRIO */
+        .linha-nome {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        .linha-nome input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        .linha-selects {
             display: flex;
             gap: 10px;
             margin-bottom: 15px;
             flex-wrap: wrap;
             width: 100%;
         }
-        input, select, button {
+        .linha-selects select {
+            flex: 1;
+            min-width: 90px;
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 4px;
             font-size: 15px;
             box-sizing: border-box;
-            max-width: 100%;
         }
-        input { flex: 1; min-width: 140px; }
-        select { flex: 1; width: 100%; }
+        /* ======================== */
+
         button {
+            padding: 12px;
             background-color: var(--primary);
             color: white;
             border: none;
+            border-radius: 4px;
             cursor: pointer;
             font-weight: bold;
             width: 100%;
+            font-size: 16px;
         }
         button:hover { opacity: 0.9; }
         button:disabled { background-color: #ccc; cursor: not-allowed; }
@@ -161,12 +184,14 @@
 <body>
     
     <h1>⚽ Sorteador do Baba ⚽</h1>
-    <div class="status-nuvem" id="status-db">Conectando ao Banco de Dados...</div>
+    <div class="status-nuvem" id="status-db">Aguardando chaves de conexão...</div>
 
-    <!-- Formulário de Cadastro -->
+    <!-- Formulário de Cadastro (LAYOUT ATUALIZADO) -->
     <div class="card">
-        <div class="form-group">
+        <div class="linha-nome">
             <input type="text" id="nome" placeholder="Nome do Jogador" autocomplete="off">
+        </div>
+        <div class="linha-selects">
             <select id="tipo">
                 <option value="Mensalista">Mensalista</option>
                 <option value="Convidado">Convidado</option>
@@ -183,13 +208,13 @@
                 <option value="4">Bom (4)</option>
                 <option value="3" selected>Médio (3)</option>
                 <option value="2">Iniciante (2)</option>
-                <option value="1">Perna de Pau (1)</option>
+                <option value="1">Perna (1)</option>
             </select>
         </div>
         <button id="btn-adicionar" onclick="adicionarJogador()">Adicionar ao Elenco</button>
     </div>
 
-    <!-- Lista de Presença (Chegaram Hoje) -->
+    <!-- Lista de Presença -->
     <div class="card" style="border: 2px solid var(--primary);">
         <h2>✅ Chegaram Hoje (<span id="total-presentes">0</span>)</h2>
         
@@ -199,7 +224,7 @@
         
         <div class="form-group" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">
             <label style="width: 100%; font-weight: bold;">Regra do Sorteio:</label>
-            <select id="modo-sorteio">
+            <select id="modo-sorteio" style="width: 100%; padding: 10px; margin-bottom: 10px;">
                 <option value="12">12 PRIMEIROS (2 times - Sem Gol)</option>
                 <option value="14">14 PRIMEIROS (2 times - Com Gol)</option>
                 <option value="todos_sem_goleiro">TODOS de linha (Múltiplos - Sem Gol)</option>
@@ -214,7 +239,7 @@
         <button class="btn-sortear" onclick="iniciarSorteioComSuspense()">🎲 Sortear Times</button>
     </div>
 
-    <!-- Lista de Elenco (Ausentes) -->
+    <!-- Lista de Elenco -->
     <div class="card">
         <h2>❌ Elenco na Nuvem (<span id="total-ausentes">0</span>)</h2>
         <ul id="lista-ausentes"></ul>
@@ -226,26 +251,21 @@
     <button id="btn-wpp" class="btn-whatsapp" onclick="exportarWhatsApp()">📱 Copiar para WhatsApp</button>
 
     <script>
-        // ==========================================
-        // CONFIGURAÇÃO DO SUPABASE
-        // ==========================================
-        // COLE SUAS CHAVES AQUI ENTRE AS ASPAS:
-        const supabaseUrl = 'https://dszktgbtxrmehdmqccqr.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRzemt0Z2J0eHJtZWhkbXFjY3FyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0OTAxNDQsImV4cCI6MjEwMjA2NjE0NH0.49f8wbu6fHawjZjG3GR0m-JvN14rnvNZQgUxgosaFAg';
-        // ==========================================
-
-        // Inicializa o cliente do Supabase chamando de 'db'
-        const db = window.supabase.createClient(supabaseUrl, supabaseKey);
-
+        let db;
         let jogadores = [];
         const coresTimes = ["🔴 Vermelho", "🔵 Azul", "🟡 Amarelo", "🟢 Verde", "⚪ Branco", "⚫ Preto", "🟣 Roxo", "🟠 Laranja"];
 
         window.onload = async function() {
-            if(supabaseUrl.includes('COLE_A_URL')) {
-                document.getElementById('status-db').innerText = "⚠️ Cole suas chaves do Supabase no código!";
+            // Verifica se o arquivo config.js foi criado e carregado corretamente
+            if(typeof supabaseUrl === 'undefined' || typeof supabaseKey === 'undefined') {
+                document.getElementById('status-db').innerText = "⚠️ Erro: Arquivo config.js não encontrado!";
                 document.getElementById('status-db').style.backgroundColor = "var(--danger)";
                 return;
             }
+
+            // Inicia o Supabase usando as variáveis do arquivo config.js
+            db = window.supabase.createClient(supabaseUrl, supabaseKey);
+            
             await carregarElencoDaNuvem();
             configurarFiltros();
         };
@@ -406,7 +426,6 @@
             presentes.forEach((j, pos) => {
                 let icone = j.posicao === 'Goleiro' ? '🧤' : '⚽';
                 let tagConvidado = j.tipo === 'Convidado' ? '<span class="badge badge-convidado">Convidado</span>' : '';
-                // Mostra a posição específica se não for Goleiro (e nem o antigo "Linha")
                 let tagPosicao = (j.posicao !== 'Goleiro' && j.posicao !== 'Linha') ? `<span class="badge badge-posicao">${j.posicao}</span>` : '';
                 
                 let btnPix = '';
@@ -523,7 +542,6 @@
             
             if (!incluiGoleiros) {
                 reservas.push(...presentes.filter(j => j.posicao === 'Goleiro'));
-                // Tudo que não é Goleiro é considerado "Linha" para o sorteio
                 jogadoresValidos = presentes.filter(j => j.posicao !== 'Goleiro');
             }
 
