@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sorteador do Baba (Nuvem)</title>
+    <title>Sorteador do Baba (Nuvem & Posições)</title>
     <!-- Adicionando a biblioteca do Supabase via CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -16,6 +16,7 @@
             --warning: #f59e0b;
             --purple: #8b5cf6;
             --supabase: #3ecf8e;
+            --pos-color: #6b7280;
         }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -104,6 +105,10 @@
             background-color: var(--dark); color: white;
             padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; margin-right: 5px;
         }
+        .badge-posicao {
+            background-color: var(--pos-color);
+            font-weight: normal;
+        }
         .badge-convidado { background-color: var(--purple); }
 
         .team-container {
@@ -167,7 +172,10 @@
                 <option value="Convidado">Convidado</option>
             </select>
             <select id="posicao">
-                <option value="Linha">Linha</option>
+                <option value="Atacante">Atacante</option>
+                <option value="Meio-Campo" selected>Meio-Campo</option>
+                <option value="Lateral">Lateral</option>
+                <option value="Zagueiro">Zagueiro</option>
                 <option value="Goleiro">Goleiro</option>
             </select>
             <select id="nivel">
@@ -226,13 +234,12 @@
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRzemt0Z2J0eHJtZWhkbXFjY3FyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0OTAxNDQsImV4cCI6MjEwMjA2NjE0NH0.49f8wbu6fHawjZjG3GR0m-JvN14rnvNZQgUxgosaFAg';
         // ==========================================
 
-        // Inicializa o cliente chamando de 'db' para não conflitar com a biblioteca
+        // Inicializa o cliente do Supabase chamando de 'db'
         const db = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         let jogadores = [];
         const coresTimes = ["🔴 Vermelho", "🔵 Azul", "🟡 Amarelo", "🟢 Verde", "⚪ Branco", "⚫ Preto", "🟣 Roxo", "🟠 Laranja"];
 
-        // Carrega os dados quando a página abre
         window.onload = async function() {
             if(supabaseUrl.includes('COLE_A_URL')) {
                 document.getElementById('status-db').innerText = "⚠️ Cole suas chaves do Supabase no código!";
@@ -399,6 +406,8 @@
             presentes.forEach((j, pos) => {
                 let icone = j.posicao === 'Goleiro' ? '🧤' : '⚽';
                 let tagConvidado = j.tipo === 'Convidado' ? '<span class="badge badge-convidado">Convidado</span>' : '';
+                // Mostra a posição específica se não for Goleiro (e nem o antigo "Linha")
+                let tagPosicao = (j.posicao !== 'Goleiro' && j.posicao !== 'Linha') ? `<span class="badge badge-posicao">${j.posicao}</span>` : '';
                 
                 let btnPix = '';
                 if(j.tipo === 'Convidado') {
@@ -414,7 +423,7 @@
                         <div class="info-jogador">
                             <span class="badge">${pos + 1}º</span> 
                             ${tagConvidado}
-                            ${icone} <strong>${j.nome}</strong> <small>(Nv ${j.nivel})</small>
+                            ${icone} <strong>${j.nome}</strong> ${tagPosicao} <small>(Nv ${j.nivel})</small>
                         </div>
                         <div class="actions">
                             ${btnPix}
@@ -427,11 +436,12 @@
             ausentes.forEach(j => {
                 let icone = j.posicao === 'Goleiro' ? '🧤' : '⚽';
                 let tagConvidado = j.tipo === 'Convidado' ? '<span class="badge badge-convidado">Convidado</span>' : '';
+                let tagPosicao = (j.posicao !== 'Goleiro' && j.posicao !== 'Linha') ? `<span class="badge badge-posicao">${j.posicao}</span>` : '';
                 
                 listaAusentes.innerHTML += `
                     <li>
                         <div class="info-jogador">
-                            ${tagConvidado} ${icone} <strong>${j.nome}</strong> <small>(Nv ${j.nivel})</small>
+                            ${tagConvidado} ${icone} <strong>${j.nome}</strong> ${tagPosicao} <small>(Nv ${j.nivel})</small>
                         </div>
                         <div class="actions">
                             <button class="btn-small btn-chegou" onclick="marcarPresenca(${j.indexArray})">Chegou +</button>
@@ -478,7 +488,7 @@
             
             const frases = [
                 "Sorteando os goleiros... 🧤",
-                "Equilibrando as notas técnicas... ⚖️",
+                "Equilibrando posições e níveis... ⚖️",
                 "Separando as panelinhas... 🍳",
                 "Consultando o banco de dados... ☁️",
                 "Preparando a resenha do Baba! 🍻"
@@ -513,7 +523,8 @@
             
             if (!incluiGoleiros) {
                 reservas.push(...presentes.filter(j => j.posicao === 'Goleiro'));
-                jogadoresValidos = presentes.filter(j => j.posicao === 'Linha');
+                // Tudo que não é Goleiro é considerado "Linha" para o sorteio
+                jogadoresValidos = presentes.filter(j => j.posicao !== 'Goleiro');
             }
 
             let maxTitulares = jogadoresValidos.length;
@@ -540,7 +551,7 @@
                 reservas.push(...chunk.slice(numTimesNoChunk * tamanhoIdeal));
 
                 let goleirosChunk = embaralhar(jogadoresDoTime.filter(j => j.posicao === 'Goleiro'));
-                let linhaChunk = embaralhar(jogadoresDoTime.filter(j => j.posicao === 'Linha'));
+                let linhaChunk = embaralhar(jogadoresDoTime.filter(j => j.posicao !== 'Goleiro'));
                 
                 linhaChunk.sort((a, b) => b.nivel - a.nivel);
 
@@ -585,8 +596,9 @@
                 let html = `<div class="team"><h3>${tituloTime} <small>(⭐️ ${media})</small></h3><ul>`;
                 time.forEach(j => {
                     let icone = j.posicao === 'Goleiro' ? '🧤' : '⚽';
+                    let tagPosicao = (j.posicao !== 'Goleiro' && j.posicao !== 'Linha') ? ` <span class="badge badge-posicao">${j.posicao}</span>` : '';
                     let tagPix = (j.tipo === 'Convidado') ? ' <span style="font-size:12px;">💸</span>' : '';
-                    html += `<li>${icone} ${j.nome}${tagPix}</li>`;
+                    html += `<li>${icone} ${j.nome}${tagPosicao}${tagPix}</li>`;
                 });
                 html += `</ul></div>`;
                 resultado.innerHTML += html;
@@ -596,8 +608,9 @@
                 let htmlReservas = `<div class="team team-reservas"><h3>De Fora / Próximos</h3><ul>`;
                 reservas.forEach(j => {
                     let icone = j.posicao === 'Goleiro' ? '🧤' : '⚽';
+                    let tagPosicao = (j.posicao !== 'Goleiro' && j.posicao !== 'Linha') ? ` <span class="badge badge-posicao">${j.posicao}</span>` : '';
                     let tagPix = (j.tipo === 'Convidado') ? ' <span style="font-size:12px;">💸</span>' : '';
-                    htmlReservas += `<li>${icone} ${j.nome}${tagPix}</li>`;
+                    htmlReservas += `<li>${icone} ${j.nome}${tagPosicao}${tagPix}</li>`;
                 });
                 htmlReservas += `</ul></div>`;
                 resultado.innerHTML += htmlReservas;
@@ -615,7 +628,8 @@
                 texto += `${tituloTime}\n`;
                 time.forEach(j => {
                     let iconPix = (j.tipo === 'Convidado') ? ' 💸' : '';
-                    texto += `${j.posicao === 'Goleiro' ? '🧤' : '⚽'} ${j.nome}${iconPix}\n`;
+                    let tagPosicao = (j.posicao !== 'Goleiro' && j.posicao !== 'Linha') ? ` (${j.posicao})` : '';
+                    texto += `${j.posicao === 'Goleiro' ? '🧤' : '⚽'} ${j.nome}${tagPosicao}${iconPix}\n`;
                 });
                 texto += `\n`;
             });
@@ -624,7 +638,8 @@
                 texto += `*De fora / Próximos:*\n`;
                 window.reservasSorteados.forEach(j => {
                     let iconPix = (j.tipo === 'Convidado') ? ' 💸' : '';
-                    texto += `${j.posicao === 'Goleiro' ? '🧤' : '⚽'} ${j.nome}${iconPix}\n`;
+                    let tagPosicao = (j.posicao !== 'Goleiro' && j.posicao !== 'Linha') ? ` (${j.posicao})` : '';
+                    texto += `${j.posicao === 'Goleiro' ? '🧤' : '⚽'} ${j.nome}${tagPosicao}${iconPix}\n`;
                 });
             }
 
