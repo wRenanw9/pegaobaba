@@ -1,0 +1,2 @@
+const supabaseUrl = 'https://dszktgbtxrmehdmqccqr.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRzemt0Z2J0eHJtZWhkbXFjY3FyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0OTAxNDQsImV4cCI6MjEwMjA2NjE0NH0.49f8wbu6fHawjZjG3GR0m-JvN14rnvNZQgUxgosaFAg';
