@@ -453,7 +453,6 @@
             }
         }
 
-        // --- LÓGICA DE SORTEIO E SUSPENSE (MANTIDA INTACTA) ---
         function embaralhar(array) {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -638,7 +637,6 @@
             });
         }
         
-        // Funções de UI para os filtros
         function configurarFiltros() {
             const modoSorteio = document.getElementById('modo-sorteio');
             const incluirGoleiros = document.getElementById('incluir-goleiros');
