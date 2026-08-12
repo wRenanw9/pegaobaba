@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sorteador do Baba (Nuvem, Posições & Tática)</title>
+    <title>Sorteador do Baba (Tática e Equilíbrio Máximo)</title>
     <!-- Biblioteca do Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
@@ -52,7 +52,7 @@
             width: 100%;
         }
         
-        /* NOVO LAYOUT DO FORMULÁRIO */
+        /* LAYOUT DO FORMULÁRIO */
         .linha-nome {
             width: 100%;
             margin-bottom: 10px;
@@ -262,7 +262,6 @@
             }
 
             db = window.supabase.createClient(supabaseUrl, supabaseKey);
-            
             await carregarElencoDaNuvem();
             configurarFiltros();
         };
@@ -500,9 +499,9 @@
             
             const frases = [
                 "Analisando formações táticas... 📋",
-                "Equilibrando posições e níveis... ⚖️",
+                "Calculando a média das notas... ⚖️",
                 "Separando as panelinhas... 🍳",
-                "Consultando o banco de dados... ☁️",
+                "Equilibrando os times... ☁️",
                 "Preparando a resenha do Baba! 🍻"
             ];
             
@@ -564,24 +563,6 @@
                 let goleirosChunk = embaralhar(jogadoresDoTime.filter(j => j.posicao === 'Goleiro'));
                 let linhaChunk = embaralhar(jogadoresDoTime.filter(j => j.posicao !== 'Goleiro'));
                 
-                // ==========================================
-                // NOVA LÓGICA DE ORDENAÇÃO: POSIÇÃO E NÍVEL
-                // ==========================================
-                const ordemPosicoes = { "Zagueiro": 1, "Lateral": 2, "Meio-Campo": 3, "Atacante": 4 };
-                
-                linhaChunk.sort((a, b) => {
-                    let pesoA = ordemPosicoes[a.posicao] || 5; 
-                    let pesoB = ordemPosicoes[b.posicao] || 5;
-                    
-                    // Primeiro tenta agrupar pela posição tática
-                    if (pesoA !== pesoB) {
-                        return pesoA - pesoB;
-                    }
-                    // Se a posição for a mesma, o desempate é feito pelo nível técnico (maior pro menor)
-                    return b.nivel - a.nivel; 
-                });
-                // ==========================================
-
                 let timesLocais = Array.from({ length: numTimesNoChunk }, () => []);
 
                 if (incluiGoleiros) {
@@ -591,16 +572,51 @@
                     reservas.push(...goleirosChunk);
                 }
 
-                let direcao = 1;
-                let tAtual = 0;
-                for (let j = 0; j < linhaChunk.length; j++) {
-                    timesLocais[tAtual].push(linhaChunk[j]);
-                    tAtual += direcao;
-                    if (tAtual >= numTimesNoChunk || tAtual < 0) {
-                        direcao *= -1;
-                        tAtual += direcao; 
+                // ==========================================
+                // DISTRIBUIÇÃO DINÂMICA INTELIGENTE
+                // ==========================================
+                // 1. Agrupar jogadores por posição
+                const posicoes = ["Zagueiro", "Lateral", "Meio-Campo", "Atacante", "Linha"];
+                const grupos = {};
+                posicoes.forEach(p => grupos[p] = []);
+
+                linhaChunk.forEach(j => {
+                    if (grupos[j.posicao]) {
+                        grupos[j.posicao].push(j);
+                    } else {
+                        grupos["Linha"].push(j); // Fallback para cadastros antigos sem posição específica
                     }
-                }
+                });
+
+                // 2. Ordenar do melhor para o pior dentro de cada grupo
+                posicoes.forEach(p => {
+                    grupos[p].sort((a, b) => b.nivel - a.nivel);
+                });
+
+                // Funções para ler o status atual do time
+                const getSomaNotas = (time) => time.reduce((acc, j) => acc + j.nivel, 0);
+                const getQtdPosicao = (time, pos) => time.filter(j => j.posicao === pos).length;
+
+                // 3. Distribuição inteligente
+                posicoes.forEach(pos => {
+                    grupos[pos].forEach(jogador => {
+                        // 3.1 Prioridade 1: Manter a quantidade total de jogadores equilibrada nos times
+                        let minTamanho = Math.min(...timesLocais.map(t => t.length));
+                        let timesElegiveis = timesLocais.filter(t => t.length === minTamanho);
+
+                        // 3.2 Prioridade 2: Equilibrar a quantidade daquela POSIÇÃO ESPECÍFICA no time
+                        let minQtdPos = Math.min(...timesElegiveis.map(t => getQtdPosicao(t, pos)));
+                        let timesMenosPos = timesElegiveis.filter(t => getQtdPosicao(t, pos) === minQtdPos);
+
+                        // 3.3 Prioridade 3: Dar o melhor jogador para o time que está com a MENOR pontuação
+                        timesMenosPos.sort((a, b) => getSomaNotas(a) - getSomaNotas(b));
+
+                        // O time mais fraco e mais carente da posição recebe o jogador!
+                        timesMenosPos[0].push(jogador);
+                    });
+                });
+                // ==========================================
+
                 times.push(...timesLocais);
             }
 
