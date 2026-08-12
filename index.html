@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sorteador do Baba</title>
+    <style>
+        :root {
+            --primary: #10b981;
+            --dark: #1f2937;
+            --light: #f3f4f6;
+            --whatsapp: #25D366;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --purple: #8b5cf6;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light);
+            color: var(--dark);
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 15px;
+            overflow-x: hidden; /* Evita rolagem horizontal indesejada */
+        }
+        h1, h2 { text-align: center; }
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            box-sizing: border-box; /* Mantém o card dentro da tela */
+            width: 100%;
+        }
+        .form-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            width: 100%;
+        }
+        input, select, button {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 15px;
+            box-sizing: border-box; /* A mágica para não vazar da tela */
+            max-width: 100%; /* Trava o tamanho máximo ao tamanho da tela */
+        }
+        input { flex: 1; min-width: 140px; }
+        select { flex: 1; width: 100%; }
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+        }
+        button:hover { opacity: 0.9; }
+        
+        .btn-sortear { background-color: var(--dark); margin-top: 10px; font-size: 18px; padding: 15px; }
+        .btn-whatsapp { background-color: var(--whatsapp); margin-top: 15px; display: none; }
+        .btn-limpar { background-color: var(--warning); color: black; margin-bottom: 15px; }
+        
+        ul { list-style: none; padding: 0; margin: 0; }
+        li {
+            background: var(--light);
+            margin: 8px 0;
+            padding: 12px;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .info-jogador { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
+        .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .btn-small { width: auto; padding: 5px 10px; font-size: 14px; }
+        .btn-chegou { background-color: var(--primary); }
+        .btn-desmarcar { background-color: var(--warning); color: black; }
+        .btn-excluir { background-color: transparent; color: var(--danger); border: 1px solid var(--danger); }
+        
+        .btn-pagou { background-color: var(--primary); }
+        .btn-devendo { background-color: var(--danger); }
+
+        .badge {
+            background-color: var(--dark); color: white;
+            padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; margin-right: 5px;
+        }
+        .badge-convidado { background-color: var(--purple); }
+
+        .team-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        .team {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border-top: 4px solid var(--primary);
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        .team-reservas { border-top-color: var(--danger); }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+            font-weight: bold;
+            flex-wrap: wrap;
+        }
+        .checkbox-group input {
+            width: auto;
+            min-width: auto;
+            transform: scale(1.5);
+            margin-left: 5px;
+        }
+
+        .animacao-suspense {
+            text-align: center;
+            padding: 40px 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            font-size: 22px;
+            font-weight: bold;
+            color: var(--dark);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    
+    <h1>⚽ Sorteador do Baba ⚽</h1>
+
+    <!-- Formulário de Cadastro -->
+    <div class="card">
+        <div class="form-group">
+            <input type="text" id="nome" placeholder="Nome do Jogador" autocomplete="off">
+            <select id="tipo">
+                <option value="Mensalista">Mensalista</option>
+                <option value="Convidado">Convidado (Paga Avulso)</option>
+            </select>
+            <select id="posicao">
+                <option value="Linha">Linha</option>
+                <option value="Goleiro">Goleiro</option>
+            </select>
+            <select id="nivel">
+                <option value="5">Craque (5)</option>
+                <option value="4">Bom (4)</option>
+                <option value="3" selected>Médio (3)</option>
+                <option value="2">Iniciante (2)</option>
+                <option value="1">Perna de Pau (1)</option>
+            </select>
+        </div>
+        <button onclick="adicionarJogador()">Adicionar ao Elenco</button>
+    </div>
+
+    <!-- Lista de Presença (Chegaram Hoje) -->
+    <div class="card" style="border: 2px solid var(--primary);">
+        <h2>✅ Chegaram Hoje (<span id="total-presentes">0</span>)</h2>
+        
+        <button class="btn-limpar" onclick="zerarPresencas()" id="btn-zerar" style="display: none;">🔄 Novo Baba (Zerar Presenças)</button>
+        
+        <ul id="lista-presentes"></ul>
+        
+        <div class="form-group" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">
+            <label style="width: 100%; font-weight: bold;">Regra do Sorteio:</label>
+            <select id="modo-sorteio">
+                <!-- Textos encurtados para caberem perfeitamente na tela do celular -->
+                <option value="12">12 PRIMEIROS (2 times - Sem Gol)</option>
+                <option value="14">14 PRIMEIROS (2 times - Com Gol)</option>
+                <option value="todos_sem_goleiro">TODOS de linha (Múltiplos - Sem Gol)</option>
+                <option value="todos">TODOS (Múltiplos - Com Gol)</option>
+            </select>
+            
+            <div class="checkbox-group">
+                <input type="checkbox" id="incluir-goleiros" checked>
+                <label for="incluir-goleiros">Incluir Goleiros</label>
+            </div>
+        </div>
+        <button class="btn-sortear" onclick="iniciarSorteioComSuspense()">🎲 Sortear Times</button>
+    </div>
+
+    <!-- Lista de Elenco (Ausentes) -->
+    <div class="card">
+        <h2>❌ Elenco / Não chegaram (<span id="total-ausentes">0</span>)</h2>
+        <ul id="lista-ausentes"></ul>
+    </div>
+
+    <!-- Resultado do Sorteio -->
+    <div id="resultado" class="team-container"></div>
+    
+    <button id="btn-wpp" class="btn-whatsapp" onclick="exportarWhatsApp()">📱 Copiar para WhatsApp</button>
+
+    <script>
+        let jogadores = JSON.parse(localStorage.getItem('pelada_jogadores')) || [];
+        
+        const coresTimes = [
+            "🔴 Vermelho",
+            "🔵 Azul",
+            "🟡 Amarelo",
+            "🟢 Verde",
+            "⚪ Branco",
+            "⚫ Preto",
+            "🟣 Roxo",
+            "🟠 Laranja"
+        ];
+        
+        jogadores = jogadores.map(j => ({
+            ...j, 
+            presente: j.presente || false, 
+            ordemChegada: j.ordemChegada || 0,
+            tipo: j.tipo || 'Mensalista',
+            pagou: j.pagou || false
+        }));
+
+        window.onload = function() {
+            atualizarListas();
+            
+            const modoSorteio = document.getElementById('modo-sorteio');
+            const incluirGoleiros = document.getElementById('incluir-goleiros');
+
+            modoSorteio.addEventListener('change', function() {
+                if (this.value === '12' || this.value === 'todos_sem_goleiro') {
+                    incluirGoleiros.checked = false;
+                } else if (this.value === '14' || this.value === 'todos') {
+                    incluirGoleiros.checked = true;
+                }
+            });
+
+            incluirGoleiros.addEventListener('change', function() {
+                if (!this.checked) {
+                    if (modoSorteio.value === '14') modoSorteio.value = '12';
+                    else if (modoSorteio.value === 'todos') modoSorteio.value = 'todos_sem_goleiro';
+                } else {
+                    if (modoSorteio.value === '12') modoSorteio.value = '14';
+                    else if (modoSorteio.value === 'todos_sem_goleiro') modoSorteio.value = 'todos';
+                }
+            });
+        };
+
+        function salvarDados() {
+            localStorage.setItem('pelada_jogadores', JSON.stringify(jogadores));
+        }
+
+        function adicionarJogador() {
+            const nomeInput = document.getElementById('nome');
+            const tipo = document.getElementById('tipo').value;
+            const posicao = document.getElementById('posicao').value;
+            const nivel = parseInt(document.getElementById('nivel').value);
+            const nome = nomeInput.value.trim();
+
+            if (nome === "") return alert("Digite o nome do jogador!");
+
+            jogadores.push({ nome, posicao, nivel, tipo, presente: false, ordemChegada: 0, pagou: false });
+            salvarDados();
+            
+            nomeInput.value = "";
+            nomeInput.focus();
+            atualizarListas();
+        }
+
+        function removerJogador(indexOriginal) {
+            if(confirm("Tem certeza que deseja excluir este jogador do elenco?")) {
+                jogadores.splice(indexOriginal, 1);
+                salvarDados();
+                atualizarListas();
+            }
+        }
+
+        function marcarPresenca(indexOriginal) {
+            jogadores[indexOriginal].presente = true;
+            jogadores[indexOriginal].ordemChegada = Date.now();
+            salvarDados();
+            atualizarListas();
+        }
+
+        function desmarcarPresenca(indexOriginal) {
+            jogadores[indexOriginal].presente = false;
+            jogadores[indexOriginal].ordemChegada = 0;
+            jogadores[indexOriginal].pagou = false; 
+            salvarDados();
+            atualizarListas();
+        }
+
+        function alternarPagamento(indexOriginal) {
+            jogadores[indexOriginal].pagou = !jogadores[indexOriginal].pagou;
+            salvarDados();
+            atualizarListas();
+        }
+        
+        function zerarPresencas() {
+            if(confirm("Deseja desmarcar todos os jogadores e começar uma nova lista de presença? O elenco continuará salvo.")) {
+                jogadores.forEach(j => {
+                    j.presente = false;
+                    j.ordemChegada = 0;
+                    j.pagou = false; 
+                });
+                salvarDados();
+                atualizarListas();
+                
+                document.getElementById('resultado').innerHTML = "";
+                document.getElementById('btn-wpp').style.display = 'none';
+            }
+        }
+
+        function atualizarListas() {
+            const listaPresentes = document.getElementById('lista-presentes');
+            const listaAusentes = document.getElementById('lista-ausentes');
+            const btnZerar = document.getElementById('btn-zerar');
+            
+            listaPresentes.innerHTML = "";
+            listaAusentes.innerHTML = "";
+
+            let ausentes = [];
+            let presentes = [];
+
+            jogadores.forEach((j, index) => {
+                let jogadorComIndex = { ...j, indexOriginal: index };
+                if (j.presente) presentes.push(jogadorComIndex);
+                else ausentes.push(jogadorComIndex);
+            });
+
+            // Lógica de prioridade: Mensalistas primeiro
+            presentes.sort((a, b) => {
+                if (a.tipo === 'Mensalista' && b.tipo !== 'Mensalista') return -1;
+                if (a.tipo !== 'Mensalista' && b.tipo === 'Mensalista') return 1;
+                return a.ordemChegada - b.ordemChegada;
+            });
+
+            presentes.forEach((j, pos) => {
+                let icone = j.posicao === 'Goleiro' ? '🧤' : '⚽';
+                let tagConvidado = j.tipo === 'Convidado' ? '<span class="badge badge-convidado">Convidado</span>' : '';
+                
+                let btnPix = '';
+                if(j.tipo === 'Convidado') {
+                    if(j.pagou) {
+                        btnPix = `<button class="btn-small btn-pagou" onclick="alternarPagamento(${j.indexOriginal})">💸 Pago</button>`;
+                    } else {
+                        btnPix = `<button class="btn-small btn-devendo" onclick="alternarPagamento(${j.indexOriginal})">⚠️ Devendo</button>`;
+                    }
+                }
+
+                listaPresentes.innerHTML += `
+                    <li>
+                        <div class="info-jogador">
+                            <span class="badge">${pos + 1}º</span> 
+                            ${tagConvidado}
+                            ${icone} <strong>${j.nome}</strong> <small>(Nv ${j.nivel})</small>
+                        </div>
+                        <div class="actions">
+                            ${btnPix}
+                            <button class="btn-small btn-desmarcar" onclick="desmarcarPresenca(${j.indexOriginal})">Voltar</button>
+                        </div>
+                    </li>
+                `;
+            });
+
+            ausentes.forEach(j => {
+                let icone = j.posicao === 'Goleiro' ? '🧤' : '⚽';
+                let tagConvidado = j.tipo === 'Convidado' ? '<span class="badge badge-convidado">Convidado</span>' : '';
+                
+                listaAusentes.innerHTML += `
+                    <li>
+                        <div class="info-jogador">
+                            ${tagConvidado} ${icone} <strong>${j.nome}</strong> <small>(Nv ${j.nivel})</small>
+                        </div>
+                        <div class="actions">
+                            <button class="btn-small btn-chegou" onclick="marcarPresenca(${j.indexOriginal})">Chegou +</button>
+                            <button class="btn-small btn-excluir" onclick="removerJogador(${j.indexOriginal})">X</button>
+                        </div>
+                    </li>
+                `;
+            });
+
+            document.getElementById('total-presentes').innerText = presentes.length;
+            document.getElementById('total-ausentes').innerText = ausentes.length;
+            
+            if(presentes.length > 0) {
+                btnZerar.style.display = "block";
+            } else {
+                btnZerar.style.display = "none";
+            }
+        }
+
+        function embaralhar(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function iniciarSorteioComSuspense() {
+            let presentes = jogadores.filter(j => j.presente).sort((a, b) => {
+                if (a.tipo === 'Mensalista' && b.tipo !== 'Mensalista') return -1;
+                if (a.tipo !== 'Mensalista' && b.tipo === 'Mensalista') return 1;
+                return a.ordemChegada - b.ordemChegada;
+            });
+            
+            if (presentes.length < 2) return alert("Marque a presença de pelo menos 2 jogadores para sortear!");
+
+            let inadimplentes = presentes.filter(j => j.tipo === 'Convidado' && !j.pagou);
+            if(inadimplentes.length > 0) {
+                alert(`⚠️ ATENÇÃO: Os convidados abaixo ainda NÃO PAGARAM O PIX e ficarão de fora do sorteio:\n\n👉 ${inadimplentes.map(i => i.nome).join(', ')}\n\n(Para incluí-los, clique no botão "⚠️ Devendo" na lista)`);
+            }
+
+            document.getElementById('btn-wpp').style.display = 'none';
+            const resultado = document.getElementById('resultado');
+            
+            const frases = [
+                "Sorteando os goleiros... 🧤",
+                "Equilibrando as notas técnicas... ⚖️",
+                "Separando as panelinhas... 🍳",
+                "Dando prioridade aos sócios... 👑",
+                "Preparando a resenha do Baba! 🍻"
+            ];
+            
+            resultado.innerHTML = `<div class="animacao-suspense" id="texto-suspense">🎲 Misturando os times...</div>`;
+            
+            let contador = 0;
+            let intervalo = setInterval(() => {
+                if(contador < frases.length) {
+                    document.getElementById('texto-suspense').innerText = frases[contador];
+                    contador++;
+                }
+            }, 600);
+
+            setTimeout(() => {
+                clearInterval(intervalo);
+                sortearTimes(presentes);
+            }, 3500);
+            
+            resultado.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+
+        function sortearTimes(presentesBrutos) {
+            let presentes = presentesBrutos.filter(j => j.tipo === 'Mensalista' || (j.tipo === 'Convidado' && j.pagou));
+
+            let modo = document.getElementById('modo-sorteio').value;
+            let incluiGoleiros = document.getElementById('incluir-goleiros').checked;
+            
+            let jogadoresValidos = presentes;
+            let reservas = [];
+            
+            if (!incluiGoleiros) {
+                reservas.push(...presentes.filter(j => j.posicao === 'Goleiro'));
+                jogadoresValidos = presentes.filter(j => j.posicao === 'Linha');
+            }
+
+            let maxTitulares = jogadoresValidos.length;
+            if (modo === '12') maxTitulares = 12;
+            if (modo === '14') maxTitulares = 14;
+
+            let titulares = jogadoresValidos.slice(0, maxTitulares);
+            reservas.push(...jogadoresValidos.slice(maxTitulares));
+
+            let times = [];
+            let tamanhoIdeal = incluiGoleiros ? 7 : 6;
+            
+            let tamanhoPartida = tamanhoIdeal * 2; 
+
+            for (let i = 0; i < titulares.length; i += tamanhoPartida) {
+                let chunk = titulares.slice(i, i + tamanhoPartida);
+                
+                let numTimesNoChunk = Math.floor(chunk.length / tamanhoIdeal);
+                
+                if (numTimesNoChunk === 0) {
+                    reservas.push(...chunk);
+                    continue;
+                }
+
+                let jogadoresDoTime = chunk.slice(0, numTimesNoChunk * tamanhoIdeal);
+                reservas.push(...chunk.slice(numTimesNoChunk * tamanhoIdeal));
+
+                let goleirosChunk = embaralhar(jogadoresDoTime.filter(j => j.posicao === 'Goleiro'));
+                let linhaChunk = embaralhar(jogadoresDoTime.filter(j => j.posicao === 'Linha'));
+                
+                linhaChunk.sort((a, b) => b.nivel - a.nivel);
+
+                let timesLocais = Array.from({ length: numTimesNoChunk }, () => []);
+
+                if (incluiGoleiros) {
+                    for (let t = 0; t < numTimesNoChunk; t++) {
+                        if (goleirosChunk.length > 0) timesLocais[t].push(goleirosChunk.shift());
+                    }
+                    reservas.push(...goleirosChunk);
+                }
+
+                let direcao = 1;
+                let tAtual = 0;
+                for (let j = 0; j < linhaChunk.length; j++) {
+                    timesLocais[tAtual].push(linhaChunk[j]);
+                    tAtual += direcao;
+                    if (tAtual >= numTimesNoChunk || tAtual < 0) {
+                        direcao *= -1;
+                        tAtual += direcao; 
+                    }
+                }
+
+                times.push(...timesLocais);
+            }
+
+            window.timesSorteados = times;
+            window.reservasSorteados = reservas;
+
+            mostrarResultado(times, reservas, incluiGoleiros);
+            document.getElementById('btn-wpp').style.display = 'block';
+        }
+
+        function mostrarResultado(times, reservas, incluiGoleiros) {
+            const resultado = document.getElementById('resultado');
+            resultado.innerHTML = "";
+            
+            times.forEach((time, index) => {
+                const media = time.length ? (time.reduce((acc, j) => acc + j.nivel, 0) / time.length).toFixed(1) : 0;
+                let nomeCor = coresTimes[index % coresTimes.length];
+                let tituloTime = incluiGoleiros ? `Time ${nomeCor}` : `Time ${nomeCor} (Sem Gol)`;
+                
+                let html = `<div class="team"><h3>${tituloTime} <small>(⭐️ ${media})</small></h3><ul>`;
+                time.forEach(j => {
+                    let icone = j.posicao === 'Goleiro' ? '🧤' : '⚽';
+                    let tagPix = (j.tipo === 'Convidado') ? ' <span style="font-size:12px;">💸</span>' : '';
+                    html += `<li>${icone} ${j.nome}${tagPix}</li>`;
+                });
+                html += `</ul></div>`;
+                resultado.innerHTML += html;
+            });
+
+            if (reservas.length > 0) {
+                let htmlReservas = `<div class="team team-reservas"><h3>De Fora / Próximos</h3><ul>`;
+                reservas.forEach(j => {
+                    let icone = j.posicao === 'Goleiro' ? '🧤' : '⚽';
+                    let tagPix = (j.tipo === 'Convidado') ? ' <span style="font-size:12px;">💸</span>' : '';
+                    htmlReservas += `<li>${icone} ${j.nome}${tagPix}</li>`;
+                });
+                htmlReservas += `</ul></div>`;
+                resultado.innerHTML += htmlReservas;
+            }
+        }
+
+        function exportarWhatsApp() {
+            let texto = "⚽ *TIMES DO BABA* ⚽\n\n";
+            let incluiGoleiros = document.getElementById('incluir-goleiros').checked;
+            
+            window.timesSorteados.forEach((time, index) => {
+                let nomeCor = coresTimes[index % coresTimes.length];
+                let tituloTime = incluiGoleiros ? `*Time ${nomeCor}*` : `*Time ${nomeCor} (Sem Goleiro)*`;
+                
+                texto += `${tituloTime}\n`;
+                time.forEach(j => {
+                    let iconPix = (j.tipo === 'Convidado') ? ' 💸' : '';
+                    texto += `${j.posicao === 'Goleiro' ? '🧤' : '⚽'} ${j.nome}${iconPix}\n`;
+                });
+                texto += `\n`;
+            });
+
+            if (window.reservasSorteados.length > 0) {
+                texto += `*De fora / Próximos:*\n`;
+                window.reservasSorteados.forEach(j => {
+                    let iconPix = (j.tipo === 'Convidado') ? ' 💸' : '';
+                    texto += `${j.posicao === 'Goleiro' ? '🧤' : '⚽'} ${j.nome}${iconPix}\n`;
+                });
+            }
+
+            navigator.clipboard.writeText(texto).then(() => {
+                alert("✅ Times copiados! Agora é só colar no grupo do WhatsApp.");
+            }).catch(() => {
+                alert("❌ Erro ao copiar. Tente selecionar o texto manualmente.");
+            });
+        }
+    </script>
+</body>
+</html>
