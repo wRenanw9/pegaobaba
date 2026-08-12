@@ -222,12 +222,12 @@
         // CONFIGURAÇÃO DO SUPABASE
         // ==========================================
         // COLE SUAS CHAVES AQUI ENTRE AS ASPAS:
-        const supabaseUrl = 'COLE_A_URL_AQUI';
-        const supabaseKey = 'COLE_A_CHAVE_AQUI';
+        const supabaseUrl = 'https://dszktgbtxrmehdmqccqr.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRzemt0Z2J0eHJtZWhkbXFjY3FyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0OTAxNDQsImV4cCI6MjEwMjA2NjE0NH0.49f8wbu6fHawjZjG3GR0m-JvN14rnvNZQgUxgosaFAg';
         // ==========================================
 
-        // Inicializa o cliente do Supabase
-        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        // Inicializa o cliente chamando de 'db' para não conflitar com a biblioteca
+        const db = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         let jogadores = [];
         const coresTimes = ["🔴 Vermelho", "🔵 Azul", "🟡 Amarelo", "🟢 Verde", "⚪ Branco", "⚫ Preto", "🟣 Roxo", "🟠 Laranja"];
@@ -247,10 +247,10 @@
         async function carregarElencoDaNuvem() {
             document.getElementById('status-db').innerText = "🔄 Sincronizando com a nuvem...";
             
-            const { data, error } = await supabase
+            const { data, error } = await db
                 .from('jogadores')
                 .select('*')
-                .order('nome', { ascending: true }); // Ordena alfabeticamente no banco
+                .order('nome', { ascending: true }); 
 
             if (error) {
                 console.error("Erro ao buscar:", error);
@@ -259,7 +259,6 @@
                 return;
             }
 
-            // Recupera o estado local (quem chegou hoje) para não perder durante a sincronização
             let estadoLocal = JSON.parse(localStorage.getItem('baba_presencas_temp')) || {};
 
             jogadores = data.map(j => ({
@@ -287,17 +286,16 @@
             btn.innerText = "Adicionando...";
             btn.disabled = true;
 
-            const { data, error } = await supabase
+            const { data, error } = await db
                 .from('jogadores')
                 .insert([{ nome: nome, tipo: tipo, posicao: posicao, nivel: nivel }])
-                .select(); // Pede para retornar o dado criado (com o ID novo)
+                .select(); 
 
             if (error) {
                 alert("Erro ao salvar na nuvem: " + error.message);
             } else {
                 nomeInput.value = "";
                 nomeInput.focus();
-                // Adiciona o jogador recém criado na tela sem precisar recarregar tudo
                 let novoJogador = data[0];
                 novoJogador.presente = false;
                 novoJogador.ordemChegada = 0;
@@ -313,7 +311,7 @@
         // 3. DELETAR DADOS (DELETE)
         async function removerJogador(idNuvem, indexArray) {
             if(confirm("Tem certeza que deseja excluir este jogador definitivamente do banco de dados?")) {
-                const { error } = await supabase
+                const { error } = await db
                     .from('jogadores')
                     .delete()
                     .eq('id', idNuvem);
