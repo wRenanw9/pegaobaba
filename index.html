@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sorteador do Baba</title>
+    <title>Sorteador do Baba (Nuvem)</title>
+    <!-- Adicionando a biblioteca do Supabase via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --primary: #10b981;
@@ -13,6 +15,7 @@
             --danger: #ef4444;
             --warning: #f59e0b;
             --purple: #8b5cf6;
+            --supabase: #3ecf8e;
         }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -21,16 +24,26 @@
             max-width: 600px;
             margin: 0 auto;
             padding: 15px;
-            overflow-x: hidden; /* Evita rolagem horizontal indesejada */
+            overflow-x: hidden;
         }
         h1, h2 { text-align: center; }
+        .status-nuvem {
+            text-align: center;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+            background-color: var(--supabase);
+            padding: 5px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
         .card {
             background: white;
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             margin-bottom: 20px;
-            box-sizing: border-box; /* Mantém o card dentro da tela */
+            box-sizing: border-box;
             width: 100%;
         }
         .form-group {
@@ -45,8 +58,8 @@
             border: 1px solid #ccc;
             border-radius: 4px;
             font-size: 15px;
-            box-sizing: border-box; /* A mágica para não vazar da tela */
-            max-width: 100%; /* Trava o tamanho máximo ao tamanho da tela */
+            box-sizing: border-box;
+            max-width: 100%;
         }
         input { flex: 1; min-width: 140px; }
         select { flex: 1; width: 100%; }
@@ -59,6 +72,7 @@
             width: 100%;
         }
         button:hover { opacity: 0.9; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
         
         .btn-sortear { background-color: var(--dark); margin-top: 10px; font-size: 18px; padding: 15px; }
         .btn-whatsapp { background-color: var(--whatsapp); margin-top: 15px; display: none; }
@@ -142,6 +156,7 @@
 <body>
     
     <h1>⚽ Sorteador do Baba ⚽</h1>
+    <div class="status-nuvem" id="status-db">Conectando ao Banco de Dados...</div>
 
     <!-- Formulário de Cadastro -->
     <div class="card">
@@ -149,7 +164,7 @@
             <input type="text" id="nome" placeholder="Nome do Jogador" autocomplete="off">
             <select id="tipo">
                 <option value="Mensalista">Mensalista</option>
-                <option value="Convidado">Convidado (Paga Avulso)</option>
+                <option value="Convidado">Convidado</option>
             </select>
             <select id="posicao">
                 <option value="Linha">Linha</option>
@@ -163,7 +178,7 @@
                 <option value="1">Perna de Pau (1)</option>
             </select>
         </div>
-        <button onclick="adicionarJogador()">Adicionar ao Elenco</button>
+        <button id="btn-adicionar" onclick="adicionarJogador()">Adicionar ao Elenco</button>
     </div>
 
     <!-- Lista de Presença (Chegaram Hoje) -->
@@ -177,7 +192,6 @@
         <div class="form-group" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">
             <label style="width: 100%; font-weight: bold;">Regra do Sorteio:</label>
             <select id="modo-sorteio">
-                <!-- Textos encurtados para caberem perfeitamente na tela do celular -->
                 <option value="12">12 PRIMEIROS (2 times - Sem Gol)</option>
                 <option value="14">14 PRIMEIROS (2 times - Com Gol)</option>
                 <option value="todos_sem_goleiro">TODOS de linha (Múltiplos - Sem Gol)</option>
@@ -194,7 +208,7 @@
 
     <!-- Lista de Elenco (Ausentes) -->
     <div class="card">
-        <h2>❌ Elenco / Não chegaram (<span id="total-ausentes">0</span>)</h2>
+        <h2>❌ Elenco na Nuvem (<span id="total-ausentes">0</span>)</h2>
         <ul id="lista-ausentes"></ul>
     </div>
 
@@ -204,57 +218,63 @@
     <button id="btn-wpp" class="btn-whatsapp" onclick="exportarWhatsApp()">📱 Copiar para WhatsApp</button>
 
     <script>
-        let jogadores = JSON.parse(localStorage.getItem('pelada_jogadores')) || [];
-        
-        const coresTimes = [
-            "🔴 Vermelho",
-            "🔵 Azul",
-            "🟡 Amarelo",
-            "🟢 Verde",
-            "⚪ Branco",
-            "⚫ Preto",
-            "🟣 Roxo",
-            "🟠 Laranja"
-        ];
-        
-        jogadores = jogadores.map(j => ({
-            ...j, 
-            presente: j.presente || false, 
-            ordemChegada: j.ordemChegada || 0,
-            tipo: j.tipo || 'Mensalista',
-            pagou: j.pagou || false
-        }));
+        // ==========================================
+        // CONFIGURAÇÃO DO SUPABASE
+        // ==========================================
+        // COLE SUAS CHAVES AQUI ENTRE AS ASPAS:
+        const supabaseUrl = 'https://dszktgbtxrmehdmqccqr.supabase.co';
+        const supabaseKey = 'sb_publishable_-Nz03onOfmJ2iu9bSDz3Sw_vGI8Ki4B';
+        // ==========================================
 
-        window.onload = function() {
-            atualizarListas();
-            
-            const modoSorteio = document.getElementById('modo-sorteio');
-            const incluirGoleiros = document.getElementById('incluir-goleiros');
+        // Inicializa o cliente do Supabase
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-            modoSorteio.addEventListener('change', function() {
-                if (this.value === '12' || this.value === 'todos_sem_goleiro') {
-                    incluirGoleiros.checked = false;
-                } else if (this.value === '14' || this.value === 'todos') {
-                    incluirGoleiros.checked = true;
-                }
-            });
+        let jogadores = [];
+        const coresTimes = ["🔴 Vermelho", "🔵 Azul", "🟡 Amarelo", "🟢 Verde", "⚪ Branco", "⚫ Preto", "🟣 Roxo", "🟠 Laranja"];
 
-            incluirGoleiros.addEventListener('change', function() {
-                if (!this.checked) {
-                    if (modoSorteio.value === '14') modoSorteio.value = '12';
-                    else if (modoSorteio.value === 'todos') modoSorteio.value = 'todos_sem_goleiro';
-                } else {
-                    if (modoSorteio.value === '12') modoSorteio.value = '14';
-                    else if (modoSorteio.value === 'todos_sem_goleiro') modoSorteio.value = 'todos';
-                }
-            });
+        // Carrega os dados quando a página abre
+        window.onload = async function() {
+            if(supabaseUrl.includes('COLE_A_URL')) {
+                document.getElementById('status-db').innerText = "⚠️ Cole suas chaves do Supabase no código!";
+                document.getElementById('status-db').style.backgroundColor = "var(--danger)";
+                return;
+            }
+            await carregarElencoDaNuvem();
+            configurarFiltros();
         };
 
-        function salvarDados() {
-            localStorage.setItem('pelada_jogadores', JSON.stringify(jogadores));
+        // 1. BUSCAR DADOS (READ)
+        async function carregarElencoDaNuvem() {
+            document.getElementById('status-db').innerText = "🔄 Sincronizando com a nuvem...";
+            
+            const { data, error } = await supabase
+                .from('jogadores')
+                .select('*')
+                .order('nome', { ascending: true }); // Ordena alfabeticamente no banco
+
+            if (error) {
+                console.error("Erro ao buscar:", error);
+                document.getElementById('status-db').innerText = "❌ Erro ao conectar com o banco";
+                document.getElementById('status-db').style.backgroundColor = "var(--danger)";
+                return;
+            }
+
+            // Recupera o estado local (quem chegou hoje) para não perder durante a sincronização
+            let estadoLocal = JSON.parse(localStorage.getItem('baba_presencas_temp')) || {};
+
+            jogadores = data.map(j => ({
+                ...j,
+                presente: estadoLocal[j.id]?.presente || false,
+                ordemChegada: estadoLocal[j.id]?.ordemChegada || 0,
+                pagou: estadoLocal[j.id]?.pagou || false
+            }));
+
+            document.getElementById('status-db').innerText = "✅ Conectado ao Banco de Dados (Supabase)";
+            atualizarListas();
         }
 
-        function adicionarJogador() {
+        // 2. INSERIR DADOS (CREATE)
+        async function adicionarJogador() {
             const nomeInput = document.getElementById('nome');
             const tipo = document.getElementById('tipo').value;
             const posicao = document.getElementById('posicao').value;
@@ -263,51 +283,91 @@
 
             if (nome === "") return alert("Digite o nome do jogador!");
 
-            jogadores.push({ nome, posicao, nivel, tipo, presente: false, ordemChegada: 0, pagou: false });
-            salvarDados();
-            
-            nomeInput.value = "";
-            nomeInput.focus();
-            atualizarListas();
+            const btn = document.getElementById('btn-adicionar');
+            btn.innerText = "Adicionando...";
+            btn.disabled = true;
+
+            const { data, error } = await supabase
+                .from('jogadores')
+                .insert([{ nome: nome, tipo: tipo, posicao: posicao, nivel: nivel }])
+                .select(); // Pede para retornar o dado criado (com o ID novo)
+
+            if (error) {
+                alert("Erro ao salvar na nuvem: " + error.message);
+            } else {
+                nomeInput.value = "";
+                nomeInput.focus();
+                // Adiciona o jogador recém criado na tela sem precisar recarregar tudo
+                let novoJogador = data[0];
+                novoJogador.presente = false;
+                novoJogador.ordemChegada = 0;
+                novoJogador.pagou = false;
+                jogadores.push(novoJogador);
+                atualizarListas();
+            }
+
+            btn.innerText = "Adicionar ao Elenco";
+            btn.disabled = false;
         }
 
-        function removerJogador(indexOriginal) {
-            if(confirm("Tem certeza que deseja excluir este jogador do elenco?")) {
-                jogadores.splice(indexOriginal, 1);
-                salvarDados();
-                atualizarListas();
+        // 3. DELETAR DADOS (DELETE)
+        async function removerJogador(idNuvem, indexArray) {
+            if(confirm("Tem certeza que deseja excluir este jogador definitivamente do banco de dados?")) {
+                const { error } = await supabase
+                    .from('jogadores')
+                    .delete()
+                    .eq('id', idNuvem);
+
+                if (error) {
+                    alert("Erro ao excluir: " + error.message);
+                } else {
+                    jogadores.splice(indexArray, 1);
+                    salvarEstadoLocal();
+                    atualizarListas();
+                }
             }
         }
 
-        function marcarPresenca(indexOriginal) {
-            jogadores[indexOriginal].presente = true;
-            jogadores[indexOriginal].ordemChegada = Date.now();
-            salvarDados();
+        // SALVA PRESENÇA TEMPORÁRIA NO CELULAR
+        function salvarEstadoLocal() {
+            let estado = {};
+            jogadores.forEach(j => {
+                if (j.presente || j.pagou) {
+                    estado[j.id] = { presente: j.presente, ordemChegada: j.ordemChegada, pagou: j.pagou };
+                }
+            });
+            localStorage.setItem('baba_presencas_temp', JSON.stringify(estado));
+        }
+
+        function marcarPresenca(indexArray) {
+            jogadores[indexArray].presente = true;
+            jogadores[indexArray].ordemChegada = Date.now();
+            salvarEstadoLocal();
             atualizarListas();
         }
 
-        function desmarcarPresenca(indexOriginal) {
-            jogadores[indexOriginal].presente = false;
-            jogadores[indexOriginal].ordemChegada = 0;
-            jogadores[indexOriginal].pagou = false; 
-            salvarDados();
+        function desmarcarPresenca(indexArray) {
+            jogadores[indexArray].presente = false;
+            jogadores[indexArray].ordemChegada = 0;
+            jogadores[indexArray].pagou = false; 
+            salvarEstadoLocal();
             atualizarListas();
         }
 
-        function alternarPagamento(indexOriginal) {
-            jogadores[indexOriginal].pagou = !jogadores[indexOriginal].pagou;
-            salvarDados();
+        function alternarPagamento(indexArray) {
+            jogadores[indexArray].pagou = !jogadores[indexArray].pagou;
+            salvarEstadoLocal();
             atualizarListas();
         }
         
         function zerarPresencas() {
-            if(confirm("Deseja desmarcar todos os jogadores e começar uma nova lista de presença? O elenco continuará salvo.")) {
+            if(confirm("Deseja desmarcar todos os jogadores? O elenco continuará salvo na nuvem.")) {
                 jogadores.forEach(j => {
                     j.presente = false;
                     j.ordemChegada = 0;
                     j.pagou = false; 
                 });
-                salvarDados();
+                salvarEstadoLocal();
                 atualizarListas();
                 
                 document.getElementById('resultado').innerHTML = "";
@@ -327,12 +387,11 @@
             let presentes = [];
 
             jogadores.forEach((j, index) => {
-                let jogadorComIndex = { ...j, indexOriginal: index };
+                let jogadorComIndex = { ...j, indexArray: index };
                 if (j.presente) presentes.push(jogadorComIndex);
                 else ausentes.push(jogadorComIndex);
             });
 
-            // Lógica de prioridade: Mensalistas primeiro
             presentes.sort((a, b) => {
                 if (a.tipo === 'Mensalista' && b.tipo !== 'Mensalista') return -1;
                 if (a.tipo !== 'Mensalista' && b.tipo === 'Mensalista') return 1;
@@ -346,9 +405,9 @@
                 let btnPix = '';
                 if(j.tipo === 'Convidado') {
                     if(j.pagou) {
-                        btnPix = `<button class="btn-small btn-pagou" onclick="alternarPagamento(${j.indexOriginal})">💸 Pago</button>`;
+                        btnPix = `<button class="btn-small btn-pagou" onclick="alternarPagamento(${j.indexArray})">💸 Pago</button>`;
                     } else {
-                        btnPix = `<button class="btn-small btn-devendo" onclick="alternarPagamento(${j.indexOriginal})">⚠️ Devendo</button>`;
+                        btnPix = `<button class="btn-small btn-devendo" onclick="alternarPagamento(${j.indexArray})">⚠️ Devendo</button>`;
                     }
                 }
 
@@ -361,7 +420,7 @@
                         </div>
                         <div class="actions">
                             ${btnPix}
-                            <button class="btn-small btn-desmarcar" onclick="desmarcarPresenca(${j.indexOriginal})">Voltar</button>
+                            <button class="btn-small btn-desmarcar" onclick="desmarcarPresenca(${j.indexArray})">Voltar</button>
                         </div>
                     </li>
                 `;
@@ -377,8 +436,8 @@
                             ${tagConvidado} ${icone} <strong>${j.nome}</strong> <small>(Nv ${j.nivel})</small>
                         </div>
                         <div class="actions">
-                            <button class="btn-small btn-chegou" onclick="marcarPresenca(${j.indexOriginal})">Chegou +</button>
-                            <button class="btn-small btn-excluir" onclick="removerJogador(${j.indexOriginal})">X</button>
+                            <button class="btn-small btn-chegou" onclick="marcarPresenca(${j.indexArray})">Chegou +</button>
+                            <button class="btn-small btn-excluir" onclick="removerJogador('${j.id}', ${j.indexArray})">X</button>
                         </div>
                     </li>
                 `;
@@ -394,6 +453,7 @@
             }
         }
 
+        // --- LÓGICA DE SORTEIO E SUSPENSE (MANTIDA INTACTA) ---
         function embaralhar(array) {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -423,7 +483,7 @@
                 "Sorteando os goleiros... 🧤",
                 "Equilibrando as notas técnicas... ⚖️",
                 "Separando as panelinhas... 🍳",
-                "Dando prioridade aos sócios... 👑",
+                "Consultando o banco de dados... ☁️",
                 "Preparando a resenha do Baba! 🍻"
             ];
             
@@ -468,12 +528,10 @@
 
             let times = [];
             let tamanhoIdeal = incluiGoleiros ? 7 : 6;
-            
             let tamanhoPartida = tamanhoIdeal * 2; 
 
             for (let i = 0; i < titulares.length; i += tamanhoPartida) {
                 let chunk = titulares.slice(i, i + tamanhoPartida);
-                
                 let numTimesNoChunk = Math.floor(chunk.length / tamanhoIdeal);
                 
                 if (numTimesNoChunk === 0) {
@@ -508,7 +566,6 @@
                         tAtual += direcao; 
                     }
                 }
-
                 times.push(...timesLocais);
             }
 
@@ -578,6 +635,30 @@
                 alert("✅ Times copiados! Agora é só colar no grupo do WhatsApp.");
             }).catch(() => {
                 alert("❌ Erro ao copiar. Tente selecionar o texto manualmente.");
+            });
+        }
+        
+        // Funções de UI para os filtros
+        function configurarFiltros() {
+            const modoSorteio = document.getElementById('modo-sorteio');
+            const incluirGoleiros = document.getElementById('incluir-goleiros');
+
+            modoSorteio.addEventListener('change', function() {
+                if (this.value === '12' || this.value === 'todos_sem_goleiro') {
+                    incluirGoleiros.checked = false;
+                } else if (this.value === '14' || this.value === 'todos') {
+                    incluirGoleiros.checked = true;
+                }
+            });
+
+            incluirGoleiros.addEventListener('change', function() {
+                if (!this.checked) {
+                    if (modoSorteio.value === '14') modoSorteio.value = '12';
+                    else if (modoSorteio.value === 'todos') modoSorteio.value = 'todos_sem_goleiro';
+                } else {
+                    if (modoSorteio.value === '12') modoSorteio.value = '14';
+                    else if (modoSorteio.value === 'todos_sem_goleiro') modoSorteio.value = 'todos';
+                }
             });
         }
     </script>
