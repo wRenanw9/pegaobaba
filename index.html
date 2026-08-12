@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sorteador do Baba (Nuvem & Posições)</title>
+    <title>Sorteador do Baba (Nuvem, Posições & Tática)</title>
     <!-- Biblioteca do Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <!-- ARQUIVO DE CONFIGURAÇÃO EXTERNO -->
-    <!-- Ele vai puxar suas chaves do config.js automaticamente -->
     <script src="config.js"></script>
 
     <style>
@@ -186,7 +185,7 @@
     <h1>⚽ Sorteador do Baba ⚽</h1>
     <div class="status-nuvem" id="status-db">Aguardando chaves de conexão...</div>
 
-    <!-- Formulário de Cadastro (LAYOUT ATUALIZADO) -->
+    <!-- Formulário de Cadastro -->
     <div class="card">
         <div class="linha-nome">
             <input type="text" id="nome" placeholder="Nome do Jogador" autocomplete="off">
@@ -256,21 +255,18 @@
         const coresTimes = ["🔴 Vermelho", "🔵 Azul", "🟡 Amarelo", "🟢 Verde", "⚪ Branco", "⚫ Preto", "🟣 Roxo", "🟠 Laranja"];
 
         window.onload = async function() {
-            // Verifica se o arquivo config.js foi criado e carregado corretamente
             if(typeof supabaseUrl === 'undefined' || typeof supabaseKey === 'undefined') {
                 document.getElementById('status-db').innerText = "⚠️ Erro: Arquivo config.js não encontrado!";
                 document.getElementById('status-db').style.backgroundColor = "var(--danger)";
                 return;
             }
 
-            // Inicia o Supabase usando as variáveis do arquivo config.js
             db = window.supabase.createClient(supabaseUrl, supabaseKey);
             
             await carregarElencoDaNuvem();
             configurarFiltros();
         };
 
-        // 1. BUSCAR DADOS (READ)
         async function carregarElencoDaNuvem() {
             document.getElementById('status-db').innerText = "🔄 Sincronizando com a nuvem...";
             
@@ -299,7 +295,6 @@
             atualizarListas();
         }
 
-        // 2. INSERIR DADOS (CREATE)
         async function adicionarJogador() {
             const nomeInput = document.getElementById('nome');
             const tipo = document.getElementById('tipo').value;
@@ -335,7 +330,6 @@
             btn.disabled = false;
         }
 
-        // 3. DELETAR DADOS (DELETE)
         async function removerJogador(idNuvem, indexArray) {
             if(confirm("Tem certeza que deseja excluir este jogador definitivamente do banco de dados?")) {
                 const { error } = await db
@@ -353,7 +347,6 @@
             }
         }
 
-        // SALVA PRESENÇA TEMPORÁRIA NO CELULAR
         function salvarEstadoLocal() {
             let estado = {};
             jogadores.forEach(j => {
@@ -506,7 +499,7 @@
             const resultado = document.getElementById('resultado');
             
             const frases = [
-                "Sorteando os goleiros... 🧤",
+                "Analisando formações táticas... 📋",
                 "Equilibrando posições e níveis... ⚖️",
                 "Separando as panelinhas... 🍳",
                 "Consultando o banco de dados... ☁️",
@@ -571,7 +564,23 @@
                 let goleirosChunk = embaralhar(jogadoresDoTime.filter(j => j.posicao === 'Goleiro'));
                 let linhaChunk = embaralhar(jogadoresDoTime.filter(j => j.posicao !== 'Goleiro'));
                 
-                linhaChunk.sort((a, b) => b.nivel - a.nivel);
+                // ==========================================
+                // NOVA LÓGICA DE ORDENAÇÃO: POSIÇÃO E NÍVEL
+                // ==========================================
+                const ordemPosicoes = { "Zagueiro": 1, "Lateral": 2, "Meio-Campo": 3, "Atacante": 4 };
+                
+                linhaChunk.sort((a, b) => {
+                    let pesoA = ordemPosicoes[a.posicao] || 5; 
+                    let pesoB = ordemPosicoes[b.posicao] || 5;
+                    
+                    // Primeiro tenta agrupar pela posição tática
+                    if (pesoA !== pesoB) {
+                        return pesoA - pesoB;
+                    }
+                    // Se a posição for a mesma, o desempate é feito pelo nível técnico (maior pro menor)
+                    return b.nivel - a.nivel; 
+                });
+                // ==========================================
 
                 let timesLocais = Array.from({ length: numTimesNoChunk }, () => []);
 
