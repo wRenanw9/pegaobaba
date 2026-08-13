@@ -229,12 +229,13 @@
             <select id="modo-sorteio" style="width: 100%; padding: 10px; margin-bottom: 5px;">
                 <option value="12">12 PRIMEIROS (2 times - Sem Goleiros)</option>
                 <option value="14">14 PRIMEIROS (2 times - Com Goleiros)</option>
-                <option value="todos_sem_goleiro">TODOS (Sem Goleiro)</option>
-                <option value="todos">TODOS (Com Goleiro)</option>
+                <option value="todos_sem_goleiro">TODOS de linha (Múltiplos - Sem Goleiros)</option>
+                <option value="todos">TODOS (Múltiplos - Com Goleiros)</option>
             </select>
             
             <div class="checkbox-group">
-                <input type="checkbox" id="incluir-goleiros" checked>
+                <!-- Removido o 'checked' padrão daqui -->
+                <input type="checkbox" id="incluir-goleiros">
                 <label for="incluir-goleiros">Incluir Goleiros no Sorteio</label>
             </div>
             
@@ -560,7 +561,6 @@
             let tamanhoIdeal = incluiGoleiros ? 7 : 6;
             let tamanhoPartida = tamanhoIdeal * 2; 
 
-            // SE NÃO PRIORIZAR ORDEM, O LOTE VIRA O TOTAL DE TITULARES (SORTEIO GLOBAL)
             if (!priorizarOrdem) {
                 let qtdTimesGlobais = Math.floor(titulares.length / tamanhoIdeal);
                 if (qtdTimesGlobais > 0) {
@@ -592,9 +592,6 @@
                     reservas.push(...goleirosChunk);
                 }
 
-                // ==========================================
-                // DISTRIBUIÇÃO DINÂMICA INTELIGENTE
-                // ==========================================
                 const posicoes = ["Zagueiro", "Lateral", "Meio-Campo", "Atacante", "Linha"];
                 const grupos = {};
                 posicoes.forEach(p => grupos[p] = []);
@@ -626,7 +623,6 @@
                         timesMenosPos[0].push(jogador);
                     });
                 });
-                // ==========================================
 
                 times.push(...timesLocais);
             }
@@ -725,6 +721,9 @@
                     else if (modoSorteio.value === 'todos_sem_goleiro') modoSorteio.value = 'todos';
                 }
             });
+
+            // Força o sincronismo das caixas assim que a página é carregada
+            modoSorteio.dispatchEvent(new Event('change'));
         }
     </script>
 </body>
