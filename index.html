@@ -3,11 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sorteador do Baba (Tática e Equilíbrio Máximo)</title>
-    <!-- Biblioteca do Supabase -->
+    <title>Sorteador do Baba (Pro)</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    <!-- ARQUIVO DE CONFIGURAÇÃO EXTERNO -->
     <script src="config.js"></script>
 
     <style>
@@ -32,6 +29,19 @@
             overflow-x: hidden;
         }
         h1, h2 { text-align: center; }
+        .cabecalho-app {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .btn-sair {
+            background-color: var(--danger);
+            padding: 5px 10px;
+            font-size: 14px;
+            width: auto;
+            border-radius: 4px;
+        }
         .status-nuvem {
             text-align: center;
             font-size: 12px;
@@ -52,46 +62,39 @@
             width: 100%;
         }
         
-        /* LAYOUT DO FORMULÁRIO */
-        .linha-nome {
-            width: 100%;
-            margin-bottom: 10px;
-        }
-        .linha-nome input {
+        /* AUTH LAYOUT */
+        #auth-container { text-align: center; }
+        .auth-input {
             width: 100%;
             padding: 12px;
+            margin-bottom: 10px;
             border: 1px solid #ccc;
             border-radius: 4px;
-            font-size: 16px;
             box-sizing: border-box;
+            font-size: 16px;
+        }
+        .btn-login { background-color: var(--primary); margin-bottom: 10px; }
+        .btn-register { background-color: var(--dark); }
+        .auth-msg { margin-top: 10px; font-size: 14px; color: var(--danger); font-weight: bold; }
+
+        /* APP LAYOUT */
+        .linha-nome { width: 100%; margin-bottom: 10px; }
+        .linha-nome input {
+            width: 100%; padding: 12px; border: 1px solid #ccc;
+            border-radius: 4px; font-size: 16px; box-sizing: border-box;
         }
         .linha-selects {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-            width: 100%;
+            display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; width: 100%;
         }
         .linha-selects select {
-            flex: 1;
-            min-width: 90px;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 15px;
-            box-sizing: border-box;
+            flex: 1; min-width: 90px; padding: 10px; border: 1px solid #ccc;
+            border-radius: 4px; font-size: 15px; box-sizing: border-box;
         }
 
         button {
-            padding: 12px;
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            width: 100%;
-            font-size: 16px;
+            padding: 12px; background-color: var(--primary); color: white;
+            border: none; border-radius: 4px; cursor: pointer;
+            font-weight: bold; width: 100%; font-size: 16px;
         }
         button:hover { opacity: 0.9; }
         button:disabled { background-color: #ccc; cursor: not-allowed; }
@@ -102,15 +105,9 @@
         
         ul { list-style: none; padding: 0; margin: 0; }
         li {
-            background: var(--light);
-            margin: 8px 0;
-            padding: 12px;
-            border-radius: 4px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
+            background: var(--light); margin: 8px 0; padding: 12px; border-radius: 4px;
+            display: flex; justify-content: space-between; align-items: center;
+            flex-wrap: wrap; gap: 10px;
         }
         .info-jogador { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
         .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
@@ -118,63 +115,35 @@
         .btn-chegou { background-color: var(--primary); }
         .btn-desmarcar { background-color: var(--warning); color: black; }
         .btn-excluir { background-color: transparent; color: var(--danger); border: 1px solid var(--danger); }
-        
         .btn-pagou { background-color: var(--primary); }
         .btn-devendo { background-color: var(--danger); }
 
         .badge {
-            background-color: var(--dark); color: white;
-            padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; margin-right: 5px;
+            background-color: var(--dark); color: white; padding: 2px 8px;
+            border-radius: 12px; font-size: 12px; font-weight: bold; margin-right: 5px;
         }
-        .badge-posicao {
-            background-color: var(--pos-color);
-            font-weight: normal;
-        }
+        .badge-posicao { background-color: var(--pos-color); font-weight: normal; }
         .badge-convidado { background-color: var(--purple); }
 
-        .team-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 15px;
-        }
+        .team-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; }
         .team {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            border-top: 4px solid var(--primary);
+            background: white; padding: 15px; border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-top: 4px solid var(--primary);
             animation: fadeIn 0.5s ease-in-out;
         }
         .team-reservas { border-top-color: var(--danger); }
         
         .checkbox-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-top: 10px;
-            font-weight: bold;
-            flex-wrap: wrap;
-            background: #f9fafb;
-            padding: 10px;
-            border-radius: 6px;
-            border: 1px solid #e5e7eb;
+            display: flex; align-items: center; gap: 10px; margin-top: 10px;
+            font-weight: bold; flex-wrap: wrap; background: #f9fafb;
+            padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb;
         }
-        .checkbox-group input {
-            width: auto;
-            min-width: auto;
-            transform: scale(1.3);
-            margin-left: 5px;
-        }
+        .checkbox-group input { width: auto; min-width: auto; transform: scale(1.3); margin-left: 5px; }
 
         .animacao-suspense {
-            text-align: center;
-            padding: 40px 20px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            font-size: 22px;
-            font-weight: bold;
-            color: var(--dark);
+            text-align: center; padding: 40px 20px; background: white;
+            border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            font-size: 22px; font-weight: bold; color: var(--dark);
         }
 
         @keyframes fadeIn {
@@ -185,81 +154,102 @@
 </head>
 <body>
     
-    <h1>⚽ Sorteador do Baba ⚽</h1>
-    <div class="status-nuvem" id="status-db">Aguardando chaves de conexão...</div>
-
-    <!-- Formulário de Cadastro -->
-    <div class="card">
-        <div class="linha-nome">
-            <input type="text" id="nome" placeholder="Nome do Jogador" autocomplete="off">
-        </div>
-        <div class="linha-selects">
-            <select id="tipo">
-                <option value="Mensalista">Mensalista</option>
-                <option value="Convidado">Convidado</option>
-            </select>
-            <select id="posicao">
-                <option value="Atacante">Atacante</option>
-                <option value="Meio-Campo" selected>Meio-Campo</option>
-                <option value="Lateral">Lateral</option>
-                <option value="Zagueiro">Zagueiro</option>
-                <option value="Goleiro">Goleiro</option>
-            </select>
-            <select id="nivel">
-                <option value="5">Craque (5)</option>
-                <option value="4">Bom (4)</option>
-                <option value="3" selected>Médio (3)</option>
-                <option value="2">Iniciante (2)</option>
-                <option value="1">Perna (1)</option>
-            </select>
-        </div>
-        <button id="btn-adicionar" onclick="adicionarJogador()">Adicionar ao Elenco</button>
-    </div>
-
-    <!-- Lista de Presença -->
-    <div class="card" style="border: 2px solid var(--primary);">
-        <h2>✅ Chegaram Hoje (<span id="total-presentes">0</span>)</h2>
+    <!-- TELA DE LOGIN / CADASTRO -->
+    <div id="auth-container">
+        <h1>⚽ Sorteador do Baba ⚽</h1>
+        <p style="color: var(--pos-color); font-size: 14px;">Plataforma de Gestão de Babas</p>
         
-        <button class="btn-limpar" onclick="zerarPresencas()" id="btn-zerar" style="display: none;">🔄 Novo Baba (Zerar Presenças)</button>
-        
-        <ul id="lista-presentes"></ul>
-        
-        <div class="form-group" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">
-            <label style="width: 100%; font-weight: bold;">Regra do Sorteio:</label>
-            <select id="modo-sorteio" style="width: 100%; padding: 10px; margin-bottom: 5px;">
-                <option value="12">12 PRIMEIROS (2 times - Sem Goleiros)</option>
-                <option value="14">14 PRIMEIROS (2 times - Com Goleiros)</option>
-                <option value="todos_sem_goleiro">TODOS de linha (Múltiplos - Sem Goleiros)</option>
-                <option value="todos">TODOS (Múltiplos - Com Goleiros)</option>
-            </select>
+        <div class="card">
+            <h2>Acesso do Organizador</h2>
+            <input type="email" id="auth-email" class="auth-input" placeholder="Seu E-mail">
+            <input type="password" id="auth-password" class="auth-input" placeholder="Sua Senha">
             
-            <div class="checkbox-group">
-                <input type="checkbox" id="incluir-goleiros">
-                <label for="incluir-goleiros">Incluir Goleiros no Sorteio</label>
-            </div>
+            <button class="btn-login" onclick="fazerLogin()">Entrar</button>
+            <button class="btn-register" onclick="criarConta()">Criar Nova Conta</button>
             
-            <div class="checkbox-group">
-                <!-- A caixa de priorizar ordem agora começa desmarcada -->
-                <input type="checkbox" id="priorizar-ordem">
-                <label for="priorizar-ordem" style="font-size: 14px;">
-                    <strong>Priorizar Ordem de Chegada</strong><br>
-                    <small style="color: #6b7280; font-weight: normal;">Se desmarcado, mistura todos os jogadores globalmente para focar 100% no equilíbrio das posições.</small>
-                </label>
-            </div>
+            <div id="auth-msg" class="auth-msg"></div>
         </div>
-        <button class="btn-sortear" onclick="iniciarSorteioComSuspense()">🎲 Sortear Times</button>
     </div>
 
-    <!-- Lista de Elenco -->
-    <div class="card">
-        <h2>❌ Elenco na Nuvem (<span id="total-ausentes">0</span>)</h2>
-        <ul id="lista-ausentes"></ul>
-    </div>
+    <!-- APLICATIVO PRINCIPAL (Escondido até fazer login) -->
+    <div id="app-container" style="display: none;">
+        
+        <div class="cabecalho-app">
+            <h1 style="margin: 0;">⚽ Sorteador</h1>
+            <button class="btn-sair" onclick="fazerLogout()">Sair</button>
+        </div>
+        
+        <div class="status-nuvem" id="status-db">Aguardando conexão...</div>
 
-    <!-- Resultado do Sorteio -->
-    <div id="resultado" class="team-container"></div>
-    
-    <button id="btn-wpp" class="btn-whatsapp" onclick="exportarWhatsApp()">📱 Copiar para WhatsApp</button>
+        <!-- Formulário de Cadastro -->
+        <div class="card">
+            <div class="linha-nome">
+                <input type="text" id="nome" placeholder="Nome do Jogador" autocomplete="off">
+            </div>
+            <div class="linha-selects">
+                <select id="tipo">
+                    <option value="Mensalista">Mensalista</option>
+                    <option value="Convidado">Convidado</option>
+                </select>
+                <select id="posicao">
+                    <option value="Atacante">Atacante</option>
+                    <option value="Meio-Campo" selected>Meio-Campo</option>
+                    <option value="Lateral">Lateral</option>
+                    <option value="Zagueiro">Zagueiro</option>
+                    <option value="Goleiro">Goleiro</option>
+                </select>
+                <select id="nivel">
+                    <option value="5">Craque (5)</option>
+                    <option value="4">Bom (4)</option>
+                    <option value="3" selected>Médio (3)</option>
+                    <option value="2">Iniciante (2)</option>
+                    <option value="1">Perna (1)</option>
+                </select>
+            </div>
+            <button id="btn-adicionar" onclick="adicionarJogador()">Adicionar ao Elenco</button>
+        </div>
+
+        <!-- Lista de Presença -->
+        <div class="card" style="border: 2px solid var(--primary);">
+            <h2>✅ Chegaram Hoje (<span id="total-presentes">0</span>)</h2>
+            <button class="btn-limpar" onclick="zerarPresencas()" id="btn-zerar" style="display: none;">🔄 Novo Baba (Zerar Presenças)</button>
+            <ul id="lista-presentes"></ul>
+            
+            <div class="form-group" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">
+                <label style="width: 100%; font-weight: bold;">Regra do Sorteio:</label>
+                <select id="modo-sorteio" style="width: 100%; padding: 10px; margin-bottom: 5px;">
+                    <option value="12">12 PRIMEIROS (2 times - Sem Goleiros)</option>
+                    <option value="14">14 PRIMEIROS (2 times - Com Goleiros)</option>
+                    <option value="todos_sem_goleiro">TODOS de linha (Múltiplos - Sem Goleiros)</option>
+                    <option value="todos">TODOS (Múltiplos - Com Goleiros)</option>
+                </select>
+                
+                <div class="checkbox-group">
+                    <input type="checkbox" id="incluir-goleiros">
+                    <label for="incluir-goleiros">Incluir Goleiros no Sorteio</label>
+                </div>
+                
+                <div class="checkbox-group">
+                    <input type="checkbox" id="priorizar-ordem">
+                    <label for="priorizar-ordem" style="font-size: 14px;">
+                        <strong>Priorizar Ordem de Chegada</strong><br>
+                        <small style="color: #6b7280; font-weight: normal;">Se desmarcado, mistura todos os jogadores globalmente para focar 100% no equilíbrio.</small>
+                    </label>
+                </div>
+            </div>
+            <button class="btn-sortear" onclick="iniciarSorteioComSuspense()">🎲 Sortear Times</button>
+        </div>
+
+        <!-- Lista de Elenco -->
+        <div class="card">
+            <h2>❌ Elenco na Nuvem (<span id="total-ausentes">0</span>)</h2>
+            <ul id="lista-ausentes"></ul>
+        </div>
+
+        <!-- Resultado do Sorteio -->
+        <div id="resultado" class="team-container"></div>
+        <button id="btn-wpp" class="btn-whatsapp" onclick="exportarWhatsApp()">📱 Copiar para WhatsApp</button>
+    </div>
 
     <script>
         let db;
@@ -268,18 +258,83 @@
 
         window.onload = async function() {
             if(typeof supabaseUrl === 'undefined' || typeof supabaseKey === 'undefined') {
-                document.getElementById('status-db').innerText = "⚠️ Erro: Arquivo config.js não encontrado!";
-                document.getElementById('status-db').style.backgroundColor = "var(--danger)";
+                alert("Erro: Arquivo config.js não encontrado!");
                 return;
             }
 
             db = window.supabase.createClient(supabaseUrl, supabaseKey);
-            await carregarElencoDaNuvem();
-            configurarFiltros();
+            verificarSessao();
         };
 
+        // ==========================================
+        // SISTEMA DE AUTENTICAÇÃO (SaaS)
+        // ==========================================
+        async function verificarSessao() {
+            const { data: { session } } = await db.auth.getSession();
+            if (session) {
+                mostrarApp();
+            } else {
+                mostrarLogin();
+            }
+        }
+
+        async function criarConta() {
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+            const msg = document.getElementById('auth-msg');
+
+            if(password.length < 6) return msg.innerText = "A senha deve ter no mínimo 6 caracteres.";
+            msg.innerText = "Criando conta...";
+
+            const { data, error } = await db.auth.signUp({ email, password });
+            
+            if (error) {
+                msg.innerText = "Erro: " + error.message;
+            } else {
+                msg.style.color = "var(--primary)";
+                msg.innerText = "Conta criada com sucesso! Você já pode entrar.";
+            }
+        }
+
+        async function fazerLogin() {
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+            const msg = document.getElementById('auth-msg');
+
+            msg.innerText = "Conectando...";
+            const { data, error } = await db.auth.signInWithPassword({ email, password });
+            
+            if (error) {
+                msg.innerText = "Email ou senha incorretos.";
+            } else {
+                mostrarApp();
+            }
+        }
+
+        async function fazerLogout() {
+            await db.auth.signOut();
+            mostrarLogin();
+        }
+
+        function mostrarApp() {
+            document.getElementById('auth-container').style.display = 'none';
+            document.getElementById('app-container').style.display = 'block';
+            carregarElencoDaNuvem();
+            configurarFiltros();
+        }
+
+        function mostrarLogin() {
+            document.getElementById('auth-container').style.display = 'block';
+            document.getElementById('app-container').style.display = 'none';
+            document.getElementById('auth-email').value = "";
+            document.getElementById('auth-password').value = "";
+            document.getElementById('auth-msg').innerText = "";
+        }
+        // ==========================================
+
         async function carregarElencoDaNuvem() {
-            document.getElementById('status-db').innerText = "🔄 Sincronizando com a nuvem...";
+            document.getElementById('status-db').innerText = "🔄 Sincronizando seu elenco...";
+            document.getElementById('status-db').style.backgroundColor = "var(--warning)";
             
             const { data, error } = await db
                 .from('jogadores')
@@ -288,7 +343,7 @@
 
             if (error) {
                 console.error("Erro ao buscar:", error);
-                document.getElementById('status-db').innerText = "❌ Erro ao conectar com o banco";
+                document.getElementById('status-db').innerText = "❌ Erro de permissão ou conexão";
                 document.getElementById('status-db').style.backgroundColor = "var(--danger)";
                 return;
             }
@@ -302,7 +357,8 @@
                 pagou: estadoLocal[j.id]?.pagou || false
             }));
 
-            document.getElementById('status-db').innerText = "✅ Conectado ao Banco de Dados (Supabase)";
+            document.getElementById('status-db').innerText = "✅ Conectado - Seu Elenco Protegido";
+            document.getElementById('status-db').style.backgroundColor = "var(--supabase)";
             atualizarListas();
         }
 
@@ -325,7 +381,7 @@
                 .select(); 
 
             if (error) {
-                alert("Erro ao salvar na nuvem: " + error.message);
+                alert("Erro ao salvar: " + error.message);
             } else {
                 nomeInput.value = "";
                 nomeInput.focus();
@@ -342,7 +398,7 @@
         }
 
         async function removerJogador(idNuvem, indexArray) {
-            if(confirm("Tem certeza que deseja excluir este jogador definitivamente do banco de dados?")) {
+            if(confirm("Tem certeza que deseja excluir este jogador definitivamente?")) {
                 const { error } = await db
                     .from('jogadores')
                     .delete()
@@ -503,7 +559,7 @@
 
             let inadimplentes = presentes.filter(j => j.tipo === 'Convidado' && !j.pagou);
             if(inadimplentes.length > 0) {
-                alert(`⚠️ ATENÇÃO: Os convidados abaixo ainda NÃO PAGARAM O PIX e ficarão de fora do sorteio:\n\n👉 ${inadimplentes.map(i => i.nome).join(', ')}\n\n(Para incluí-los, clique no botão "⚠️ Devendo" na lista)`);
+                alert(`⚠️ ATENÇÃO: Os convidados abaixo ainda NÃO PAGARAM O PIX e ficarão de fora do sorteio:\n\n👉 ${inadimplentes.map(i => i.nome).join(', ')}\n\n(Para incluí-los, marque o pagamento)`);
             }
 
             document.getElementById('btn-wpp').style.display = 'none';
@@ -722,7 +778,6 @@
                 }
             });
 
-            // Força o sincronismo das caixas assim que a página é carregada
             modoSorteio.dispatchEvent(new Event('change'));
         }
     </script>
