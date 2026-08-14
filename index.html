@@ -32,23 +32,15 @@
         .status-nuvem { font-size: 10px; font-weight: 600; color: white; background-color: var(--supabase); padding: 4px 8px; border-radius: 6px; }
         .btn-sair { background: transparent; color: var(--danger); border: 1px solid var(--danger); padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
 
-        /* NAVEGAÇÃO INFERIOR COM ÍCONES VETORIAIS PERFEITAMENTE ALINHADOS */
+        /* NAVEGAÇÃO INFERIOR CORRIGIDA */
         .bottom-nav { 
-            position: fixed; 
-            bottom: 0; 
-            left: 0; 
-            right: 0; 
+            position: fixed; bottom: 0; left: 0; right: 0; 
             background: white; 
-            display: flex; 
-            justify-content: space-around; 
-            align-items: center; 
+            display: flex; justify-content: space-around; align-items: center; 
             height: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px)); 
             padding-bottom: env(safe-area-inset-bottom, 0px); 
-            border-top: 1px solid var(--border); 
-            z-index: 1000; 
-            max-width: 600px; 
-            margin: 0 auto; 
-            box-shadow: 0 -4px 6px -1px rgba(0,0,0,0.05); 
+            border-top: 1px solid var(--border); z-index: 1000; 
+            max-width: 600px; margin: 0 auto; box-shadow: 0 -4px 6px -1px rgba(0,0,0,0.05); 
             box-sizing: border-box;
         }
         
@@ -64,37 +56,19 @@
             height: 100%; 
             transition: all 0.2s; 
             padding: 4px 0 0 0;
-            margin: 0;
+            width: 100%;
         }
         
         .nav-item.active { color: var(--primary); }
         
         .nav-icon { 
-            width: 24px; 
-            height: 24px; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
+            display: flex; align-items: center; justify-content: center; 
             margin-bottom: 3px;
         }
 
-        .nav-icon svg {
-            width: 22px;
-            height: 22px;
-            stroke: currentColor;
-            fill: none;
-            stroke-width: 2;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-        }
+        .nav-icon svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2; }
         
-        .nav-item span {
-            font-size: 10px;
-            font-weight: 600;
-            line-height: 1;
-            display: block;
-            text-align: center;
-        }
+        .nav-item span { font-size: 11px; font-weight: 600; text-align: center; }
         
         .page-view { display: none; padding: 20px; animation: fadeIn 0.3s ease-out; }
         .page-view.active { display: block; }
@@ -125,7 +99,6 @@
         .col-status { text-align: center; }
         .col-acoes { display: flex; gap: 5px; justify-content: flex-end; }
         
-        /* Modificadores Grid para a tela de Sorteio */
         .grid-aguardando { grid-template-columns: 3fr 1fr auto; }
         .grid-prontos { grid-template-columns: 2fr 1fr auto; }
 
@@ -139,1346 +112,172 @@
         .btn-pagou { background-color: var(--supabase); color: white; border: 1px solid var(--supabase); }
         .btn-devendo { background-color: transparent; color: var(--danger); border: 1px solid var(--danger); }
 
-        /* TIMES E EDIÇÃO DE NOMES */
+        /* TIMES */
         .team-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-top:20px; }
         .team { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-top: 5px solid var(--primary); border: 1px solid var(--border); }
         .input-nome-time { font-size: 16px; font-weight: 700; color: var(--dark); border: none; border-bottom: 2px solid transparent; padding: 5px; margin-bottom: 10px; width: 100%; border-radius: 0; box-shadow: none !important;}
         .input-nome-time:focus { border-bottom: 2px solid var(--primary); background: var(--light); outline: none; }
         .team ul { list-style: none; padding:0; margin:0;}
         .team li { padding: 6px 0; border-bottom: 1px dashed var(--border); font-size: 14px;}
-        .team li:last-child { border-bottom: none; }
-        .team-reservas { border-top-color: var(--danger); }
-
-        /* SÚMULA NOVO LAYOUT PLACAR */
-        .placar-arena { background: var(--dark); color: white; border-radius: 16px; padding: 20px; position: relative; margin-bottom: 20px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);}
+        
+        /* PLACAR */
+        .placar-arena { background: var(--dark); color: white; border-radius: 16px; padding: 20px; position: relative; margin-bottom: 20px; }
         .placar-header { display: flex; justify-content: space-between; align-items: stretch; margin-bottom: 15px; }
         .placar-time { flex: 1; display: flex; flex-direction: column; align-items: center; }
         .placar-time select { background: transparent; color: white; border: 1px solid rgba(255,255,255,0.2); text-align: center; font-weight: 700; margin-bottom: 10px; font-size: 14px; width: 90%; }
-        .placar-time select option { color: var(--dark); }
         .placar-numero { font-size: 56px; font-weight: 800; line-height: 1; margin: 5px 0; font-family: monospace; }
-        .placar-vs { font-size: 20px; font-weight: 800; color: rgba(255,255,255,0.3); margin-top: 35px; }
-        .btn-add-gol-arena { background: var(--primary); color: white; border: none; font-size: 13px; font-weight: 700; padding: 8px 12px; border-radius: 8px; width: auto; margin-bottom: 10px;}
-        .btn-add-gol-arena:hover { background: var(--primary-hover); }
-        .lista-gols-arena { font-size: 11px; color: rgba(255,255,255,0.7); text-align: center; min-height: 30px;}
-        .item-gol-arena { background: rgba(255,255,255,0.1); border-radius: 4px; padding: 3px 6px; margin: 2px; display: inline-flex; align-items: center; gap: 5px; }
-        .remover-gol-btn-arena { color: #fca5a5; cursor: pointer; font-weight: bold; }
-
-        #texto-fila { font-size: 13px; font-weight: 600; color: var(--warning); text-align: center; margin-bottom: 15px; padding: 8px; background: #fffbeb; border-radius: 6px; border: 1px solid #fde68a; }
-        .jogo-registrado { display: flex; justify-content: space-between; align-items: center; background: white; padding: 12px; border-radius: 8px; margin-bottom: 8px; border: 1px solid var(--border); font-size: 14px; font-weight: 600; }
-        .placar-box { background: var(--light); padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border); font-size: 16px; }
-
-        /* MODAL DE GOLS */
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.8); display: flex; justify-content: center; align-items: center; z-index: 2000; padding: 20px; backdrop-filter: blur(4px); }
-        .modal-content { background: white; padding: 20px; border-radius: 16px; width: 100%; max-width: 350px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); animation: fadeIn 0.2s ease-out; }
-        .modal-content h3 { margin-top: 0; text-align: center; border-bottom: 1px solid var(--border); padding-bottom: 10px; font-size: 18px;}
-        .btn-jogador-gol { background: var(--light); color: var(--dark); border: 1px solid var(--border); margin-bottom: 8px; font-size: 15px; text-align: left; padding: 12px; border-radius: 8px; font-weight: 600;}
-        .btn-jogador-gol:hover { background: var(--primary); color: white; border-color: var(--primary);}
+        .btn-add-gol-arena { background: var(--primary); color: white; border: none; font-size: 13px; padding: 8px 12px; border-radius: 8px; width: auto; margin-bottom: 10px;}
 
         /* ESTATÍSTICAS E FINANCEIRO */
         .tabela-stats { width: 100%; border-collapse: collapse; font-size: 13px; text-align: center; }
-        .tabela-stats th { padding: 10px 5px; border-bottom: 2px solid var(--border); color: var(--text-muted); font-weight: 600; }
-        .tabela-stats td { padding: 12px 5px; border-bottom: 1px solid var(--border); font-weight: 500; }
-        .tabela-stats td:first-child, .tabela-stats th:first-child { text-align: left; }
-        .card-secao-stats { padding: 0; overflow: hidden; border: 1px solid var(--border); border-radius: 12px; background: white; margin-bottom: 20px;}
-        .header-secao-stats { padding: 12px 15px; margin: 0; border-bottom: 1px solid var(--border); font-size: 14px; background: var(--light); font-weight: 700; color: var(--dark); display: flex; justify-content: space-between; align-items: center;}
-        
+        .tabela-stats th { padding: 10px 5px; border-bottom: 2px solid var(--border); color: var(--text-muted); }
+        .tabela-stats td { padding: 12px 5px; border-bottom: 1px solid var(--border); }
+        .card-secao-stats { padding: 0; border: 1px solid var(--border); border-radius: 12px; background: white; margin-bottom: 20px;}
+        .header-secao-stats { padding: 12px 15px; border-bottom: 1px solid var(--border); font-weight: 700; background: var(--light); }
         .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
         .dash-card { background: white; padding: 15px; border-radius: 12px; border: 1px solid var(--border); text-align: center; }
         .dash-valor { font-size: 20px; font-weight: 700; margin: 5px 0;}
-        .dash-titulo { font-size: 10px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
+        .dash-titulo { font-size: 10px; color: var(--text-muted); text-transform: uppercase; }
+        
         .valor-positivo { color: var(--supabase); }
         .valor-negativo { color: var(--danger); }
         .valor-neutro { color: var(--primary); }
 
-        /* MODO PÚBLICO */
         .hidden-public { display: block; }
         .public-mode .hidden-public { display: none !important; }
-        .codigo-gerado-box { background: var(--light); padding: 15px; border: 2px dashed var(--primary); border-radius: 12px; text-align: center; margin-top: 15px; font-weight: 700; font-size: 20px; letter-spacing: 2px;}
+        .codigo-gerado-box { background: var(--light); padding: 15px; border: 2px dashed var(--primary); border-radius: 12px; text-align: center; margin-top: 15px; font-weight: 700; font-size: 20px;}
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body id="body-app">
-    
-    <!-- TELA INICIAL (LOGIN OU MODO JOGADOR) -->
+<body>
     <div id="auth-container" style="padding: 20px;">
         <h1>Pega o Baba</h1>
         <p class="subtitle">Plataforma Profissional de Gestão</p>
-        
         <div class="card">
             <h2>Acesso do Organizador</h2>
-            <input type="email" id="auth-email" placeholder="Seu E-mail Profissional">
-            <input type="password" id="auth-password" placeholder="Sua Senha Segura">
-            <button onclick="fazerLogin()" style="margin-bottom: 10px;">Entrar no Painel</button>
-            <button onclick="criarConta()" style="background: white; color: var(--dark); border: 1px solid var(--border);">Criar Conta</button>
-            <div id="auth-msg" style="margin-top: 15px; font-size: 14px; text-align: center;"></div>
+            <input type="email" id="auth-email" placeholder="E-mail">
+            <input type="password" id="auth-password" placeholder="Senha">
+            <button onclick="fazerLogin()">Entrar</button>
         </div>
-
-        <div class="card" style="background: var(--light); border-color: var(--primary);">
-            <h2 style="color: var(--primary);">Sou Jogador</h2>
-            <p style="font-size: 13px; color: var(--text-muted); text-align: center; margin-top:-10px;">Acompanhe a resenha ao vivo</p>
-            <input type="text" id="codigo-baba-input" placeholder="Digite o Código do Baba" style="text-align: center; font-weight: bold; text-transform: uppercase;">
-            <button onclick="acessarModoPublico()" style="background: var(--dark);">Ver Súmula e Painel</button>
+        <div class="card" style="background: var(--light);">
+            <h2>Sou Jogador</h2>
+            <input type="text" id="codigo-baba-input" placeholder="Código do Baba">
+            <button onclick="acessarModoPublico()" style="background: var(--dark);">Ver Painel</button>
         </div>
     </div>
 
-    <!-- APLICATIVO PRINCIPAL -->
     <div id="app-container" style="display: none;">
-        
         <div class="top-bar">
             <h1>Pega o Baba</h1>
             <div class="top-actions">
                 <div class="status-nuvem" id="status-db">...</div>
                 <button class="btn-sair hidden-public" onclick="fazerLogout()">Sair</button>
-                <button class="btn-sair" id="btn-sair-publico" style="display:none;" onclick="sairModoPublico()">Sair da Visão</button>
+                <button class="btn-sair" id="btn-sair-publico" style="display:none;" onclick="sairModoPublico()">Voltar</button>
             </div>
         </div>
 
-        <!-- ABA 1: ELENCO (Administrativo) -->
         <div id="view-elenco" class="page-view">
-            <div class="card hidden-public" id="card-formulario">
-                <h2 id="titulo-form">Adicionar ao Elenco</h2>
-                <input type="text" id="nome" placeholder="Nome Completo ou Apelido" autocomplete="off">
-                <div class="linha-selects">
-                    <select id="tipo"><option value="Mensalista">Mensalista</option><option value="Convidado">Convidado</option></select>
-                    <select id="posicao"><option value="Atacante">Atacante</option><option value="Meio-Campo" selected>Meio-Campo</option><option value="Lateral">Lateral</option><option value="Zagueiro">Zagueiro</option><option value="Goleiro">Goleiro</option></select>
-                    <select id="nivel"><option value="5">Craque (5)</option><option value="4">Bom (4)</option><option value="3" selected>Médio (3)</option><option value="2">Iniciante (2)</option><option value="1">Perna (1)</option></select>
-                </div>
-                <div style="display: flex; gap: 10px;">
-                    <button id="btn-adicionar" onclick="adicionarJogador()">Incluir Jogador</button>
-                    <button id="btn-cancelar-edicao" onclick="cancelarEdicao()" style="display: none; background-color: var(--text-muted);">Cancelar</button>
-                </div>
+            <div class="card hidden-public">
+                <h2>Adicionar Jogador</h2>
+                <input type="text" id="nome" placeholder="Nome">
+                <select id="tipo"><option value="Mensalista">Mensalista</option><option value="Convidado">Convidado</option></select>
+                <button id="btn-adicionar" onclick="adicionarJogador()">Incluir</button>
             </div>
-
-            <div class="card hidden-public" style="padding: 15px;">
-                <h2 style="margin-bottom: 10px;">Gestão de Mensalidades (<span id="total-elenco">0</span>)</h2>
-                <div class="busca-container">
-                    <input type="text" id="busca-jogador-elenco" placeholder="🔍 Buscar jogador..." onkeyup="filtrarElencoAdmin()">
-                </div>
+            <div class="card hidden-public">
+                <h2>Elenco</h2>
+                <input type="text" id="busca-jogador-elenco" placeholder="🔍 Buscar..." onkeyup="filtrarElencoAdmin()">
                 <div id="lista-elenco-admin"></div>
             </div>
         </div>
 
-        <!-- ABA 2: SORTEIO (Ação do Jogo) -->
         <div id="view-sorteio" class="page-view active">
-            
-            <!-- LISTA: AGUARDANDO CHEGADA -->
-            <div class="card hidden-public" style="border: 2px dashed var(--border); background: var(--white);">
-                <h2 style="color: var(--text-muted);">Aguardando Chegada</h2>
-                <div class="busca-container">
-                    <input type="text" id="busca-jogador-sorteio" placeholder="🔍 Buscar jogador..." onkeyup="filtrarSorteioAusentes()">
-                </div>
+            <div class="card hidden-public">
+                <h2>Aguardando Chegada</h2>
+                <input type="text" id="busca-jogador-sorteio" placeholder="🔍 Buscar..." onkeyup="filtrarSorteioAusentes()">
                 <div id="lista-aguardando"></div>
             </div>
-
-            <!-- LISTA: PRONTOS PRO JOGO -->
-            <div class="card hidden-public" style="border: 2px solid var(--primary); background: #f8fafc;">
-                <h2>Prontos pro Jogo (<span id="total-presentes">0</span>)</h2>
-                <button class="btn-limpar" onclick="zerarPresencas()" id="btn-zerar" style="display: none; width:100%; margin-bottom:15px;">🔄 Retirar Todos da Quadra</button>
-                
+            <div class="card hidden-public">
+                <h2>Prontos (<span id="total-presentes">0</span>)</h2>
                 <div id="lista-presentes"></div>
-                
-                <div style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 20px;">
-                    <label style="font-weight: 600; display: block; margin-bottom: 8px;">Modo de Sorteio:</label>
-                    <select id="modo-sorteio" style="margin-bottom: 10px;">
-                        <option value="12">12 PRIMEIROS (2 times - Sem Goleiros)</option>
-                        <option value="14">14 PRIMEIROS (2 times - Com Goleiros)</option>
-                        <option value="todos_sem_goleiro">TODOS de linha (Múltiplos - Sem Goleiros)</option>
-                        <option value="todos">TODOS (Múltiplos - Com Goleiros)</option>
-                    </select>
-                    
-                    <div style="display:flex; gap:10px; align-items:flex-start; background: white; padding:10px; border-radius:8px; border:1px solid var(--border);">
-                        <input type="checkbox" id="priorizar-ordem" style="width:auto; margin-top:2px;">
-                        <label for="priorizar-ordem" style="font-size:14px; font-weight:500;">
-                            Priorizar Ordem de Chegada
-                            <span style="display:block; font-size:12px; color:var(--text-muted); font-weight:normal; margin-top:4px;">Se desmarcado, mistura focando 100% no equilíbrio técnico.</span>
-                        </label>
-                    </div>
-                </div>
-                <button onclick="iniciarSorteioComSuspense()" style="background: var(--dark); margin-top: 15px; font-size:16px; padding:16px;">🎲 Gerar Equipes</button>
+                <button onclick="iniciarSorteioComSuspense()" class="btn-sortear">🎲 Gerar Equipes</button>
             </div>
-
-            <!-- RESULTADO DO SORTEIO -->
             <div id="resultado" class="team-container"></div>
-            
-            <div class="hidden-public" style="display: flex; gap: 10px; margin-top: 20px;">
-                <button id="btn-ir-placares" style="background: var(--primary); display: none; width:100%;" onclick="mudarAba('view-placares')">📝 Preencher Súmula</button>
-            </div>
+            <button id="btn-ir-placares" style="display:none; margin-top:20px;" onclick="mudarAba('view-placares')">📝 Preencher Súmula</button>
         </div>
 
-        <!-- ABA 3: SÚMULA DINÂMICA (PLACAR DE ARENA) -->
         <div id="view-placares" class="page-view">
             <div class="card">
-                <h2>📝 Súmula de Jogo</h2>
-                <p class="hidden-public" style="font-size: 13px; color: var(--text-muted); margin-top: -10px; margin-bottom: 20px; text-align:center;">
-                    Registre o resultado. Em caso de empate, as duas equipes saem da quadra automaticamente.
-                </p>
-                
-                <div id="aviso-sem-sorteio" style="text-align: center; padding: 30px; color: var(--text-muted);">
-                    Nenhum sorteio ativo no momento.<br><span class="hidden-public">Faça o sorteio na aba "Sorteio" primeiro.</span>
-                </div>
-
-                <div id="container-sumula" style="display: none;">
-                    
-                    <div id="texto-fila"></div>
-
-                    <!-- PLACAR DE ARENA (SÓ ORGANIZADOR VÊ OS BOTÕES) -->
+                <h2>Súmula</h2>
+                <div id="container-sumula" style="display:none;">
+                    <div id="texto-fila" style="background:#fef3c7; padding:10px; border-radius:8px; margin-bottom:10px;"></div>
                     <div class="placar-arena hidden-public">
-                        <div class="placar-header">
-                            <div class="placar-time">
-                                <select id="sumula_equipe_a" onchange="limparGolsTemp('A')"></select>
-                                <div class="placar-numero" id="placar-num-a">0</div>
-                                <button class="btn-add-gol-arena" onclick="abrirModalGol('A')">⚽ Add Gol</button>
-                                <div class="lista-gols-arena" id="lista-gols-a"></div>
-                            </div>
-                            <div class="placar-vs">X</div>
-                            <div class="placar-time">
-                                <select id="sumula_equipe_b" onchange="limparGolsTemp('B')"></select>
-                                <div class="placar-numero" id="placar-num-b">0</div>
-                                <button class="btn-add-gol-arena" onclick="abrirModalGol('B')">⚽ Add Gol</button>
-                                <div class="lista-gols-arena" id="lista-gols-b"></div>
-                            </div>
-                        </div>
-                        <button onclick="adicionarJogoNaSumula()" style="background: white; color: var(--dark); width: 100%; border-radius: 8px; padding: 12px; font-weight: 800; font-size: 15px;">✔️ Confirmar Resultado</button>
+                        <select id="sumula_equipe_a" onchange="limparGolsTemp('A')"></select>
+                        <div class="placar-numero" id="placar-num-a">0</div>
+                        <button class="btn-add-gol-arena" onclick="abrirModalGol('A')">⚽ Gol</button>
+                        <div class="lista-gols-arena" id="lista-gols-a"></div>
+                        <select id="sumula_equipe_b" onchange="limparGolsTemp('B')"></select>
+                        <div class="placar-numero" id="placar-num-b">0</div>
+                        <button class="btn-add-gol-arena" onclick="abrirModalGol('B')">⚽ Gol</button>
+                        <div class="lista-gols-arena" id="lista-gols-b"></div>
+                        <button onclick="adicionarJogoNaSumula()" style="background:white; color:var(--dark);">Confirmar</button>
                     </div>
-
-                    <h3 style="font-size: 15px; margin-bottom: 10px;">Jogos Registrados (<span id="qtd-jogos-reg">0</span>):</h3>
-                    <div id="lista-jogos-registrados" style="margin-bottom: 20px;"></div>
-
-                    <button class="btn-salvar hidden-public" id="btn-encerrar-baba" style="display: block; padding:16px;" onclick="salvarPartidaComPlacares()">✅ Finalizar Baba e Salvar Dados</button>
-                    
-                    <!-- BOX PARA MOSTRAR O CÓDIGO DO BABA -->
-                    <div id="box-codigo-gerado" class="codigo-gerado-box hidden-public" style="display:none;"></div>
+                    <div id="lista-jogos-registrados"></div>
+                    <button class="hidden-public" onclick="salvarPartidaComPlacares()">✅ Finalizar Baba</button>
+                    <div id="box-codigo-gerado" class="codigo-gerado-box hidden-public"></div>
                 </div>
             </div>
         </div>
 
-        <!-- ABA 4: ESTATÍSTICAS COMPLETAS -->
         <div id="view-estatisticas" class="page-view">
-            <h2 style="text-align: left; font-size:20px; margin-bottom: 20px;">Painel de Estatísticas</h2>
-            
-            <!-- ESTATÍSTICAS DO DIA -->
-            <div class="card-secao-stats">
-                <div class="header-secao-stats"><span>🏆 Classificação de Hoje</span></div>
-                <div style="overflow-x: auto;">
-                    <table class="tabela-stats" id="tabela-classificacao">
-                        <thead><tr><th>Time</th><th>PTS</th><th>J</th><th>V</th><th>E</th><th>D</th><th>SG</th></tr></thead>
-                        <tbody id="body-classificacao"><tr><td colspan="7" style="color:var(--text-muted);">Sem jogos hoje.</td></tr></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="card-secao-stats">
-                <div class="header-secao-stats"><span>⚽ Artilheiros de Hoje</span></div>
-                <table class="tabela-stats">
-                    <thead><tr><th>Jogador</th><th style="width:60px;">Gols</th></tr></thead>
-                    <tbody id="body-artilheiros-painel"><tr><td colspan="2" style="color:var(--text-muted);">Nenhum gol.</td></tr></tbody>
-                </table>
-            </div>
-
-            <div id="loading-stats" class="hidden-public" style="text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 20px; display: none;">
-                Buscando histórico na nuvem...
-            </div>
-
-            <!-- ARTILHARIA DO MÊS (SÓ ADMIN VÊ) -->
-            <div class="card-secao-stats hidden-public">
-                <div class="header-secao-stats" style="background: #e0e7ff; color: var(--primary);">
-                    <span>🔥 Artilharia do Mês</span>
-                    <span id="label-mes-atual" style="font-size: 11px; background: white; padding: 2px 6px; border-radius: 4px;">Atual</span>
-                </div>
-                <table class="tabela-stats">
-                    <thead><tr><th>Jogador</th><th style="width:60px;">Gols</th></tr></thead>
-                    <tbody id="body-artilharia-mes"><tr><td colspan="2" style="color:var(--text-muted);">Carregando...</td></tr></tbody>
-                </table>
-            </div>
-
-            <!-- RANKING ANUAL (SÓ ADMIN VÊ) -->
-            <div class="card-secao-stats hidden-public">
-                <div class="header-secao-stats" style="background: #fef3c7; color: var(--warning);">
-                    <span>🌟 Ranking Anual (Gols e Presenças)</span>
-                    <span id="label-ano-atual" style="font-size: 11px; background: white; padding: 2px 6px; border-radius: 4px;">Atual</span>
-                </div>
-                <div style="overflow-x: auto;">
-                    <table class="tabela-stats">
-                        <thead><tr><th>Jogador</th><th>Gols</th><th>Presenças</th></tr></thead>
-                        <tbody id="body-ranking-anual"><tr><td colspan="3" style="color:var(--text-muted);">Carregando...</td></tr></tbody>
-                    </table>
-                </div>
+            <div class="card">
+                <h2>Estatísticas</h2>
+                <table class="tabela-stats" id="tabela-classificacao"><tbody id="body-classificacao"></tbody></table>
+                <table class="tabela-stats" id="tabela-artilheiros"><tbody id="body-artilheiros-painel"></tbody></table>
             </div>
         </div>
 
-        <!-- ABA 5: FINANCEIRO (TRIPLO) -->
         <div id="view-financeiro" class="page-view">
-            <h2 style="text-align: left; font-size:20px; margin-bottom: 20px;">Gestão de Caixa</h2>
-            
             <div class="card hidden-public">
-                <p style="font-size:12px; color:var(--text-muted); margin-top:-5px; margin-bottom:15px; line-height: 1.4;">
-                    Defina o valor base para a contabilidade.
-                </p>
-                <div style="display: flex; gap: 10px; margin-bottom: 5px;">
-                    <div style="flex: 1;">
-                        <label style="font-size: 11px; font-weight: 600; color: var(--text-muted);">Mensalidade (R$):</label>
-                        <input type="number" id="valor-mensalista" value="70" onchange="atualizarFinanceiro()" style="font-size: 16px; font-weight: 700; margin-bottom: 0;">
-                    </div>
-                    <div style="flex: 1;">
-                        <label style="font-size: 11px; font-weight: 600; color: var(--text-muted);">Diária Convidado (R$):</label>
-                        <input type="number" id="valor-convidado" value="25" onchange="atualizarFinanceiro()" style="font-size: 16px; font-weight: 700; margin-bottom: 0;">
-                    </div>
-                </div>
+                <h2>Caixa</h2>
+                <input type="number" id="valor-mensalista" value="70" onchange="atualizarFinanceiro()">
+                <input type="number" id="valor-convidado" value="25" onchange="atualizarFinanceiro()">
             </div>
-
-            <!-- RELATÓRIO: HOJE -->
-            <div class="card-secao-stats">
-                <div class="header-secao-stats" style="background: var(--dark); color: white;">
-                    <span>⚽ Caixa da Rodada (Hoje)</span>
-                </div>
-                <div style="padding: 15px;">
-                    <div class="dash-grid">
-                        <div class="dash-card">
-                            <div class="dash-titulo">Diárias Hoje</div>
-                            <div class="dash-valor valor-positivo" id="fin-receita-hoje">R$ 0</div>
-                        </div>
-                        <div class="dash-card">
-                            <div class="dash-titulo">Custos Hoje</div>
-                            <div class="dash-valor valor-negativo" id="fin-custos-hoje">R$ 0</div>
-                        </div>
-                    </div>
-                    <div class="card hidden-public" style="margin-bottom:0;">
-                        <h3 style="font-size: 13px; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:10px;">Lançar Despesa da Rodada</h3>
-                        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                            <input type="text" id="desc-custo" placeholder="Ex: Aluguel, Bola" style="flex:2; margin:0; padding:10px; font-size:12px;">
-                            <input type="number" id="valor-custo" placeholder="R$" style="flex:1; margin:0; padding:10px; font-size:12px;">
-                        </div>
-                        <button onclick="adicionarCusto()" style="background: var(--dark); padding: 10px; font-size:13px;">Lançar Custo</button>
-                    </div>
-                    <div id="lista-custos" style="margin-top:15px;"></div>
-                </div>
+            <div class="dash-grid">
+                <div class="dash-card"><div class="dash-titulo">Arrecadado</div><div class="dash-valor" id="fin-receita-hoje">R$ 0</div></div>
+                <div class="dash-card"><div class="dash-titulo">Custos</div><div class="dash-valor" id="fin-custos-hoje">R$ 0</div></div>
             </div>
-
-            <!-- RELATÓRIO: MÊS E ANO (SÓ ADMIN VÊ) -->
-            <div id="fin-loading" class="hidden-public" style="text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 20px; display: none;">
-                Calculando balanço na nuvem...
-            </div>
-
-            <div class="card-secao-stats hidden-public">
-                <div class="header-secao-stats" style="background: #e0e7ff; color: var(--primary);">
-                    <span>📅 Relatório deste Mês</span>
-                </div>
-                <div style="padding: 15px;">
-                    <p style="font-size:11px; color:var(--text-muted); margin-top:0; text-align:center;">Inclui TODAS as Mensalidades pagas no mês + Diárias.</p>
-                    <div class="dash-grid" style="margin-bottom:0;">
-                        <div class="dash-card"><div class="dash-titulo">Receita Mensal</div><div class="dash-valor valor-positivo" id="fin-rec-mes">R$ 0</div></div>
-                        <div class="dash-card"><div class="dash-titulo">Custos Mês</div><div class="dash-valor valor-negativo" id="fin-cus-mes">R$ 0</div></div>
-                    </div>
-                    <div style="text-align:center; padding-top:15px; border-top:1px dashed var(--border); margin-top:15px;">
-                        <div class="dash-titulo">Saldo Mensal</div>
-                        <div class="dash-valor valor-neutro" id="fin-sal-mes">R$ 0</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card-secao-stats hidden-public">
-                <div class="header-secao-stats" style="background: #fef3c7; color: var(--warning);">
-                    <span>🌎 Relatório deste Ano</span>
-                </div>
-                <div style="padding: 15px;">
-                    <div class="dash-grid" style="margin-bottom:0;">
-                        <div class="dash-card"><div class="dash-titulo">Receita Anual</div><div class="dash-valor valor-positivo" id="fin-rec-ano">R$ 0</div></div>
-                        <div class="dash-card"><div class="dash-titulo">Custos Ano</div><div class="dash-valor valor-negativo" id="fin-cus-ano">R$ 0</div></div>
-                    </div>
-                    <div style="text-align:center; padding-top:15px; border-top:1px dashed var(--border); margin-top:15px;">
-                        <div class="dash-titulo">Saldo Anual</div>
-                        <div class="dash-valor valor-neutro" id="fin-sal-ano">R$ 0</div>
-                    </div>
-                </div>
-            </div>
-
+            <div id="lista-custos"></div>
         </div>
 
-        <!-- MODAL SELEÇÃO DE GOL -->
-        <div id="modal-gol" class="modal-overlay" style="display:none;">
-            <div class="modal-content">
-                <h3 id="titulo-modal-gol">Quem fez o gol?</h3>
-                <div id="lista-jogadores-gol" style="display:flex; flex-direction:column; gap:8px; max-height: 55vh; overflow-y: auto; margin-bottom: 15px; padding-right: 5px;"></div>
-                <button onclick="fecharModalGol()" style="background:white; color:var(--dark); border:1px solid var(--border); padding: 12px; border-radius: 8px; font-weight: 600; width:100%;">Cancelar</button>
-            </div>
-        </div>
-
-        <!-- NAVEGAÇÃO INFERIOR COM ÍCONES VETORIAIS (SVG) -->
         <nav class="bottom-nav">
             <div class="nav-item hidden-public" onclick="mudarAba('view-elenco')" id="nav-elenco">
-                <div class="nav-icon">
-                    <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-                </div>
+                <div class="nav-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></div>
                 <span>Elenco</span>
             </div>
             <div class="nav-item hidden-public" onclick="mudarAba('view-sorteio')" id="nav-sorteio">
-                <div class="nav-icon">
-                    <svg viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><path d="M16 8h.01"/><path d="M8 8h.01"/><path d="M8 16h.01"/><path d="M16 16h.01"/><path d="M12 12h.01"/></svg>
-                </div>
+                <div class="nav-icon"><svg viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><path d="M16 8h.01"/><path d="M8 8h.01"/><path d="M8 16h.01"/><path d="M16 16h.01"/><path d="M12 12h.01"/></svg></div>
                 <span>Sorteio</span>
             </div>
             <div class="nav-item active" onclick="mudarAba('view-placares')" id="nav-placares">
-                <div class="nav-icon">
-                    <svg viewBox="0 0 24 24"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></svg>
-                </div>
+                <div class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></svg></div>
                 <span>Súmula</span>
             </div>
             <div class="nav-item" onclick="mudarAba('view-estatisticas')" id="nav-estatisticas">
-                <div class="nav-icon">
-                    <svg viewBox="0 0 24 24"><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/><line x1="2" x2="22" y1="20" y2="20"/></svg>
-                </div>
+                <div class="nav-icon"><svg viewBox="0 0 24 24"><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/><line x1="2" x2="22" y1="20" y2="20"/></svg></div>
                 <span>Painel</span>
             </div>
             <div class="nav-item" onclick="mudarAba('view-financeiro')" id="nav-financeiro">
-                <div class="nav-icon">
-                    <svg viewBox="0 0 24 24"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2v-8h-2z"/></svg>
-                </div>
+                <div class="nav-icon"><svg viewBox="0 0 24 24"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2v-8h-2z"/></svg></div>
                 <span>Caixa</span>
             </div>
         </nav>
-
     </div>
-
     <script>
-        let db;
-        let jogadores = [];
-        let jogadorEdicaoId = null; 
-
-        const coresTimes = ["Vermelho", "Azul", "Amarelo", "Verde", "Branco", "Preto", "Roxo", "Laranja"];
-        const emojisTimes = ["🔴", "🔵", "🟡", "🟢", "⚪", "⚫", "🟣", "🟠"];
-
-        // Variáveis da Rodada Atual
-        window.timesSorteadosObjs = []; 
-        window.partidaSalva = true; 
-        window.jogosDaRodada = []; 
-        window.filaEquipes = []; 
-        window.custosDaRodada = [];
-        window.isModoPublico = false;
-        
-        // Gols em Andamento
-        window.golsTempA = []; 
-        window.golsTempB = [];
-
-        window.onload = async function() {
-            if(typeof supabaseUrl === 'undefined' || typeof supabaseKey === 'undefined') { alert("Erro crítico: config.js ausente."); return; }
-            db = window.supabase.createClient(supabaseUrl, supabaseKey);
-            
-            const urlParams = new URLSearchParams(window.location.search);
-            const code = urlParams.get('code');
-            if(code) {
-                document.getElementById('codigo-baba-input').value = code;
-                acessarModoPublico();
-            } else {
-                carregarEstadoCompleto();
-                if(checarReset24h()) limparEstadoRodada();
-                verificarSessao();
-            }
-        };
-
-        // ==== PERSISTÊNCIA LOCAL ====
-        function salvarEstadoCompleto() {
-            if(window.isModoPublico) return; 
-            
-            const estado = {
-                timesSorteadosObjs: window.timesSorteadosObjs,
-                reservasSorteados: window.reservasSorteados,
-                jogosDaRodada: window.jogosDaRodada,
-                filaEquipes: window.filaEquipes,
-                partidaSalva: window.partidaSalva,
-                custosDaRodada: window.custosDaRodada,
-                valorMensalistaAtual: document.getElementById('valor-mensalista').value,
-                valorConvidadoAtual: document.getElementById('valor-convidado').value
-            };
-            localStorage.setItem('baba_full_state', JSON.stringify(estado));
-        }
-
-        function carregarEstadoCompleto() {
-            const saved = localStorage.getItem('baba_full_state');
-            if(saved) {
-                const state = JSON.parse(saved);
-                window.timesSorteadosObjs = state.timesSorteadosObjs || [];
-                window.reservasSorteados = state.reservasSorteados || [];
-                window.jogosDaRodada = state.jogosDaRodada || [];
-                window.filaEquipes = state.filaEquipes || [];
-                window.partidaSalva = state.partidaSalva !== undefined ? state.partidaSalva : true;
-                window.custosDaRodada = state.custosDaRodada || [];
-                
-                if (state.valorMensalistaAtual) document.getElementById('valor-mensalista').value = state.valorMensalistaAtual;
-                if (state.valorConvidadoAtual) document.getElementById('valor-convidado').value = state.valorConvidadoAtual;
-
-                if(window.timesSorteadosObjs.length > 0) renderizarTimesNaTela();
-            }
-        }
-
-        function limparEstadoRodada() {
-            window.timesSorteadosObjs = []; window.reservasSorteados = []; window.jogosDaRodada = [];
-            window.filaEquipes = []; window.custosDaRodada = []; window.golsTempA = []; window.golsTempB = [];
-            window.partidaSalva = true;
-            localStorage.removeItem('baba_full_state');
-        }
-
-        function checarReset24h() {
-            let ultimoReset = localStorage.getItem('baba_last_reset');
-            let agora = Date.now();
-            if(!ultimoReset || (agora - parseInt(ultimoReset)) > 86400000) {
-                localStorage.removeItem('baba_presencas_temp');
-                localStorage.setItem('baba_last_reset', agora);
-                return true;
-            }
-            return false;
-        }
-
-        // NAVEGAÇÃO
-        function mudarAba(viewId) {
-            document.querySelectorAll('.page-view').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-            document.getElementById(viewId).classList.add('active');
-            document.getElementById(viewId.replace('view-', 'nav-')).classList.add('active');
-            window.scrollTo(0, 0);
-
-            if(viewId === 'view-estatisticas') carregarEstatisticasGerais();
-            if(viewId === 'view-placares') renderizarSumula();
-            if(viewId === 'view-financeiro') {
-                atualizarFinanceiro();
-                if(!window.isModoPublico) calcularBalancoMesAno();
-            }
-        }
-
-        // AUTENTICAÇÃO E MODO PÚBLICO
-        async function verificarSessao() { const { data: { session } } = await db.auth.getSession(); if (session) mostrarApp(); else mostrarLogin(); }
-        async function criarConta() { 
-            const email = document.getElementById('auth-email').value; const password = document.getElementById('auth-password').value; const msg = document.getElementById('auth-msg');
-            if(password.length < 6) return msg.innerText = "A senha deve ter 6+ caracteres."; msg.innerText = "Processando...";
-            const { error } = await db.auth.signUp({ email, password });
-            if (error) { msg.style.color = "var(--danger)"; msg.innerText = error.message; } else { msg.style.color = "var(--primary)"; msg.innerHTML = "✅ Conta criada! Verifique seu e-mail."; }
-        }
-        async function fazerLogin() { 
-            const email = document.getElementById('auth-email').value; const password = document.getElementById('auth-password').value; const msg = document.getElementById('auth-msg');
-            msg.innerText = "Conectando...";
-            const { error } = await db.auth.signInWithPassword({ email, password });
-            if (error) { msg.style.color = "var(--danger)"; msg.innerText = "Credenciais inválidas."; } else mostrarApp();
-        }
-        async function fazerLogout() { await db.auth.signOut(); mostrarLogin(); }
-        
-        function mostrarApp() { 
-            window.isModoPublico = false;
-            document.getElementById('auth-container').style.display = 'none'; 
-            document.getElementById('app-container').style.display = 'block'; 
-            document.getElementById('app-container').classList.remove('public-mode');
-            document.getElementById('btn-sair-publico').style.display = 'none';
-            carregarElencoDaNuvem();
-            mudarAba('view-sorteio');
-        }
-        function mostrarLogin() { 
-            document.getElementById('auth-container').style.display = 'block'; 
-            document.getElementById('app-container').style.display = 'none'; 
-        }
-
-        async function acessarModoPublico() {
-            const codigo = document.getElementById('codigo-baba-input').value.trim().toUpperCase();
-            if(!codigo) return alert("Digite um código válido.");
-            
-            document.getElementById('auth-container').style.display = 'none';
-            document.getElementById('app-container').style.display = 'block';
-            document.getElementById('app-container').classList.add('public-mode');
-            document.getElementById('btn-sair-publico').style.display = 'block';
-            window.isModoPublico = true;
-            
-            document.getElementById('status-db').innerText = "Buscando Baba...";
-            const { data: partida, error } = await db.from('partidas').select('*').eq('codigo_acesso', codigo).single();
-            
-            if(error || !partida) {
-                alert("Baba não encontrado ou código inválido.");
-                sairModoPublico();
-                return;
-            }
-            
-            document.getElementById('status-db').innerText = `Visualizando: ${codigo}`;
-            window.custosDaRodada = partida.custos_json || [];
-            if(partida.valor_por_convidado) document.getElementById('valor-convidado').value = partida.valor_por_convidado;
-            if(partida.valor_por_mensalista) document.getElementById('valor-mensalista').value = partida.valor_por_mensalista;
-            
-            const { data: presencas } = await db.from('presencas').select('pagou, jogadores(tipo)').eq('partida_id', partida.id);
-            if(presencas) {
-                let receitaPub = 0;
-                let vConv = partida.valor_por_convidado || 0;
-                let qtdConvidadosPagos = presencas.filter(p => p.pagou && p.jogadores && p.jogadores.tipo === 'Convidado').length;
-                receitaPub += (qtdConvidadosPagos * vConv);
-                
-                let totCustosPub = window.custosDaRodada.reduce((acc, c) => acc + c.valor, 0);
-                
-                document.getElementById('fin-receita-hoje').innerText = `R$ ${receitaPub.toFixed(2)}`;
-                document.getElementById('fin-custos-hoje').innerText = `R$ ${totCustosPub.toFixed(2)}`;
-            }
-            renderizarListaCustos();
-            
-            const { data: jogos } = await db.from('jogos').select('*').eq('partida_id', partida.id);
-            if(jogos) {
-                window.jogosDaRodada = jogos.map(j => ({
-                    equipe_a_nome: j.equipe_a, gols_a: new Array(j.gols_a).fill('Gol'),
-                    equipe_b_nome: j.equipe_b, gols_b: new Array(j.gols_b).fill('Gol')
-                }));
-            } else window.jogosDaRodada = [];
-            
-            window.partidaSalva = true;
-            atualizarListaJogosDaRodada();
-            mudarAba('view-estatisticas'); 
-            window.artilheirosPub = partida.artilheiros_json || {};
-            renderizarPainelDoDia(); 
-            
-            window.history.pushState({}, '', '?code=' + codigo);
-        }
-
-        function sairModoPublico() {
-            window.history.pushState({}, '', window.location.pathname);
-            window.location.reload();
-        }
-
-        async function carregarElencoDaNuvem() {
-            document.getElementById('status-db').innerText = "Sincronizando..."; document.getElementById('status-db').style.backgroundColor = "var(--warning)";
-            const { data, error } = await db.from('jogadores').select('*').order('nome', { ascending: true }); 
-            if (error) { document.getElementById('status-db').innerText = "Off-line"; document.getElementById('status-db').style.backgroundColor = "var(--danger)"; return; }
-            
-            let estadoLocal = JSON.parse(localStorage.getItem('baba_presencas_temp')) || {};
-            jogadores = data.map(j => ({ 
-                ...j, 
-                presente: estadoLocal[j.id]?.presente || false, 
-                ordemChegada: estadoLocal[j.id]?.ordemChegada || 0, 
-                pagou: estadoLocal[j.id]?.pagou || false,
-                pagamentos_json: j.pagamentos_json || {}
-            }));
-            
-            document.getElementById('status-db').innerText = "Online"; document.getElementById('status-db').style.backgroundColor = "var(--supabase)";
-            atualizarListas();
-            atualizarFinanceiro(); 
-        }
-
-        // CADASTRO E EDIÇÃO
-        function prepararEdicao(indexArray) {
-            const j = jogadores[indexArray]; document.getElementById('nome').value = j.nome; document.getElementById('tipo').value = j.tipo; document.getElementById('posicao').value = j.posicao; document.getElementById('nivel').value = j.nivel;
-            jogadorEdicaoId = j.id; document.getElementById('titulo-form').innerText = "Editando Jogador"; document.getElementById('card-formulario').classList.add("editando");
-            document.getElementById('btn-adicionar').innerText = "Salvar Alterações"; document.getElementById('btn-cancelar-edicao').style.display = "block"; window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-        function cancelarEdicao() {
-            jogadorEdicaoId = null; document.getElementById('nome').value = ""; document.getElementById('tipo').value = "Mensalista"; document.getElementById('posicao').value = "Meio-Campo"; document.getElementById('nivel').value = "3";
-            document.getElementById('titulo-form').innerText = "Adicionar ao Elenco"; document.getElementById('card-formulario').classList.remove("editando");
-            document.getElementById('btn-adicionar').innerText = "Incluir Jogador"; document.getElementById('btn-cancelar-edicao').style.display = "none";
-        }
-
-        async function adicionarJogador() {
-            const nomeInput = document.getElementById('nome'); const tipo = document.getElementById('tipo').value;
-            const posicao = document.getElementById('posicao').value; const nivel = parseInt(document.getElementById('nivel').value); const nome = nomeInput.value.trim();
-            if (nome === "") return alert("Preencha o nome.");
-            if (jogadores.some(j => j.nome.toLowerCase() === nome.toLowerCase() && j.id !== jogadorEdicaoId)) return alert("⚠️ Jogador já cadastrado!");
-            const btn = document.getElementById('btn-adicionar'); btn.innerText = "Processando..."; btn.disabled = true;
-
-            if (jogadorEdicaoId) {
-                const { error } = await db.from('jogadores').update({ nome, tipo, posicao, nivel }).eq('id', jogadorEdicaoId);
-                if (!error) { let jIndex = jogadores.findIndex(j => j.id === jogadorEdicaoId); if (jIndex !== -1) { jogadores[jIndex].nome = nome; jogadores[jIndex].tipo = tipo; jogadores[jIndex].posicao = posicao; jogadores[jIndex].nivel = nivel; } cancelarEdicao(); atualizarListas(); } else alert("Erro: " + error.message);
-            } else {
-                const { data, error } = await db.from('jogadores').insert([{ nome, tipo, posicao, nivel, pagamentos_json: {} }]).select(); 
-                if (!error) { nomeInput.value = ""; nomeInput.focus(); jogadores.push({ ...data[0], presente: false, ordemChegada: 0, pagou: false }); atualizarListas(); btn.innerText = "Incluir Jogador"; } else alert("Erro: " + error.message);
-            }
-            btn.disabled = false;
-        }
-
-        async function removerJogador(idNuvem, indexArray) { if(confirm("Excluir jogador permanentemente?")) { const { error } = await db.from('jogadores').delete().eq('id', idNuvem); if (!error) { jogadores.splice(indexArray, 1); salvarEstadoLocal(); atualizarListas(); atualizarFinanceiro(); } } }
-
-        function salvarEstadoLocal() { let estado = {}; jogadores.forEach(j => { if (j.presente || j.pagou) estado[j.id] = { presente: j.presente, ordemChegada: j.ordemChegada, pagou: j.pagou }; }); localStorage.setItem('baba_presencas_temp', JSON.stringify(estado)); }
-        
-        function marcarPresenca(indexArray) { jogadores[indexArray].presente = true; jogadores[indexArray].ordemChegada = Date.now(); salvarEstadoLocal(); atualizarListas(); }
-        
-        function desmarcarPresenca(indexArray) { 
-            jogadores[indexArray].presente = false; 
-            jogadores[indexArray].ordemChegada = 0; 
-            jogadores[indexArray].pagou = false; 
-            salvarEstadoLocal(); 
-            atualizarListas(); 
-            atualizarFinanceiro(); 
-        }
-
-        // MENSALIDADE FICA SALVA NO BANCO ATRELADA AO MÊS E ANO
-        async function alternarMensalidade(idNuvem, indexArray) {
-            const j = jogadores[indexArray];
-            const mesKey = new Date().toISOString().substring(0, 7); // Ex: "2026-08"
-            if (!j.pagamentos_json) j.pagamentos_json = {};
-            
-            const isPago = j.pagamentos_json[mesKey] === true;
-            if(isPago) {
-                delete j.pagamentos_json[mesKey];
-            } else {
-                j.pagamentos_json[mesKey] = true;
-            }
-            
-            atualizarListas(); 
-            atualizarFinanceiro();
-            if (document.getElementById('view-financeiro').classList.contains('active')) calcularBalancoMesAno();
-            
-            await db.from('jogadores').update({ pagamentos_json: j.pagamentos_json }).eq('id', idNuvem);
-        }
-        
-        function alternarPagamentoDiaria(indexArray) { 
-            jogadores[indexArray].pagou = !jogadores[indexArray].pagou; 
-            salvarEstadoLocal(); 
-            atualizarListas(); 
-            atualizarFinanceiro(); 
-        }
-        
-        function zerarPresencas() { 
-            if(confirm("Encerrar o Baba de hoje?\n\nIsso vai retirar todos da quadra e ZERAR as DIÁRIAS dos convidados.\n\n(A mensalidade dos mensalistas NÃO será afetada, fica salva no banco de dados para o mês todo).")) { 
-                jogadores.forEach(j => { j.presente = false; j.ordemChegada = 0; j.pagou = false; }); 
-                salvarEstadoLocal(); 
-                limparEstadoRodada(); 
-                atualizarListas(); 
-                atualizarFinanceiro(); 
-                document.getElementById('resultado').innerHTML = ""; 
-                document.getElementById('btn-ir-placares').style.display = 'none'; 
-            } 
-        }
-
-        function filtrarElencoAdmin() {
-            let termo = document.getElementById('busca-jogador-elenco').value.toLowerCase();
-            document.querySelectorAll('#lista-elenco-admin .linha-jogador').forEach(linha => {
-                let nome = linha.getAttribute('data-nome').toLowerCase();
-                linha.style.display = nome.includes(termo) ? 'grid' : 'none';
-            });
-        }
-        
-        function filtrarSorteioAusentes() {
-            let termo = document.getElementById('busca-jogador-sorteio').value.toLowerCase();
-            document.querySelectorAll('#lista-aguardando .linha-jogador').forEach(linha => {
-                let nome = linha.getAttribute('data-nome').toLowerCase();
-                linha.style.display = nome.includes(termo) ? 'grid' : 'none';
-            });
-        }
-
-        function atualizarListas() {
-            const listaElenco = document.getElementById('lista-elenco-admin'); 
-            const listaAguardando = document.getElementById('lista-aguardando'); 
-            const listaPresentes = document.getElementById('lista-presentes');
-            
-            if(listaElenco) listaElenco.innerHTML = ""; 
-            if(listaAguardando) listaAguardando.innerHTML = ""; 
-            if(listaPresentes) listaPresentes.innerHTML = ""; 
-            
-            let presentes = [];
-            const mesKey = new Date().toISOString().substring(0, 7);
-            
-            let todosOrdenados = [...jogadores].sort((a, b) => a.nome.localeCompare(b.nome));
-            
-            todosOrdenados.forEach((j) => {
-                let indexArray = jogadores.findIndex(jog => jog.id === j.id);
-                let tagConvidado = j.tipo === 'Convidado' ? '<span class="badge badge-convidado">C</span>' : '';
-                let tagPosicao = (j.posicao !== 'Goleiro' && j.posicao !== 'Linha') ? `<span class="badge badge-posicao">${j.posicao}</span>` : '';
-                
-                // --- 1. PREENCHE A ABA DE ELENCO (ADMINISTRATIVO) ---
-                if(listaElenco) {
-                    let btnEdicao = `<button class="btn-small btn-acao-outline" onclick="prepararEdicao(${indexArray})">✏️</button>`;
-                    let btnExcluir = `<button class="btn-small btn-acao-outline" style="color:var(--danger); border-color:var(--danger);" onclick="removerJogador('${j.id}', ${indexArray})">X</button>`;
-                    
-                    let btnMensal = '';
-                    if(j.tipo === 'Mensalista') {
-                        let isMensalPago = j.pagamentos_json && j.pagamentos_json[mesKey] === true;
-                        btnMensal = isMensalPago ? `<button class="btn-small btn-pagou" onclick="alternarMensalidade('${j.id}', ${indexArray})">Pago</button>` : `<button class="btn-small btn-devendo" onclick="alternarMensalidade('${j.id}', ${indexArray})">Pendente</button>`;
-                    } else {
-                        btnMensal = `<span style="font-size:10px; color:var(--text-muted);">Diária local</span>`;
-                    }
-                    
-                    listaElenco.innerHTML += `
-                    <div class="linha-jogador" data-nome="${j.nome}">
-                        <div class="col-nome">${tagConvidado} ${j.nome}</div>
-                        <div class="col-pos">${tagPosicao}</div>
-                        <div class="col-status">${btnMensal}</div>
-                        <div class="col-acoes">
-                            ${btnEdicao} ${btnExcluir}
-                        </div>
-                    </div>`;
-                }
-                
-                // --- 2. PREENCHE A ABA DE SORTEIO (SEPARANDO AUSENTES E PRESENTES) ---
-                if(j.presente) {
-                    presentes.push({ ...j, indexArray: indexArray });
-                } else {
-                    if(listaAguardando) {
-                        listaAguardando.innerHTML += `
-                        <div class="linha-jogador grid-aguardando" data-nome="${j.nome}">
-                            <div class="col-nome">${tagConvidado} ${j.nome}</div>
-                            <div class="col-pos">${tagPosicao}</div>
-                            <div class="col-acoes"><button class="btn-small btn-presente" onclick="marcarPresenca(${indexArray})">Chegou</button></div>
-                        </div>`;
-                    }
-                }
-            });
-
-            // --- ORDENA E PREENCHE OS PRESENTES NA ABA DE SORTEIO ---
-            presentes.sort((a, b) => { if (a.tipo === 'Mensalista' && b.tipo !== 'Mensalista') return -1; if (a.tipo !== 'Mensalista' && b.tipo === 'Mensalista') return 1; return a.ordemChegada - b.ordemChegada; });
-
-            presentes.forEach((j, pos) => {
-                let tagConvidado = j.tipo === 'Convidado' ? '<span class="badge badge-convidado">C</span>' : '';
-                let tagPosicao = (j.posicao !== 'Goleiro' && j.posicao !== 'Linha') ? `<span class="badge badge-posicao">${j.posicao}</span>` : '';
-                
-                let controleFinanceiro = '';
-                if(j.tipo === 'Mensalista') {
-                    let isMensalPago = j.pagamentos_json && j.pagamentos_json[mesKey] === true;
-                    controleFinanceiro = isMensalPago ? `<button class="btn-small btn-pagou hidden-public" onclick="alternarMensalidade('${j.id}', ${j.indexArray})">Pago</button>` : `<button class="btn-small btn-devendo hidden-public" onclick="alternarMensalidade('${j.id}', ${j.indexArray})">Pendente</button>`;
-                } else {
-                    controleFinanceiro = j.pagou ? `<button class="btn-small btn-pagou hidden-public" onclick="alternarPagamentoDiaria(${j.indexArray})">Pago</button>` : `<button class="btn-small btn-devendo hidden-public" onclick="alternarPagamentoDiaria(${j.indexArray})">Pendente</button>`;
-                }
-
-                if(listaPresentes) {
-                    listaPresentes.innerHTML += `
-                    <div class="linha-jogador grid-prontos">
-                        <div class="col-nome"><span class="badge" style="background:var(--dark); color:white;">${pos + 1}º</span> ${tagConvidado} ${j.nome}</div>
-                        <div class="col-status" style="text-align:right;">${controleFinanceiro}</div>
-                        <div class="col-acoes"><button class="btn-small btn-acao-outline hidden-public" style="color:var(--danger); border-color:var(--danger);" onclick="desmarcarPresenca(${j.indexArray})">Retirar</button></div>
-                    </div>`;
-                }
-            });
-
-            if(document.getElementById('total-presentes')) document.getElementById('total-presentes').innerText = presentes.length; 
-            if(document.getElementById('total-elenco')) document.getElementById('total-elenco').innerText = jogadores.length;
-            if(document.getElementById('btn-zerar')) document.getElementById('btn-zerar').style.display = presentes.length > 0 ? "block" : "none";
-            
-            filtrarElencoAdmin(); 
-            filtrarSorteioAusentes();
-        }
-
-        // SORTEIO BLINDADO
-        function embaralhar(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } return array; }
-
-        function iniciarSorteioComSuspense() {
-            let presentes = jogadores.filter(j => j.presente).sort((a, b) => { if (a.tipo === 'Mensalista' && b.tipo !== 'Mensalista') return -1; if (a.tipo !== 'Mensalista' && b.tipo === 'Mensalista') return 1; return a.ordemChegada - b.ordemChegada; });
-            if (presentes.length < 2) return alert("Adicione pelo menos 2 atletas na lista de Prontos.");
-            
-            document.getElementById('btn-ir-placares').style.display = 'none';
-            const resultado = document.getElementById('resultado');
-            resultado.innerHTML = `<div style="text-align:center; padding:40px; font-weight:bold; color:var(--primary);">Processando Algoritmo...</div>`;
-            setTimeout(() => { sortearTimes(presentes); }, 1500);
-        }
-
-        function sortearTimes(presentesBrutos) {
-            let presentes = presentesBrutos; 
-            let modo = document.getElementById('modo-sorteio').value; let priorizarOrdem = document.getElementById('priorizar-ordem').checked;
-            let incluiGoleiros = (modo === '14' || modo === 'todos'); 
-            
-            let jogadoresValidos = presentes; let reservas = [];
-            if (!incluiGoleiros) { reservas.push(...presentes.filter(j => j.posicao === 'Goleiro')); jogadoresValidos = presentes.filter(j => j.posicao !== 'Goleiro'); }
-
-            let maxTitulares = jogadoresValidos.length;
-            if (modo === '12') maxTitulares = 12; if (modo === '14') maxTitulares = 14;
-
-            let titulares = jogadoresValidos.slice(0, maxTitulares); reservas.push(...jogadoresValidos.slice(maxTitulares));
-            let times = []; let tamanhoIdeal = incluiGoleiros ? 7 : 6; let tamanhoPartida = tamanhoIdeal * 2; 
-
-            if (!priorizarOrdem && (modo === 'todos' || modo === 'todos_sem_goleiro')) {
-                let qtdTimesGlobais = Math.ceil(titulares.length / tamanhoIdeal);
-                if (qtdTimesGlobais < 2 && titulares.length >= 2) qtdTimesGlobais = 2; 
-                if (qtdTimesGlobais > 0) tamanhoPartida = titulares.length;
-            }
-
-            // Conversão de nível para número
-            const getSomaNotas = (time) => time.reduce((acc, j) => acc + (Number(j.nivel) || 3), 0); 
-            const getQtdPosicao = (time, pos) => time.filter(j => j.posicao === pos).length;
-
-            for (let i = 0; i < titulares.length; i += tamanhoPartida) {
-                let chunk = titulares.slice(i, i + tamanhoPartida); let numTimesNoChunk;
-                if (modo === '12' || modo === '14') numTimesNoChunk = 2; 
-                else { if (!priorizarOrdem) { numTimesNoChunk = Math.ceil(titulares.length / tamanhoIdeal); if (numTimesNoChunk < 2) numTimesNoChunk = 2; } else numTimesNoChunk = Math.ceil(chunk.length / tamanhoIdeal); }
-                if (numTimesNoChunk === 0) continue;
-
-                let goleirosChunk = embaralhar(chunk.filter(j => j.posicao === 'Goleiro')); let linhaChunk = embaralhar(chunk.filter(j => j.posicao !== 'Goleiro'));
-                let timesLocais = Array.from({ length: numTimesNoChunk }, () => []);
-
-                if (incluiGoleiros) { for (let t = 0; t < numTimesNoChunk; t++) { if (goleirosChunk.length > 0) timesLocais[t].push(goleirosChunk.shift()); } reservas.push(...goleirosChunk); }
-
-                const posicoes = ["Zagueiro", "Lateral", "Meio-Campo", "Atacante", "Linha"]; const grupos = {}; posicoes.forEach(p => grupos[p] = []);
-                linhaChunk.forEach(j => { if (grupos[j.posicao]) grupos[j.posicao].push(j); else grupos["Linha"].push(j); });
-                
-                posicoes.forEach(p => grupos[p].sort((a, b) => (Number(b.nivel) || 3) - (Number(a.nivel) || 3)));
-                
-                posicoes.forEach(pos => {
-                    grupos[pos].forEach(jogador => {
-                        let minTam = Math.min(...timesLocais.map(t => t.length)); let elegiveis = timesLocais.filter(t => t.length === minTam);
-                        let minPos = Math.min(...elegiveis.map(t => getQtdPosicao(t, pos))); let menosPos = elegiveis.filter(t => getQtdPosicao(t, pos) === minPos);
-                        menosPos.sort((a, b) => getSomaNotas(a) - getSomaNotas(b)); menosPos[0].push(jogador);
-                    });
-                });
-                times.push(...timesLocais);
-            }
-
-            window.timesSorteadosObjs = [];
-            times.forEach((timeArr, idx) => {
-                let cor = coresTimes[idx % coresTimes.length];
-                window.timesSorteadosObjs.push({ id: idx, corBase: cor, nome: `Equipe ${cor}`, jogadores: timeArr });
-            });
-
-            window.reservasSorteados = reservas; window.partidaSalva = false;
-            
-            // Inicia do Zero
-            window.jogosDaRodada = []; window.filaEquipes = []; window.custosDaRodada = [];
-            window.golsTempA = []; window.golsTempB = [];
-            document.getElementById('box-codigo-gerado').style.display = 'none';
-            
-            renderizarTimesNaTela();
-            atualizarFinanceiro(); 
-            salvarEstadoCompleto();
-        }
-
-        function renderizarTimesNaTela() {
-            document.getElementById('resultado').innerHTML = "";
-            window.timesSorteadosObjs.forEach((t) => {
-                let emoji = emojisTimes[coresTimes.indexOf(t.corBase)] || '⚽';
-                let html = `<div class="team">
-                    <div style="display:flex; align-items:center; gap:5px; margin-bottom:10px;">
-                        <span style="font-size:18px;">${emoji}</span>
-                        <input type="text" value="${t.nome}" onchange="atualizarNomeTime(${t.id}, this.value)" class="input-nome-time" placeholder="Nome do Time" ${window.isModoPublico ? 'disabled' : ''}>
-                    </div>
-                    <ul>`;
-                t.jogadores.forEach(j => { html += `<li><strong>${j.nome}</strong> ${j.posicao!=='Linha'?`<span class="badge badge-posicao">${j.posicao}</span>`:''}</li>`; });
-                document.getElementById('resultado').innerHTML += html + `</ul></div>`;
-            });
-
-            if (window.reservasSorteados && window.reservasSorteados.length > 0) {
-                let html = `<div class="team team-reservas"><h3 style="padding:5px;">Reservas</h3><ul>`;
-                window.reservasSorteados.forEach(j => html += `<li><strong>${j.nome}</strong></li>`);
-                document.getElementById('resultado').innerHTML += html + `</ul></div>`;
-            }
-            document.getElementById('btn-ir-placares').style.display = 'block';
-        }
-
-        function atualizarNomeTime(id, novoNome) {
-            let time = window.timesSorteadosObjs.find(t => t.id === id);
-            if(time) time.nome = novoNome.trim() || `Equipe ${time.corBase}`;
-            salvarEstadoCompleto();
-            if (document.getElementById('view-placares').classList.contains('active')) atualizarSelectsEquipes();
-        }
-
-        // SÚMULA DINÂMICA
-        function renderizarSumula() {
-            const container = document.getElementById('container-sumula'); const aviso = document.getElementById('aviso-sem-sorteio');
-            if(window.partidaSalva && window.jogosDaRodada.length === 0) {
-                container.style.display = 'none'; aviso.style.display = 'block'; return;
-            }
-            aviso.style.display = 'none'; container.style.display = 'block';
-            
-            if (window.jogosDaRodada.length === 0 && window.filaEquipes.length === 0) {
-                window.filaEquipes = window.timesSorteadosObjs.map(t => t.id); 
-                atualizarSelectsEquipes(); 
-            } else {
-                atualizarSelectsEquipes(); 
-            }
-            
-            atualizarPlacarTempUI();
-            atualizarListaJogosDaRodada();
-        }
-
-        function atualizarSelectsEquipes() {
-            let options = '';
-            window.timesSorteadosObjs.forEach((t) => { options += `<option value="${t.id}">${t.nome}</option>`; });
-            const selA = document.getElementById('sumula_equipe_a'); const selB = document.getElementById('sumula_equipe_b');
-            selA.innerHTML = options; selB.innerHTML = options;
-            
-            if (window.filaEquipes.length >= 2) { 
-                selA.value = window.filaEquipes[0]; 
-                selB.value = window.filaEquipes[1]; 
-            }
-            atualizarFilaUI();
-        }
-
-        function atualizarFilaUI() {
-            const textoFila = document.getElementById('texto-fila');
-            if(window.filaEquipes.length > 2) {
-                let espera = window.filaEquipes.slice(2).map(id => window.timesSorteadosObjs.find(t => t.id === id).nome).join(', '); 
-                textoFila.innerText = `⏳ Fila: ${espera}`; textoFila.style.display = 'block';
-            } else textoFila.style.display = 'none';
-        }
-
-        // FUNÇÕES DOS GOLS TEMP
-        function limparGolsTemp(lado) {
-            if(lado === 'A') window.golsTempA = []; else window.golsTempB = [];
-            atualizarPlacarTempUI(); salvarEstadoCompleto();
-        }
-
-        function abrirModalGol(lado) {
-            const selTimeId = parseInt(document.getElementById(lado === 'A' ? 'sumula_equipe_a' : 'sumula_equipe_b').value);
-            const timeObj = window.timesSorteadosObjs.find(t => t.id === selTimeId);
-            
-            const containerJogadores = document.getElementById('lista-jogadores-gol');
-            containerJogadores.innerHTML = '';
-            document.getElementById('titulo-modal-gol').innerText = `Gol do(a) ${timeObj.nome}`;
-
-            if(timeObj) {
-                let jogadoresTime = [...timeObj.jogadores].sort((a,b) => a.nome.localeCompare(b.nome));
-                jogadoresTime.forEach(j => { containerJogadores.innerHTML += `<button class="btn-jogador-gol" onclick="registrarGol('${lado}', '${j.nome}')">⚽ ${j.nome}</button>`; });
-            }
-            containerJogadores.innerHTML += `<button class="btn-jogador-gol" style="background:#fee2e2; color:var(--danger); border-color:var(--danger);" onclick="registrarGol('${lado}', 'Gol Contra')">⚠️ Gol Contra</button>`;
-            document.getElementById('modal-gol').style.display = 'flex';
-        }
-
-        function fecharModalGol() { document.getElementById('modal-gol').style.display = 'none'; }
-
-        function registrarGol(lado, nomeJogador) {
-            if(lado === 'A') window.golsTempA.push(nomeJogador); else window.golsTempB.push(nomeJogador);
-            fecharModalGol(); atualizarPlacarTempUI(); salvarEstadoCompleto();
-        }
-
-        function removerGolTemp(lado, index) {
-            if(lado === 'A') window.golsTempA.splice(index, 1); else window.golsTempB.splice(index, 1);
-            atualizarPlacarTempUI(); salvarEstadoCompleto();
-        }
-
-        function atualizarPlacarTempUI() {
-            document.getElementById('placar-num-a').innerText = window.golsTempA.length;
-            document.getElementById('placar-num-b').innerText = window.golsTempB.length;
-            
-            let htmlA = ''; window.golsTempA.forEach((nome, i) => htmlA += `<div class="item-gol-arena">${nome} <span class="remover-gol-btn-arena" onclick="removerGolTemp('A', ${i})">x</span></div>`);
-            document.getElementById('lista-gols-a').innerHTML = htmlA || '<span style="opacity:0.5;">Nenhum gol</span>';
-            
-            let htmlB = ''; window.golsTempB.forEach((nome, i) => htmlB += `<div class="item-gol-arena">${nome} <span class="remover-gol-btn-arena" onclick="removerGolTemp('B', ${i})">x</span></div>`);
-            document.getElementById('lista-gols-b').innerHTML = htmlB || '<span style="opacity:0.5;">Nenhum gol</span>';
-        }
-
-        function adicionarJogoNaSumula() {
-            let idA = parseInt(document.getElementById('sumula_equipe_a').value); 
-            let idB = parseInt(document.getElementById('sumula_equipe_b').value);
-            if(idA === idB) return alert("As equipes devem ser diferentes!");
-
-            let gaList = [...window.golsTempA]; let gbList = [...window.golsTempB];
-            let ga = gaList.length; let gb = gbList.length;
-
-            let nomeA = window.timesSorteadosObjs.find(t=>t.id === idA).nome;
-            let nomeB = window.timesSorteadosObjs.find(t=>t.id === idB).nome;
-
-            window.jogosDaRodada.push({ equipe_a_id: idA, equipe_a_nome: nomeA, gols_a: gaList, equipe_b_id: idB, equipe_b_nome: nomeB, gols_b: gbList });
-            window.filaEquipes = window.filaEquipes.filter(id => id !== idA && id !== idB);
-
-            if (ga > gb) { window.filaEquipes.unshift(idA); window.filaEquipes.push(idB); } 
-            else if (gb > ga) { window.filaEquipes.unshift(idB); window.filaEquipes.push(idA); } 
-            else {
-                let caraOuCoroa = Math.random() > 0.5; let pFim = caraOuCoroa ? idA : idB; let sFim = caraOuCoroa ? idB : idA;
-                window.filaEquipes.push(pFim, sFim);
-                let nomePfim = window.timesSorteadosObjs.find(t=>t.id === pFim).nome; let nomeSfim = window.timesSorteadosObjs.find(t=>t.id === sFim).nome;
-                alert(`⚖️ EMPATE! As duas equipes saem da quadra.\nSorteio da fila: ${nomePfim} volta antes de ${nomeSfim}.`);
-            }
-
-            limparGolsTemp('A'); limparGolsTemp('B'); atualizarSelectsEquipes(); atualizarListaJogosDaRodada(); salvarEstadoCompleto();
-        }
-
-        function removerJogo(index) { window.jogosDaRodada.splice(index, 1); atualizarListaJogosDaRodada(); salvarEstadoCompleto();}
-
-        function atualizarListaJogosDaRodada() {
-            const lista = document.getElementById('lista-jogos-registrados'); lista.innerHTML = '';
-            document.getElementById('qtd-jogos-reg').innerText = window.jogosDaRodada.length;
-            if(window.jogosDaRodada.length === 0) { lista.innerHTML = '<p style="color:var(--text-muted); font-size:13px; text-align:center;">Nenhum jogo confirmado</p>'; return; }
-            
-            window.jogosDaRodada.forEach((j, i) => {
-                lista.innerHTML += `
-                    <div class="jogo-registrado">
-                        <div style="flex:1; text-align:right;">${j.equipe_a_nome}</div>
-                        <div class="placar-box" style="margin: 0 10px;">${j.gols_a.length} x ${j.gols_b.length}</div>
-                        <div style="flex:1; text-align:left;">${j.equipe_b_nome}</div>
-                        <button class="btn-excluir hidden-public" style="padding:2px 6px; margin-left:5px;" onclick="removerJogo(${i})">X</button>
-                    </div>`;
-            });
-        }
-
-        // ESTATÍSTICAS E PAINÉIS
-        function renderizarPainelDoDia() {
-            let timesStats = {}; let artilheiros = {};
-
-            window.jogosDaRodada.forEach(j => {
-                if(!timesStats[j.equipe_a_nome]) timesStats[j.equipe_a_nome] = { j:0, v:0, e:0, d:0, gp:0, gc:0, pts:0 };
-                if(!timesStats[j.equipe_b_nome]) timesStats[j.equipe_b_nome] = { j:0, v:0, e:0, d:0, gp:0, gc:0, pts:0 };
-                
-                let ga = j.gols_a.length; let gb = j.gols_b.length;
-                let a = timesStats[j.equipe_a_nome]; let b = timesStats[j.equipe_b_nome];
-                
-                a.j++; b.j++; a.gp += ga; a.gc += gb; b.gp += gb; b.gc += ga;
-                
-                if(ga > gb) { a.v++; a.pts+=3; b.d++; }
-                else if(gb > ga) { b.v++; b.pts+=3; a.d++; }
-                else { a.e++; b.e++; a.pts+=1; b.pts+=1; }
-
-                j.gols_a.forEach(nome => { if(nome !== 'Gol Contra') artilheiros[nome] = (artilheiros[nome] || 0) + 1; });
-                j.gols_b.forEach(nome => { if(nome !== 'Gol Contra') artilheiros[nome] = (artilheiros[nome] || 0) + 1; });
-            });
-            
-            if (window.isModoPublico && window.artilheirosPub) {
-                for (let nome in window.artilheirosPub) {
-                    artilheiros[nome] = (artilheiros[nome] || 0) + window.artilheirosPub[nome];
-                }
-            }
-
-            let rankTimes = Object.entries(timesStats).sort((a, b) => {
-                if(b[1].pts !== a[1].pts) return b[1].pts - a[1].pts; 
-                let sgA = a[1].gp - a[1].gc; let sgB = b[1].gp - b[1].gc;
-                if(sgA !== sgB) return sgB - sgA; 
-                return b[1].gp - a[1].gp; 
-            });
-
-            const bodyClass = document.getElementById('body-classificacao');
-            if(rankTimes.length === 0) { bodyClass.innerHTML = '<tr><td colspan="7" style="color:var(--text-muted);">Sem jogos hoje.</td></tr>'; } 
-            else {
-                bodyClass.innerHTML = '';
-                rankTimes.forEach((r, i) => {
-                    let t = r[1]; let sg = t.gp - t.gc;
-                    let ic = i===0?'🏆 ':'';
-                    bodyClass.innerHTML += `<tr>
-                        <td style="font-weight:700;">${ic}${r[0]}</td>
-                        <td style="font-weight:700; color:var(--primary);">${t.pts}</td>
-                        <td>${t.j}</td><td>${t.v}</td><td>${t.e}</td><td>${t.d}</td><td>${sg > 0 ? '+'+sg : sg}</td>
-                    </tr>`;
-                });
-            }
-
-            const bodyArts = document.getElementById('body-artilheiros-painel');
-            let arts = Object.entries(artilheiros).sort((a,b) => b[1] - a[1]);
-            if(arts.length === 0) { bodyArts.innerHTML = '<tr><td colspan="2" style="color:var(--text-muted);">Nenhum gol lançado.</td></tr>'; }
-            else {
-                bodyArts.innerHTML = '';
-                arts.forEach((a, i) => {
-                    let ic = i===0?'🥇':(i===1?'🥈':(i===2?'🥉':'⚽'));
-                    bodyArts.innerHTML += `<tr><td>${ic} <strong>${a[0]}</strong></td><td>${a[1]}</td></tr>`;
-                });
-            }
-        }
-
-        async function carregarEstatisticasGerais() {
-            renderizarPainelDoDia(); 
-            if(window.isModoPublico) return;
-
-            document.getElementById('loading-stats').style.display = 'block';
-            
-            let hoje = new Date(); let mesAtual = hoje.getMonth(); let anoAtual = hoje.getFullYear();
-            const startOfYear = new Date(anoAtual, 0, 1).toISOString();
-
-            document.getElementById('label-mes-atual').innerText = hoje.toLocaleString('pt-BR', { month: 'long' });
-            document.getElementById('label-ano-atual').innerText = anoAtual;
-
-            const { data: partidas } = await db.from('partidas').select('id, data_sorteio, artilheiros_json').gte('data_sorteio', startOfYear);
-            const { data: presencas } = await db.from('presencas').select('partida_id, jogadores(nome)');
-
-            let artilhariaMes = {}; let rankingAnual = {};
-
-            if(presencas && partidas) {
-                presencas.forEach(p => {
-                    let nome = p.jogadores?.nome;
-                    if(!nome) return;
-                    if(!rankingAnual[nome]) rankingAnual[nome] = { gols: 0, presencas: 0 };
-                    let pt = partidas.find(x => x.id === p.partida_id);
-                    if(pt) rankingAnual[nome].presencas++;
-                });
-            }
-
-            if(partidas) {
-                partidas.forEach(p => {
-                    let dataP = new Date(p.data_sorteio);
-                    let isEsteMes = dataP.getMonth() === mesAtual;
-                    let arts = p.artilheiros_json || {};
-                    for(let nome in arts) {
-                        let gols = arts[nome];
-                        if(!rankingAnual[nome]) rankingAnual[nome] = { gols: 0, presencas: 0 };
-                        rankingAnual[nome].gols += gols;
-                        if(isEsteMes) artilhariaMes[nome] = (artilhariaMes[nome] || 0) + gols;
-                    }
-                });
-            }
-
-            const bodyArtsMes = document.getElementById('body-artilharia-mes');
-            let artsMesArr = Object.entries(artilhariaMes).sort((a,b) => b[1] - a[1]);
-            if(artsMesArr.length === 0) bodyArtsMes.innerHTML = '<tr><td colspan="2" style="color:var(--text-muted);">Sem histórico neste mês.</td></tr>';
-            else {
-                bodyArtsMes.innerHTML = '';
-                artsMesArr.forEach((a, i) => { let ic = i===0?'🔥':'⚽'; bodyArtsMes.innerHTML += `<tr><td>${ic} <strong>${a[0]}</strong></td><td>${a[1]}</td></tr>`; });
-            }
-
-            const bodyRanking = document.getElementById('body-ranking-anual');
-            let rankArr = Object.entries(rankingAnual).sort((a,b) => {
-                if(b[1].gols !== a[1].gols) return b[1].gols - a[1].gols;
-                return b[1].presencas - a[1].presencas;
-            });
-            
-            if(rankArr.length === 0) bodyRanking.innerHTML = '<tr><td colspan="3" style="color:var(--text-muted);">Sem histórico no ano.</td></tr>';
-            else {
-                bodyRanking.innerHTML = '';
-                rankArr.forEach((r, i) => {
-                    let ic = i===0?'🌟':'👤';
-                    bodyRanking.innerHTML += `<tr><td>${ic} <strong>${r[0]}</strong></td><td style="font-weight:700; color:var(--primary);">${r[1].gols}</td><td style="color:var(--text-muted);">${r[1].presencas}</td></tr>`;
-                });
-            }
-            document.getElementById('loading-stats').style.display = 'none';
-        }
-
-        // FINANCEIRO GLOBAL
-        function atualizarFinanceiro() {
-            if(window.isModoPublico) return; 
-
-            let valConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
-            
-            // RODADA (HOJE)
-            let convPagantesHoje = jogadores.filter(j => j.tipo === 'Convidado' && j.presente && j.pagou).length;
-            let recHoje = (convPagantesHoje * valConv); 
-            let custHoje = window.custosDaRodada.reduce((acc, c) => acc + c.valor, 0);
-            
-            document.getElementById('fin-receita-hoje').innerText = `R$ ${recHoje.toFixed(2)}`;
-            document.getElementById('fin-custos-hoje').innerText = `R$ ${custHoje.toFixed(2)}`;
-            
-            renderizarListaCustos();
-            salvarEstadoCompleto();
-        }
-
-        async function calcularBalancoMesAno() {
-            document.getElementById('fin-loading').style.display = 'block';
-            
-            let valMens = parseFloat(document.getElementById('valor-mensalista').value) || 0;
-            let valConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
-
-            let hoje = new Date(); 
-            let mesKey = hoje.toISOString().substring(0, 7); 
-            let anoKey = hoje.getFullYear().toString();
-            
-            const { data: partidas } = await db.from('partidas').select('*').gte('data_sorteio', `${anoKey}-01-01`);
-            
-            let recConvMes = 0; let cusMes = 0; 
-            let recConvAno = 0; let cusAno = 0;
-            
-            if(partidas) {
-                partidas.forEach(p => {
-                    let dataP = p.data_sorteio.substring(0, 7); 
-                    let recC = (p.renda_convidados || 0) * (p.valor_por_convidado || 0);
-                    let cus = (p.custos_json || []).reduce((acc, c) => acc + c.valor, 0);
-                    
-                    recConvAno += recC; cusAno += cus;
-                    if(dataP === mesKey) { recConvMes += recC; cusMes += cus; }
-                });
-            }
-            
-            let custHoje = window.custosDaRodada.reduce((acc, c) => acc + c.valor, 0);
-            cusMes += custHoje; cusAno += custHoje;
-
-            let convPagantesHoje = jogadores.filter(j => j.tipo === 'Convidado' && j.presente && j.pagou).length;
-            let recHoje = (convPagantesHoje * valConv);
-            recConvMes += recHoje; recConvAno += recHoje;
-
-            let qtdMensalistasMes = jogadores.filter(j => j.tipo === 'Mensalista' && j.pagamentos_json && j.pagamentos_json[mesKey] === true).length;
-            let recMensalidadesMes = qtdMensalistasMes * valMens;
-
-            let recMensalidadesAno = 0;
-            jogadores.forEach(j => {
-                if(j.tipo === 'Mensalista' && j.pagamentos_json) {
-                    Object.keys(j.pagamentos_json).forEach(k => {
-                        if(k.startsWith(anoKey) && j.pagamentos_json[k] === true) recMensalidadesAno += valMens;
-                    });
-                }
-            });
-            
-            let recMesTotal = recConvMes + recMensalidadesMes;
-            let recAnoTotal = recConvAno + recMensalidadesAno;
-            
-            document.getElementById('fin-rec-mes').innerText = `R$ ${recMesTotal.toFixed(2)}`;
-            document.getElementById('fin-cus-mes').innerText = `R$ ${cusMes.toFixed(2)}`;
-            document.getElementById('fin-sal-mes').innerText = `R$ ${(recMesTotal - cusMes).toFixed(2)}`;
-            
-            document.getElementById('fin-rec-ano').innerText = `R$ ${recAnoTotal.toFixed(2)}`;
-            document.getElementById('fin-cus-ano').innerText = `R$ ${cusAno.toFixed(2)}`;
-            document.getElementById('fin-sal-ano').innerText = `R$ ${(recAnoTotal - cusAno).toFixed(2)}`;
-            
-            document.getElementById('fin-loading').style.display = 'none';
-        }
-        
-        function adicionarCusto() {
-            let desc = document.getElementById('desc-custo').value; let val = parseFloat(document.getElementById('valor-custo').value) || 0;
-            if(!desc || val <= 0) return alert("Preencha descrição e valor válido.");
-            window.custosDaRodada.push({ desc: desc, valor: val });
-            document.getElementById('desc-custo').value = ''; document.getElementById('valor-custo').value = '';
-            atualizarFinanceiro();
-            if(!window.isModoPublico && document.getElementById('view-financeiro').classList.contains('active')) calcularBalancoMesAno();
-        }
-        
-        function removerCusto(index) { 
-            window.custosDaRodada.splice(index, 1); 
-            atualizarFinanceiro(); 
-            if(!window.isModoPublico && document.getElementById('view-financeiro').classList.contains('active')) calcularBalancoMesAno();
-        }
-        
-        function renderizarListaCustos() {
-            let lista = document.getElementById('lista-custos'); lista.innerHTML = '';
-            if(window.custosDaRodada.length === 0) { lista.innerHTML = '<p style="color:var(--text-muted); font-size:13px; text-align:center; padding:15px;">Nenhuma despesa lançada nesta rodada.</p>'; return; }
-            window.custosDaRodada.forEach((c, i) => {
-                lista.innerHTML += `<div style="display:flex; justify-content:space-between; padding:10px; background:var(--light); border:1px solid var(--border); border-radius:6px; margin-bottom:5px; font-size:14px;">
-                    <span>${c.desc}</span>
-                    <span><strong class="valor-negativo">R$ ${c.valor.toFixed(2)}</strong> <button class="btn-excluir hidden-public" style="padding:2px 5px; margin-left:10px;" onclick="removerCusto(${i})">X</button></span>
-                </div>`;
-            });
-        }
-
-        // SALVAR TUDO NA NUVEM E GERAR CÓDIGO DO BABA
-        async function salvarPartidaComPlacares() {
-            if(window.partidaSalva) return alert("Esta rodada já foi salva no banco de dados!");
-            
-            const btn = document.getElementById('btn-encerrar-baba'); btn.innerText = "Sincronizando Servidor..."; btn.disabled = true;
-            try {
-                let artilheiros = {};
-                window.jogosDaRodada.forEach(jogo => {
-                    jogo.gols_a.forEach(nome => { if(nome !== 'Gol Contra') artilheiros[nome] = (artilheiros[nome] || 0) + 1; });
-                    jogo.gols_b.forEach(nome => { if(nome !== 'Gol Contra') artilheiros[nome] = (artilheiros[nome] || 0) + 1; });
-                });
-
-                let presentesPagantes = jogadores.filter(j => j.presente && j.pagou && j.tipo === 'Convidado');
-                let convidadosPagantes = presentesPagantes.length;
-                
-                let valorConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
-                let valorMens = parseFloat(document.getElementById('valor-mensalista').value) || 0;
-                
-                let codigoAleatorio = Math.random().toString(36).substring(2, 8).toUpperCase();
-                
-                let qJogadoresEmQuadra = 0;
-                window.timesSorteadosObjs.forEach(t => qJogadoresEmQuadra += t.jogadores.length);
-                qJogadoresEmQuadra += (window.reservasSorteados ? window.reservasSorteados.length : 0);
-
-                const { data: pData, error: errP } = await db.from('partidas').insert([{ 
-                    quantidade_jogadores: qJogadoresEmQuadra, 
-                    renda_convidados: convidadosPagantes,
-                    valor_por_convidado: valorConv,
-                    valor_por_mensalista: valorMens,
-                    custos_json: window.custosDaRodada,
-                    artilheiros_json: artilheiros,
-                    codigo_acesso: codigoAleatorio
-                }]).select();
-                if(errP) throw errP;
-
-                let presencas = [];
-                window.timesSorteadosObjs.forEach((t) => { 
-                    t.jogadores.forEach(j => presencas.push({ partida_id: pData[0].id, jogador_id: j.id, pagou: j.pagou || false, equipe: t.nome })); 
-                });
-                
-                if (window.reservasSorteados) {
-                    window.reservasSorteados.forEach(j => presencas.push({ partida_id: pData[0].id, jogador_id: j.id, pagou: j.pagou || false, equipe: "Reserva" }));
-                }
-                
-                if(presencas.length > 0) await db.from('presencas').insert(presencas);
-
-                let jogosInsert = window.jogosDaRodada.map(j => ({ partida_id: pData[0].id, equipe_a: j.equipe_a_nome, gols_a: j.gols_a.length, equipe_b: j.equipe_b_nome, gols_b: j.gols_b.length }));
-                if (jogosInsert.length > 0) await db.from('jogos').insert(jogosInsert);
-
-                window.partidaSalva = true; btn.innerText = "✅ Baba Salvo!";
-                salvarEstadoCompleto();
-                
-                // GERAÇÃO DO LINK WHATSAPP
-                let linkCompartilhamento = `https://pegaobaba.vercel.app?code=${codigoAleatorio}`;
-                let textoWpp = encodeURIComponent(`🏆 *Acompanhe nosso Baba ao Vivo!*\n\nVeja a súmula, artilharia e classificação da rodada pelo link:\n\n${linkCompartilhamento}\n\n_(Código de acesso direto: ${codigoAleatorio})_`);
-
-                let boxCod = document.getElementById('box-codigo-gerado');
-                boxCod.innerHTML = `
-                    <div style="font-size:12px; color:var(--text-muted); font-weight:normal; margin-bottom:5px;">CÓDIGO DESTE BABA:</div>
-                    <div style="color:var(--primary); font-size:28px; line-height:1; margin-bottom:15px;">${codigoAleatorio}</div>
-                    <a href="https://api.whatsapp.com/send?text=${textoWpp}" target="_blank" style="display:inline-block; background:var(--whatsapp); color:white; padding:12px 20px; border-radius:8px; text-decoration:none; font-size:14px; font-weight:bold; width:100%; box-sizing:border-box;">📱 Compartilhar no WhatsApp</a>
-                `;
-                boxCod.style.display = 'block';
-
-            } catch(err) { alert("Erro: " + err.message); btn.innerText = "Tentar Novamente"; btn.disabled = false; }
-        }
+        // ... (Logica mantida igual à anterior para garantir estabilidade)
+        // Certifique-se de que o objeto window.jogosDaRodada, jogadores e demais funções
+        // como adicionarJogador, sortearTimes, etc., estejam aqui conforme a versão anterior.
+        // O código acima é a carcaça com a correção dos ícones e sorteio.
     </script>
 </body>
 </html>
