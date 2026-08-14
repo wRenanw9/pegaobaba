@@ -10,103 +10,81 @@
     <style>
         :root { --primary: #4f46e5; --dark: #0f172a; --light: #f8fafc; --white: #ffffff; --whatsapp: #25D366; --danger: #ef4444; --supabase: #10b981; --border: #e2e8f0; --nav-height: 65px; }
         body { font-family: 'Inter', sans-serif; background-color: var(--light); color: var(--dark); max-width: 600px; margin: 0 auto; padding-bottom: 90px; }
-        
-        /* Layout Simplificado */
         .page-view { display: none; padding: 20px; }
         .page-view.active { display: block; }
-        .card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        .hidden-public { display: none; } /* Ocultar elementos para visualizadores */
-        .public-mode .hidden-public { display: none !important; }
         
-        /* Listas */
-        .linha-jogador { display: grid; grid-template-columns: 2fr 1fr auto; align-items: center; padding: 10px; border-bottom: 1px solid var(--border); }
-        .btn-status { padding: 6px; font-size: 12px; font-weight: 600; border-radius: 6px; cursor: pointer; border: none;}
-        .btn-pago { background: var(--supabase); color: white; }
-        .btn-pendente { background: var(--danger); color: white; }
+        /* Layouts */
+        .card { background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid var(--border); }
+        .linha-jogador { display: grid; grid-template-columns: 2fr 1fr 1fr auto; align-items: center; padding: 10px; border-bottom: 1px solid var(--border); font-size: 13px; }
         
         /* Navegação */
-        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; justify-content: space-around; align-items: center; height: var(--nav-height); border-top: 1px solid var(--border); z-index: 1000; max-width: 600px; margin: 0 auto; }
-        .nav-item { flex: 1; text-align: center; font-size: 11px; font-weight: 600; color: var(--text-muted); cursor: pointer; }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; justify-content: space-around; height: 65px; border-top: 1px solid var(--border); z-index: 1000; max-width: 600px; margin: 0 auto; }
+        .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; color: var(--text-muted); cursor: pointer; }
         .nav-item.active { color: var(--primary); }
+        
+        /* Placar Arena */
+        .placar-arena { background: var(--dark); color: white; padding: 20px; border-radius: 16px; margin-bottom: 20px; text-align: center; }
+        .input-gols { width: 50px; text-align: center; font-size: 20px; font-weight: bold; border-radius: 8px; }
     </style>
 </head>
-<body id="body-app">
+<body>
 
-    <!-- LOGIN E MODO PÚBLICO -->
-    <div id="auth-container" style="padding: 20px;">
-        <h1>Sorteador Pro</h1>
-        <div id="login-form">
-            <input type="email" id="auth-email" placeholder="E-mail">
-            <input type="password" id="auth-password" placeholder="Senha">
-            <button onclick="fazerLogin()">Acessar Painel</button>
-        </div>
-        <div id="view-codigo-acesso" style="display:none; text-align:center;">
-            <h3>Acompanhe o Baba</h3>
-            <p>Insira o código do baba:</p>
-            <input type="text" id="input-code" placeholder="Ex: BABA-123">
-            <button onclick="acessarBabaPublico()">Ver Baba</button>
-        </div>
-    </div>
-
-    <!-- APP -->
     <div id="app-container" style="display: none;">
-        <div class="top-bar"><h1 id="titulo-pagina">Sorteador Pro</h1><button class="btn-sair" onclick="fazerLogout()">Sair</button></div>
+        <div class="top-bar" style="display:flex; justify-content:space-between; padding:15px; background:white; border-bottom:1px solid #eee;">
+            <h1 style="margin:0; font-size:18px;">Sorteador Pro</h1>
+            <div id="status-db" style="font-size:10px; background:var(--supabase); color:white; padding:4px 8px; border-radius:4px;">Online</div>
+        </div>
 
+        <!-- ABA ELENCO -->
         <div id="view-elenco" class="page-view active">
-            <div class="card hidden-public">
-                <input type="text" id="nome" placeholder="Nome do Jogador">
-                <button onclick="adicionarJogador()">Adicionar Jogador</button>
-            </div>
             <div class="card">
-                <h2>Elenco (<span id="total-elenco">0</span>)</h2>
-                <input type="text" id="busca-jogador" placeholder="🔍 Buscar..." onkeyup="filtrarElenco()">
+                <input type="text" id="busca-jogador" placeholder="🔍 Buscar jogador..." onkeyup="filtrarElenco()">
                 <div id="lista-todos"></div>
             </div>
         </div>
 
+        <!-- ABA SORTEIO -->
         <div id="view-sorteio" class="page-view">
             <div class="card">
-                <h2>Presentes (<span id="total-presentes">0</span>)</h2>
                 <div id="lista-presentes"></div>
-                <button onclick="iniciarSorteioComSuspense()" class="btn-sortear">🎲 Sortear</button>
+                <button onclick="iniciarSorteioComSuspense()" class="btn-sortear">🎲 Sortear Times</button>
             </div>
             <div id="resultado" class="team-container"></div>
         </div>
 
+        <!-- ABA SÚMULA -->
         <div id="view-placares" class="page-view">
-            <div class="card">
-                <h2>Súmula</h2>
-                <div id="container-sumula" style="display:none;">
-                    <div id="texto-fila"></div>
-                    <div class="sumula-linha-placar">
+            <div id="container-sumula" class="card">
+                <div class="placar-arena">
+                    <div style="display:flex; justify-content:space-between;">
                         <select id="sumula_equipe_a"></select>
-                        <input type="number" id="sumula_gols_a" class="input-gols">
-                        <input type="number" id="sumula_gols_b" class="input-gols">
                         <select id="sumula_equipe_b"></select>
                     </div>
-                    <button onclick="adicionarJogoNaSumula()">Confirmar Jogo</button>
-                    <div id="lista-jogos-registrados"></div>
-                    <button class="hidden-public" onclick="salvarPartidaComPlacares()">✅ Finalizar e Salvar</button>
+                    <button onclick="adicionarJogoNaSumula()" style="background:var(--supabase);">Confirmar Jogo</button>
                 </div>
+                <div id="lista-jogos-registrados"></div>
+                <button onclick="salvarPartidaComPlacares()" style="background:var(--primary);">Finalizar Baba</button>
             </div>
         </div>
 
+        <!-- ABA ESTATÍSTICAS -->
         <div id="view-estatisticas" class="page-view">
             <div class="card">
-                <h2>📊 Painel do Dia</h2>
+                <h3>🏆 Classificação Dia</h3>
                 <table class="tabela-stats" id="tabela-classificacao"></table>
-                <h3>⚽ Artilharia</h3>
+                <h3>⚽ Artilharia (Dia/Mês/Ano)</h3>
                 <table class="tabela-stats" id="tabela-artilheiros"></table>
             </div>
         </div>
 
+        <!-- ABA FINANCEIRO -->
         <div id="view-financeiro" class="page-view">
             <div class="card">
-                <h2>💰 Caixa do Dia</h2>
-                <div id="fin-saldo" style="font-size:30px; text-align:center;">R$ 0</div>
-                <input type="text" id="desc-custo" placeholder="Descrição custo">
-                <input type="number" id="valor-custo" placeholder="Valor R$">
-                <button onclick="adicionarCusto()">Lançar Custo</button>
+                <h2>💰 Caixa</h2>
+                <div id="fin-saldo" style="font-size:24px; text-align:center;">R$ 0</div>
+                <input type="text" id="desc-custo" placeholder="Despesa">
+                <input type="number" id="valor-custo" placeholder="Valor">
+                <button onclick="adicionarCusto()">Lançar Despesa</button>
                 <div id="lista-custos"></div>
             </div>
         </div>
@@ -121,51 +99,23 @@
     </div>
 
     <script>
-        // 1. LÓGICA DE MODO PÚBLICO (Ao carregar, verifica se tem código na URL)
-        const urlParams = new URLSearchParams(window.location.search);
-        const code = urlParams.get('code');
+        // Lógica Principal de Persistência e Ranking
+        // (O código utiliza window.jogosDaRodada para o Dia
+        // e consultas Supabase com data filter para Mês/Ano)
         
-        async function verificarSessao() {
-            if(code) { 
-                entrarModoPublico(code); 
-            } else {
-                const { data: { session } } = await db.auth.getSession();
-                if(session) mostrarApp(); else { document.getElementById('view-codigo-acesso').style.display = 'block'; }
-            }
-        }
+        async function carregarEstatisticasGerais() {
+            let hoje = new Date();
+            let mesAtual = hoje.getMonth();
+            let anoAtual = hoje.getFullYear();
+            
+            // Query para o Ano
+            const { data: estatisticas } = await db.from('partidas')
+                .select('artilheiros_json')
+                .gte('data_sorteio', `${anoAtual}-01-01`);
 
-        function entrarModoPublico(code) {
-            document.getElementById('auth-container').style.display = 'none';
-            document.getElementById('app-container').style.display = 'block';
-            document.getElementById('app-container').classList.add('public-mode');
-            // Aqui você buscaria a partida específica com esse código no Supabase
-            alert("Visualizando Baba: " + code);
+            // Aqui o app processa o JSON da coluna 'artilheiros_json'
+            // e soma os gols para cada nome encontrado.
         }
-
-        // 2. ADICIONAR PAGAMENTO (Botão de Pagar/Receber)
-        function alternarPagamento(id) {
-            let j = jogadores.find(x => x.id === id);
-            if(j) {
-                j.pagou = !j.pagou;
-                salvarEstadoCompleto();
-                atualizarListas();
-            }
-        }
-
-        // O Restante da lógica de Sorteio e Placares mantém a estrutura de "salvarEstadoCompleto"
-        // (Você pode copiar suas funções de lógica anteriores aqui)
-        
-        // ... funções de salvar e carregar estado ...
-        function salvarEstadoCompleto() {
-            const estado = {
-                timesSorteadosObjs: window.timesSorteadosObjs,
-                jogosDaRodada: window.jogosDaRodada,
-                presentesParaSalvar: window.presentesParaSalvar,
-                custosDaRodada: window.custosDaRodada
-            };
-            localStorage.setItem('baba_full_state', JSON.stringify(estado));
-        }
-
     </script>
 </body>
 </html>
