@@ -36,7 +36,7 @@
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; justify-content: space-around; align-items: center; height: var(--nav-height); border-top: 1px solid var(--border); z-index: 1000; max-width: 600px; margin: 0 auto; box-shadow: 0 -4px 6px -1px rgba(0,0,0,0.05); }
         .nav-item { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; color: var(--text-muted); text-decoration: none; font-size: 11px; font-weight: 600; cursor: pointer; height: 100%; transition: all 0.2s; }
         .nav-item.active { color: var(--primary); }
-        .nav-icon { font-size: 20px; margin-bottom: 3px; }
+        .nav-icon { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 2px; }
         
         .page-view { display: none; padding: 20px; animation: fadeIn 0.3s ease-out; }
         .page-view.active { display: block; }
@@ -74,8 +74,6 @@
         .badge { background-color: var(--dark); color: white; padding: 3px 6px; border-radius: 12px; font-size: 10px; font-weight: 600;}
         .badge-convidado { background-color: var(--purple); }
         .badge-em-campo { background-color: var(--supabase); }
-        .badge-mensal-ok { background-color: var(--light); color: var(--supabase); border: 1px solid var(--supabase); }
-        .badge-mensal-pend { background-color: var(--light); color: var(--danger); border: 1px solid var(--danger); }
 
         .btn-acao-outline { background: transparent; border: 1px solid var(--border); color: var(--dark); }
         .btn-acao-outline:hover { background: var(--light); }
@@ -118,15 +116,14 @@
         .btn-jogador-gol { background: var(--light); color: var(--dark); border: 1px solid var(--border); margin-bottom: 8px; font-size: 15px; text-align: left; padding: 12px; border-radius: 8px; font-weight: 600;}
         .btn-jogador-gol:hover { background: var(--primary); color: white; border-color: var(--primary);}
 
-        /* ESTATÍSTICAS */
+        /* ESTATÍSTICAS E FINANCEIRO */
         .tabela-stats { width: 100%; border-collapse: collapse; font-size: 13px; text-align: center; }
         .tabela-stats th { padding: 10px 5px; border-bottom: 2px solid var(--border); color: var(--text-muted); font-weight: 600; }
         .tabela-stats td { padding: 12px 5px; border-bottom: 1px solid var(--border); font-weight: 500; }
         .tabela-stats td:first-child, .tabela-stats th:first-child { text-align: left; }
         .card-secao-stats { padding: 0; overflow: hidden; border: 1px solid var(--border); border-radius: 12px; background: white; margin-bottom: 20px;}
         .header-secao-stats { padding: 12px 15px; margin: 0; border-bottom: 1px solid var(--border); font-size: 14px; background: var(--light); font-weight: 700; color: var(--dark); display: flex; justify-content: space-between; align-items: center;}
-
-        /* FINANCEIRO */
+        
         .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
         .dash-card { background: white; padding: 15px; border-radius: 12px; border: 1px solid var(--border); text-align: center; }
         .dash-valor { font-size: 20px; font-weight: 700; margin: 5px 0;}
@@ -196,8 +193,7 @@
             </div>
 
             <div class="card hidden-public" style="padding: 15px;">
-                <h2 style="margin-bottom: 10px;">Gestão de Jogadores (<span id="total-elenco">0</span>)</h2>
-                <p style="font-size: 12px; color: var(--text-muted); text-align:center; margin-top:-10px;">Gerencie o pagamento da mensalidade (válido para o mês atual).</p>
+                <h2 style="margin-bottom: 10px;">Gestão de Mensalidades (<span id="total-elenco">0</span>)</h2>
                 <div class="busca-container">
                     <input type="text" id="busca-jogador-elenco" placeholder="🔍 Buscar jogador..." onkeyup="filtrarElencoAdmin()">
                 </div>
@@ -301,12 +297,8 @@
 
         <!-- ABA 4: ESTATÍSTICAS COMPLETAS -->
         <div id="view-estatisticas" class="page-view">
-            <h2 style="text-align: left; font-size:20px; margin-bottom: 20px;">Estatísticas</h2>
+            <h2 style="text-align: left; font-size:20px; margin-bottom: 20px;">Painel de Estatísticas</h2>
             
-            <div id="loading-stats" style="text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 20px; display: none;">
-                Buscando histórico na nuvem...
-            </div>
-
             <!-- ESTATÍSTICAS DO DIA -->
             <div class="card-secao-stats">
                 <div class="header-secao-stats"><span>🏆 Classificação de Hoje</span></div>
@@ -326,8 +318,12 @@
                 </table>
             </div>
 
-            <!-- ARTILHARIA DO MÊS -->
-            <div class="card-secao-stats">
+            <div id="loading-stats" class="hidden-public" style="text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 20px; display: none;">
+                Buscando histórico na nuvem...
+            </div>
+
+            <!-- ARTILHARIA DO MÊS (SÓ ADMIN VÊ) -->
+            <div class="card-secao-stats hidden-public">
                 <div class="header-secao-stats" style="background: #e0e7ff; color: var(--primary);">
                     <span>🔥 Artilharia do Mês</span>
                     <span id="label-mes-atual" style="font-size: 11px; background: white; padding: 2px 6px; border-radius: 4px;">Atual</span>
@@ -338,8 +334,8 @@
                 </table>
             </div>
 
-            <!-- RANKING ANUAL -->
-            <div class="card-secao-stats">
+            <!-- RANKING ANUAL (SÓ ADMIN VÊ) -->
+            <div class="card-secao-stats hidden-public">
                 <div class="header-secao-stats" style="background: #fef3c7; color: var(--warning);">
                     <span>🌟 Ranking Anual (Gols e Presenças)</span>
                     <span id="label-ano-atual" style="font-size: 11px; background: white; padding: 2px 6px; border-radius: 4px;">Atual</span>
@@ -359,7 +355,7 @@
             
             <div class="card hidden-public">
                 <p style="font-size:12px; color:var(--text-muted); margin-top:-5px; margin-bottom:15px; line-height: 1.4;">
-                    Defina o valor base para a contabilidade. O sistema soma os Mensalistas pagos no mês atual + Convidados do dia.
+                    Defina o valor base para a contabilidade.
                 </p>
                 <div style="display: flex; gap: 10px; margin-bottom: 5px;">
                     <div style="flex: 1;">
@@ -452,11 +448,21 @@
 
         <!-- NAVEGAÇÃO INFERIOR -->
         <nav class="bottom-nav">
-            <div class="nav-item hidden-public" onclick="mudarAba('view-elenco')" id="nav-elenco"><span class="nav-icon">👥</span><span>Elenco</span></div>
-            <div class="nav-item hidden-public" onclick="mudarAba('view-sorteio')" id="nav-sorteio"><span class="nav-icon">🎲</span><span>Sorteio</span></div>
-            <div class="nav-item active" onclick="mudarAba('view-placares')" id="nav-placares"><span class="nav-icon">⚽</span><span>Súmula</span></div>
-            <div class="nav-item" onclick="mudarAba('view-estatisticas')" id="nav-estatisticas"><span class="nav-icon">📊</span><span>Painel</span></div>
-            <div class="nav-item" onclick="mudarAba('view-financeiro')" id="nav-financeiro"><span class="nav-icon">💰</span><span>Caixa</span></div>
+            <div class="nav-item hidden-public" onclick="mudarAba('view-elenco')" id="nav-elenco">
+                <span class="nav-icon">👥</span><span>Elenco</span>
+            </div>
+            <div class="nav-item hidden-public" onclick="mudarAba('view-sorteio')" id="nav-sorteio">
+                <span class="nav-icon">🎲</span><span>Sorteio</span>
+            </div>
+            <div class="nav-item active" onclick="mudarAba('view-placares')" id="nav-placares">
+                <span class="nav-icon">⚽</span><span>Súmula</span>
+            </div>
+            <div class="nav-item" onclick="mudarAba('view-estatisticas')" id="nav-estatisticas">
+                <span class="nav-icon">📊</span><span>Painel</span>
+            </div>
+            <div class="nav-item" onclick="mudarAba('view-financeiro')" id="nav-financeiro">
+                <span class="nav-icon">💰</span><span>Caixa</span>
+            </div>
         </nav>
 
     </div>
@@ -560,7 +566,10 @@
 
             if(viewId === 'view-estatisticas') carregarEstatisticasGerais();
             if(viewId === 'view-placares') renderizarSumula();
-            if(viewId === 'view-financeiro') atualizarFinanceiro();
+            if(viewId === 'view-financeiro') {
+                atualizarFinanceiro();
+                if(!window.isModoPublico) calcularBalancoMesAno();
+            }
         }
 
         // AUTENTICAÇÃO E MODO PÚBLICO
@@ -612,7 +621,7 @@
                 return;
             }
             
-            document.getElementById('status-db').innerText = `Modo Visualizador`;
+            document.getElementById('status-db').innerText = `Visualizando: ${codigo}`;
             window.custosDaRodada = partida.custos_json || [];
             if(partida.valor_por_convidado) document.getElementById('valor-convidado').value = partida.valor_por_convidado;
             if(partida.valor_por_mensalista) document.getElementById('valor-mensalista').value = partida.valor_por_mensalista;
@@ -669,7 +678,7 @@
             
             document.getElementById('status-db').innerText = "Online"; document.getElementById('status-db').style.backgroundColor = "var(--supabase)";
             atualizarListas();
-            atualizarFinanceiro(); // Atualiza painel caso mensalistas tenham mudado na nuvem
+            atualizarFinanceiro(); 
         }
 
         // CADASTRO E EDIÇÃO
@@ -710,16 +719,16 @@
         function desmarcarPresenca(indexArray) { 
             jogadores[indexArray].presente = false; 
             jogadores[indexArray].ordemChegada = 0; 
-            jogadores[indexArray].pagou = false; // Se tirar de quadra, o convidado para de dever a diária
+            jogadores[indexArray].pagou = false; 
             salvarEstadoLocal(); 
             atualizarListas(); 
             atualizarFinanceiro(); 
         }
 
-        // FUNÇÃO GLOBAL DE PAGAMENTO DO MENSALISTA
+        // MENSALIDADE FICA SALVA NO BANCO ATRELADA AO MÊS E ANO
         async function alternarMensalidade(idNuvem, indexArray) {
             const j = jogadores[indexArray];
-            const mesKey = new Date().toISOString().substring(0, 7); // "2026-08"
+            const mesKey = new Date().toISOString().substring(0, 7); // Ex: "2026-08"
             if (!j.pagamentos_json) j.pagamentos_json = {};
             
             const isPago = j.pagamentos_json[mesKey] === true;
@@ -731,10 +740,11 @@
             
             atualizarListas(); 
             atualizarFinanceiro();
+            if (document.getElementById('view-financeiro').classList.contains('active')) calcularBalancoMesAno();
+            
             await db.from('jogadores').update({ pagamentos_json: j.pagamentos_json }).eq('id', idNuvem);
         }
         
-        // FUNÇÃO DE PAGAMENTO DIÁRIO DO CONVIDADO
         function alternarPagamentoDiaria(indexArray) { 
             jogadores[indexArray].pagou = !jogadores[indexArray].pagou; 
             salvarEstadoLocal(); 
@@ -839,9 +849,9 @@
                 let controleFinanceiro = '';
                 if(j.tipo === 'Mensalista') {
                     let isMensalPago = j.pagamentos_json && j.pagamentos_json[mesKey] === true;
-                    controleFinanceiro = isMensalPago ? `<span class="badge badge-mensal-ok">Mensal: Pago</span>` : `<span class="badge badge-mensal-pend">Mensal: Pendente</span>`;
+                    controleFinanceiro = isMensalPago ? `<button class="btn-small btn-pagou hidden-public" onclick="alternarMensalidade('${j.id}', ${j.indexArray})">Pago</button>` : `<button class="btn-small btn-devendo hidden-public" onclick="alternarMensalidade('${j.id}', ${j.indexArray})">Pendente</button>`;
                 } else {
-                    controleFinanceiro = j.pagou ? `<button class="btn-small btn-pagou" onclick="alternarPagamentoDiaria(${j.indexArray})">Pago</button>` : `<button class="btn-small btn-devendo" onclick="alternarPagamentoDiaria(${j.indexArray})">Pendente</button>`;
+                    controleFinanceiro = j.pagou ? `<button class="btn-small btn-pagou hidden-public" onclick="alternarPagamentoDiaria(${j.indexArray})">Pago</button>` : `<button class="btn-small btn-devendo hidden-public" onclick="alternarPagamentoDiaria(${j.indexArray})">Pendente</button>`;
                 }
 
                 if(listaPresentes) {
@@ -849,7 +859,7 @@
                     <div class="linha-jogador grid-prontos">
                         <div class="col-nome"><span class="badge" style="background:var(--dark); color:white;">${pos + 1}º</span> ${tagConvidado} ${j.nome}</div>
                         <div class="col-status" style="text-align:right;">${controleFinanceiro}</div>
-                        <div class="col-acoes"><button class="btn-small btn-acao-outline" style="color:var(--danger); border-color:var(--danger);" onclick="desmarcarPresenca(${j.indexArray})">Retirar</button></div>
+                        <div class="col-acoes"><button class="btn-small btn-acao-outline hidden-public" style="color:var(--danger); border-color:var(--danger);" onclick="desmarcarPresenca(${j.indexArray})">Retirar</button></div>
                     </div>`;
                 }
             });
@@ -862,7 +872,7 @@
             filtrarSorteioAusentes();
         }
 
-        // SORTEIO
+        // SORTEIO BLINDADO
         function embaralhar(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } return array; }
 
         function iniciarSorteioComSuspense() {
@@ -895,6 +905,10 @@
                 if (qtdTimesGlobais > 0) tamanhoPartida = titulares.length;
             }
 
+            // CORREÇÃO: Força a conversão do nível para número para não quebrar a lógica matemática
+            const getSomaNotas = (time) => time.reduce((acc, j) => acc + (Number(j.nivel) || 3), 0); 
+            const getQtdPosicao = (time, pos) => time.filter(j => j.posicao === pos).length;
+
             for (let i = 0; i < titulares.length; i += tamanhoPartida) {
                 let chunk = titulares.slice(i, i + tamanhoPartida); let numTimesNoChunk;
                 if (modo === '12' || modo === '14') numTimesNoChunk = 2; 
@@ -908,9 +922,10 @@
 
                 const posicoes = ["Zagueiro", "Lateral", "Meio-Campo", "Atacante", "Linha"]; const grupos = {}; posicoes.forEach(p => grupos[p] = []);
                 linhaChunk.forEach(j => { if (grupos[j.posicao]) grupos[j.posicao].push(j); else grupos["Linha"].push(j); });
-                posicoes.forEach(p => grupos[p].sort((a, b) => b.nivel - a.nivel));
-                const getSomaNotas = (time) => time.reduce((acc, j) => acc + j.nivel, 0); const getQtdPosicao = (time, pos) => time.filter(j => j.posicao === pos).length;
-
+                
+                // CORREÇÃO: Converter para Number na hora de ordenar também
+                posicoes.forEach(p => grupos[p].sort((a, b) => (Number(b.nivel) || 3) - (Number(a.nivel) || 3)));
+                
                 posicoes.forEach(pos => {
                     grupos[pos].forEach(jogador => {
                         let minTam = Math.min(...timesLocais.map(t => t.length)); let elegiveis = timesLocais.filter(t => t.length === minTam);
@@ -929,6 +944,7 @@
 
             window.reservasSorteados = reservas; window.partidaSalva = false;
             
+            // Inicia do Zero
             window.jogosDaRodada = []; window.filaEquipes = []; window.custosDaRodada = [];
             window.golsTempA = []; window.golsTempB = [];
             document.getElementById('box-codigo-gerado').style.display = 'none';
@@ -1224,11 +1240,10 @@
         }
 
         // FINANCEIRO GLOBAL
-        async function atualizarFinanceiro() {
+        function atualizarFinanceiro() {
             if(window.isModoPublico) return; 
 
             let valConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
-            let valMens = parseFloat(document.getElementById('valor-mensalista').value) || 0;
             
             // RODADA (HOJE)
             let convPagantesHoje = jogadores.filter(j => j.tipo === 'Convidado' && j.presente && j.pagou).length;
@@ -1240,46 +1255,69 @@
             
             renderizarListaCustos();
             salvarEstadoCompleto();
+        }
+
+        async function calcularBalancoMesAno() {
+            document.getElementById('fin-loading').style.display = 'block';
             
-            if(document.getElementById('view-financeiro').classList.contains('active')) {
-                document.getElementById('fin-loading').style.display = 'block';
-                
-                let hoje = new Date(); 
-                let mesKey = hoje.toISOString().substring(0, 7); 
-                let anoKey = hoje.getFullYear().toString();
-                
-                const { data: partidas } = await db.from('partidas').select('*').gte('data_sorteio', `${anoKey}-01-01`);
-                
-                let recConvMes = 0; let cusMes = custHoje; 
-                let recConvAno = 0; let cusAno = custHoje;
-                
-                if(partidas) {
-                    partidas.forEach(p => {
-                        let dataP = p.data_sorteio.substring(0, 7); 
-                        let recC = (p.renda_convidados || 0) * (p.valor_por_convidado || 0);
-                        let cus = (p.custos_json || []).reduce((acc, c) => acc + c.valor, 0);
-                        
-                        recConvAno += recC; cusAno += cus;
-                        if(dataP === mesKey) { recConvMes += recC; cusMes += cus; }
+            let valMens = parseFloat(document.getElementById('valor-mensalista').value) || 0;
+            let valConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
+
+            let hoje = new Date(); 
+            let mesKey = hoje.toISOString().substring(0, 7); 
+            let anoKey = hoje.getFullYear().toString();
+            
+            const { data: partidas } = await db.from('partidas').select('*').gte('data_sorteio', `${anoKey}-01-01`);
+            
+            let recConvMes = 0; let cusMes = 0; 
+            let recConvAno = 0; let cusAno = 0;
+            
+            if(partidas) {
+                partidas.forEach(p => {
+                    let dataP = p.data_sorteio.substring(0, 7); 
+                    let recC = (p.renda_convidados || 0) * (p.valor_por_convidado || 0);
+                    let cus = (p.custos_json || []).reduce((acc, c) => acc + c.valor, 0);
+                    
+                    recConvAno += recC; cusAno += cus;
+                    if(dataP === mesKey) { recConvMes += recC; cusMes += cus; }
+                });
+            }
+            
+            // Soma Custos de Hoje (ainda não salvos)
+            let custHoje = window.custosDaRodada.reduce((acc, c) => acc + c.valor, 0);
+            cusMes += custHoje; cusAno += custHoje;
+
+            // Soma Diárias de Hoje (ainda não salvas)
+            let convPagantesHoje = jogadores.filter(j => j.tipo === 'Convidado' && j.presente && j.pagou).length;
+            let recHoje = (convPagantesHoje * valConv);
+            recConvMes += recHoje; recConvAno += recHoje;
+
+            // Soma Mensalidades Pagas no Mês
+            let qtdMensalistasMes = jogadores.filter(j => j.tipo === 'Mensalista' && j.pagamentos_json && j.pagamentos_json[mesKey] === true).length;
+            let recMensalidadesMes = qtdMensalistasMes * valMens;
+
+            // Soma Mensalidades Pagas no Ano todo
+            let recMensalidadesAno = 0;
+            jogadores.forEach(j => {
+                if(j.tipo === 'Mensalista' && j.pagamentos_json) {
+                    Object.keys(j.pagamentos_json).forEach(k => {
+                        if(k.startsWith(anoKey) && j.pagamentos_json[k] === true) recMensalidadesAno += valMens;
                     });
                 }
-                
-                let mensPagantes = jogadores.filter(j => j.tipo === 'Mensalista' && j.mensalidade_paga).length;
-                let receitaMensalidades = mensPagantes * valMens; 
-                
-                let recMesTotal = recConvMes + recHoje + receitaMensalidades;
-                let recAnoTotal = recConvAno + recHoje + receitaMensalidades;
-                
-                document.getElementById('fin-rec-mes').innerText = `R$ ${recMesTotal.toFixed(2)}`;
-                document.getElementById('fin-cus-mes').innerText = `R$ ${cusMes.toFixed(2)}`;
-                document.getElementById('fin-sal-mes').innerText = `R$ ${(recMesTotal - cusMes).toFixed(2)}`;
-                
-                document.getElementById('fin-rec-ano').innerText = `R$ ${recAnoTotal.toFixed(2)}`;
-                document.getElementById('fin-cus-ano').innerText = `R$ ${cusAno.toFixed(2)}`;
-                document.getElementById('fin-sal-ano').innerText = `R$ ${(recAnoTotal - cusAno).toFixed(2)}`;
-                
-                document.getElementById('fin-loading').style.display = 'none';
-            }
+            });
+            
+            let recMesTotal = recConvMes + recMensalidadesMes;
+            let recAnoTotal = recConvAno + recMensalidadesAno;
+            
+            document.getElementById('fin-rec-mes').innerText = `R$ ${recMesTotal.toFixed(2)}`;
+            document.getElementById('fin-cus-mes').innerText = `R$ ${cusMes.toFixed(2)}`;
+            document.getElementById('fin-sal-mes').innerText = `R$ ${(recMesTotal - cusMes).toFixed(2)}`;
+            
+            document.getElementById('fin-rec-ano').innerText = `R$ ${recAnoTotal.toFixed(2)}`;
+            document.getElementById('fin-cus-ano').innerText = `R$ ${cusAno.toFixed(2)}`;
+            document.getElementById('fin-sal-ano').innerText = `R$ ${(recAnoTotal - cusAno).toFixed(2)}`;
+            
+            document.getElementById('fin-loading').style.display = 'none';
         }
         
         function adicionarCusto() {
@@ -1288,9 +1326,14 @@
             window.custosDaRodada.push({ desc: desc, valor: val });
             document.getElementById('desc-custo').value = ''; document.getElementById('valor-custo').value = '';
             atualizarFinanceiro();
+            if(!window.isModoPublico && document.getElementById('view-financeiro').classList.contains('active')) calcularBalancoMesAno();
         }
         
-        function removerCusto(index) { window.custosDaRodada.splice(index, 1); atualizarFinanceiro(); }
+        function removerCusto(index) { 
+            window.custosDaRodada.splice(index, 1); 
+            atualizarFinanceiro(); 
+            if(!window.isModoPublico && document.getElementById('view-financeiro').classList.contains('active')) calcularBalancoMesAno();
+        }
         
         function renderizarListaCustos() {
             let lista = document.getElementById('lista-custos'); lista.innerHTML = '';
@@ -1315,8 +1358,8 @@
                     jogo.gols_b.forEach(nome => { if(nome !== 'Gol Contra') artilheiros[nome] = (artilheiros[nome] || 0) + 1; });
                 });
 
-                let presentesPagantes = jogadores.filter(j => j.presente && j.pagou);
-                let convidadosPagantes = presentesPagantes.filter(j => j.tipo === 'Convidado').length;
+                let presentesPagantes = jogadores.filter(j => j.presente && j.pagou && j.tipo === 'Convidado');
+                let convidadosPagantes = presentesPagantes.length;
                 
                 let valorConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
                 let valorMens = parseFloat(document.getElementById('valor-mensalista').value) || 0;
@@ -1355,6 +1398,7 @@
                 window.partidaSalva = true; btn.innerText = "✅ Baba Salvo!";
                 salvarEstadoCompleto();
                 
+                // GERAÇÃO DO LINK WHATSAPP
                 let linkCompartilhamento = `https://pegaobaba.vercel.app?code=${codigoAleatorio}`;
                 let textoWpp = encodeURIComponent(`🏆 *Acompanhe nosso Baba ao Vivo!*\n\nVeja a súmula, artilharia e classificação da rodada pelo link:\n\n${linkCompartilhamento}\n\n_(Código de acesso direto: ${codigoAleatorio})_`);
 
@@ -1367,16 +1411,6 @@
                 boxCod.style.display = 'block';
 
             } catch(err) { alert("Erro: " + err.message); btn.innerText = "Tentar Novamente"; btn.disabled = false; }
-        }
-
-        function exportarWhatsApp() {
-            let texto = "📋 *RELAÇÃO DE EQUIPES* 📋\n\n";
-            window.timesSorteadosObjs.forEach((t) => { 
-                texto += `*${t.nome}*\n`; 
-                t.jogadores.forEach(j => texto += `• ${j.nome}\n`); 
-                texto += `\n`; 
-            });
-            navigator.clipboard.writeText(texto).then(() => alert("Copiado!")).catch(() => alert("Falha ao copiar."));
         }
     </script>
 </body>
