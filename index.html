@@ -107,7 +107,11 @@
             box-sizing: border-box;
             width: 100%;
             border: 1px solid var(--border);
+            transition: border-color 0.3s ease;
         }
+        
+        /* Highlight form when editing */
+        .card.editando { border-color: var(--warning); box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1); }
         
         /* AUTH LAYOUT */
         #auth-container { margin-top: 40px; }
@@ -187,6 +191,8 @@
         
         .btn-small { width: auto; padding: 6px 12px; font-size: 13px; border-radius: 6px; }
         .btn-chegou { background-color: var(--primary); }
+        .btn-editar { background-color: transparent; color: var(--primary); border: 1px solid var(--primary); }
+        .btn-editar:hover { background-color: var(--primary); color: white; }
         .btn-desmarcar { background-color: var(--white); color: var(--dark); border: 1px solid var(--border); }
         .btn-excluir { background-color: transparent; color: var(--danger); border: 1px solid var(--danger); }
         .btn-excluir:hover { background-color: var(--danger); color: white; }
@@ -272,9 +278,9 @@
         
         <div class="status-nuvem" id="status-db">Aguardando conexão segura...</div>
 
-        <!-- Formulário de Cadastro -->
-        <div class="card">
-            <h2>Adicionar Jogador</h2>
+        <!-- Formulário de Cadastro e Edição -->
+        <div class="card" id="card-formulario">
+            <h2 id="titulo-form">Adicionar Jogador</h2>
             <div class="linha-nome">
                 <input type="text" id="nome" placeholder="Nome Completo ou Apelido" autocomplete="off">
             </div>
@@ -298,7 +304,12 @@
                     <option value="1">Perna (1)</option>
                 </select>
             </div>
-            <button id="btn-adicionar" onclick="adicionarJogador()">Incluir no Sistema</button>
+            
+            <!-- Grupo de botões do formulário -->
+            <div style="display: flex; gap: 10px;">
+                <button id="btn-adicionar" onclick="adicionarJogador()">Incluir no Sistema</button>
+                <button id="btn-cancelar-edicao" onclick="cancelarEdicao()" style="display: none; background-color: var(--text-muted);">Cancelar</button>
+            </div>
         </div>
 
         <!-- Lista de Presença -->
@@ -350,10 +361,11 @@
     <script>
         let db;
         let jogadores = [];
+        let jogadorEdicaoId = null; // Variável para controlar a edição
+
         const coresTimes = ["Vermelho", "Azul", "Amarelo", "Verde", "Branco", "Preto", "Roxo", "Laranja"];
         const emojisTimes = ["🔴", "🔵", "🟡", "🟢", "⚪", "⚫", "🟣", "🟠"];
 
-        // Variáveis para gravação no banco
         window.presentesParaSalvar = [];
         window.partidaSalva = false;
 
@@ -469,6 +481,47 @@
             atualizarListas();
         }
 
+        // ==========================================
+        // SISTEMA DE EDIÇÃO DE JOGADOR
+        // ==========================================
+        function prepararEdicao(indexArray) {
+            const j = jogadores[indexArray];
+            
+            // Preenche o formulário com os dados
+            document.getElementById('nome').value = j.nome;
+            document.getElementById('tipo').value = j.tipo;
+            document.getElementById('posicao').value = j.posicao;
+            document.getElementById('nivel').value = j.nivel;
+            
+            // Guarda o ID do jogador que está sendo editado
+            jogadorEdicaoId = j.id;
+            
+            // Atualiza a Interface
+            document.getElementById('titulo-form').innerText = "Editando Jogador";
+            document.getElementById('card-formulario').classList.add("editando");
+            document.getElementById('btn-adicionar').innerText = "Salvar Alterações";
+            document.getElementById('btn-cancelar-edicao').style.display = "block";
+            
+            // Rola a tela para cima suavemente
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function cancelarEdicao() {
+            jogadorEdicaoId = null;
+            
+            // Limpa o formulário
+            document.getElementById('nome').value = "";
+            document.getElementById('tipo').value = "Mensalista";
+            document.getElementById('posicao').value = "Meio-Campo";
+            document.getElementById('nivel').value = "3";
+            
+            // Restaura a Interface
+            document.getElementById('titulo-form').innerText = "Adicionar Jogador";
+            document.getElementById('card-formulario').classList.remove("editando");
+            document.getElementById('btn-adicionar').innerText = "Incluir no Sistema";
+            document.getElementById('btn-cancelar-edicao').style.display = "none";
+        }
+
         async function adicionarJogador() {
             const nomeInput = document.getElementById('nome');
             const tipo = document.getElementById('tipo').value;
@@ -482,25 +535,56 @@
             btn.innerText = "Processando...";
             btn.disabled = true;
 
-            const { data, error } = await db
-                .from('jogadores')
-                .insert([{ nome: nome, tipo: tipo, posicao: posicao, nivel: nivel }])
-                .select(); 
+            if (jogadorEdicaoId) {
+                // ==========================
+                // MODO: ATUALIZAR EXISTENTE
+                // ==========================
+                const { error } = await db
+                    .from('jogadores')
+                    .update({ nome: nome, tipo: tipo, posicao: posicao, nivel: nivel })
+                    .eq('id', jogadorEdicaoId);
 
-            if (error) {
-                alert("Erro ao gravar registro: " + error.message);
+                if (error) {
+                    alert("Erro ao salvar alterações: " + error.message);
+                    btn.innerText = "Salvar Alterações";
+                } else {
+                    // Atualiza a lista na tela sem precisar recarregar
+                    let jIndex = jogadores.findIndex(j => j.id === jogadorEdicaoId);
+                    if (jIndex !== -1) {
+                        jogadores[jIndex].nome = nome;
+                        jogadores[jIndex].tipo = tipo;
+                        jogadores[jIndex].posicao = posicao;
+                        jogadores[jIndex].nivel = nivel;
+                    }
+                    cancelarEdicao(); // Limpa e volta ao estado normal
+                    atualizarListas();
+                }
+
             } else {
-                nomeInput.value = "";
-                nomeInput.focus();
-                let novoJogador = data[0];
-                novoJogador.presente = false;
-                novoJogador.ordemChegada = 0;
-                novoJogador.pagou = false;
-                jogadores.push(novoJogador);
-                atualizarListas();
+                // ==========================
+                // MODO: CRIAR NOVO
+                // ==========================
+                const { data, error } = await db
+                    .from('jogadores')
+                    .insert([{ nome: nome, tipo: tipo, posicao: posicao, nivel: nivel }])
+                    .select(); 
+
+                if (error) {
+                    alert("Erro ao gravar registro: " + error.message);
+                    btn.innerText = "Incluir no Sistema";
+                } else {
+                    nomeInput.value = "";
+                    nomeInput.focus();
+                    let novoJogador = data[0];
+                    novoJogador.presente = false;
+                    novoJogador.ordemChegada = 0;
+                    novoJogador.pagou = false;
+                    jogadores.push(novoJogador);
+                    atualizarListas();
+                    btn.innerText = "Incluir no Sistema";
+                }
             }
 
-            btn.innerText = "Incluir no Sistema";
             btn.disabled = false;
         }
 
@@ -613,6 +697,7 @@
                         </div>
                         <div class="actions">
                             ${btnPix}
+                            <button class="btn-small btn-editar" onclick="prepararEdicao(${j.indexArray})">✏️</button>
                             <button class="btn-small btn-desmarcar" onclick="desmarcarPresenca(${j.indexArray})">Remover</button>
                         </div>
                     </li>
@@ -630,6 +715,7 @@
                         </div>
                         <div class="actions">
                             <button class="btn-small btn-chegou" onclick="marcarPresenca(${j.indexArray})">Presente</button>
+                            <button class="btn-small btn-editar" onclick="prepararEdicao(${j.indexArray})">Editar</button>
                             <button class="btn-small btn-excluir" onclick="removerJogador('${j.id}', ${j.indexArray})">Excluir</button>
                         </div>
                     </li>
@@ -795,7 +881,6 @@
 
             mostrarResultado(times, reservas, incluiGoleiros);
             
-            // Prepara as variáveis para salvar a partida
             window.presentesParaSalvar = presentes;
             window.partidaSalva = false;
             
@@ -808,9 +893,6 @@
             btnSalvar.style.backgroundColor = "var(--primary)";
         }
 
-        // ==========================================
-        // FUNÇÃO DE GRAVAÇÃO DO HISTÓRICO
-        // ==========================================
         async function salvarPartidaHistorico() {
             if(window.partidaSalva) return alert("Esta partida já foi salva no banco de dados!");
             
@@ -819,10 +901,8 @@
             btn.disabled = true;
 
             try {
-                // Conta quantos convidados pagaram para registrar a renda
                 let convidadosPagantes = window.presentesParaSalvar.filter(j => j.tipo === 'Convidado' && j.pagou).length;
                 
-                // 1. Cria o registro geral da partida
                 const { data: partidaData, error: erroPartida } = await db
                     .from('partidas')
                     .insert([{ 
@@ -835,7 +915,6 @@
 
                 const partidaId = partidaData[0].id;
 
-                // 2. Prepara e salva a presença de cada jogador vinculado àquela partida
                 const presencasInsert = window.presentesParaSalvar.map(j => ({
                     partida_id: partidaId,
                     jogador_id: j.id,
@@ -858,7 +937,6 @@
                 btn.disabled = false;
             }
         }
-        // ==========================================
 
         function mostrarResultado(times, reservas, incluiGoleiros) {
             const resultado = document.getElementById('resultado');
