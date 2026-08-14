@@ -19,7 +19,7 @@
             --border: #e2e8f0; --nav-height: 65px;
         }
         
-        body { font-family: 'Inter', sans-serif; background-color: var(--light); color: var(--dark); max-width: 600px; margin: 0 auto; padding: 0; overflow-x: hidden; -webkit-font-smoothing: antialiased; padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px) + 20px); }
+        body { font-family: 'Inter', sans-serif; background-color: var(--light); color: var(--dark); max-width: 600px; margin: 0 auto; padding: 0; overflow-x: hidden; -webkit-font-smoothing: antialiased; padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px) + 25px); }
         h1, h2, h3 { margin-bottom: 20px; }
         h1 { text-align: center; font-weight: 800; letter-spacing: -0.02em; margin-top: 20px; }
         h2 { text-align: center; font-size: 18px; font-weight: 700; }
@@ -32,11 +32,62 @@
         .status-nuvem { font-size: 10px; font-weight: 600; color: white; background-color: var(--supabase); padding: 4px 8px; border-radius: 6px; }
         .btn-sair { background: transparent; color: var(--danger); border: 1px solid var(--danger); padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
 
-        /* NAVEGAÇÃO INFERIOR CORRIGIDA */
-        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; justify-content: space-around; align-items: center; height: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px)); padding-bottom: env(safe-area-inset-bottom, 0px); border-top: 1px solid var(--border); z-index: 1000; max-width: 600px; margin: 0 auto; box-shadow: 0 -4px 6px -1px rgba(0,0,0,0.05); }
-        .nav-item { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; color: var(--text-muted); text-decoration: none; font-size: 10px; font-weight: 600; cursor: pointer; height: 100%; transition: all 0.2s; padding: 5px 0;}
+        /* NAVEGAÇÃO INFERIOR ALINHADA */
+        .bottom-nav { 
+            position: fixed; 
+            bottom: 0; 
+            left: 0; 
+            right: 0; 
+            background: white; 
+            display: flex; 
+            justify-content: space-around; 
+            align-items: center; 
+            height: var(--nav-height);
+            padding-bottom: env(safe-area-inset-bottom, 0px); 
+            border-top: 1px solid var(--border); 
+            z-index: 1000; 
+            max-width: 600px; 
+            margin: 0 auto; 
+            box-shadow: 0 -4px 6px -1px rgba(0,0,0,0.05); 
+            box-sizing: border-box;
+        }
+        
+        .nav-item { 
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            color: var(--text-muted); 
+            text-decoration: none; 
+            cursor: pointer; 
+            height: 100%; 
+            transition: all 0.2s; 
+            padding: 0;
+            margin: 0;
+        }
+        
         .nav-item.active { color: var(--primary); }
-        .nav-icon { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 18px; margin-bottom: 2px; }
+        
+        .nav-icon { 
+            width: 28px; 
+            height: 24px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 20px; 
+            line-height: 1; 
+            margin: 0 0 3px 0;
+            overflow: hidden;
+        }
+        
+        .nav-item span:last-child {
+            font-size: 11px;
+            font-weight: 600;
+            line-height: 1;
+            display: block;
+            text-align: center;
+        }
         
         .page-view { display: none; padding: 20px; animation: fadeIn 0.3s ease-out; }
         .page-view.active { display: block; }
@@ -446,22 +497,27 @@
             </div>
         </div>
 
-        <!-- NAVEGAÇÃO INFERIOR -->
+        <!-- NAVEGAÇÃO INFERIOR ALINHADA -->
         <nav class="bottom-nav">
             <div class="nav-item hidden-public" onclick="mudarAba('view-elenco')" id="nav-elenco">
-                <span class="nav-icon">👥</span><span>Elenco</span>
+                <div class="nav-icon">👥</div>
+                <span>Elenco</span>
             </div>
             <div class="nav-item hidden-public" onclick="mudarAba('view-sorteio')" id="nav-sorteio">
-                <span class="nav-icon">🎲</span><span>Sorteio</span>
+                <div class="nav-icon">🎲</div>
+                <span>Sorteio</span>
             </div>
             <div class="nav-item active" onclick="mudarAba('view-placares')" id="nav-placares">
-                <span class="nav-icon">⚽</span><span>Súmula</span>
+                <div class="nav-icon">⚽</div>
+                <span>Súmula</span>
             </div>
             <div class="nav-item" onclick="mudarAba('view-estatisticas')" id="nav-estatisticas">
-                <span class="nav-icon">📊</span><span>Painel</span>
+                <div class="nav-icon">📊</div>
+                <span>Painel</span>
             </div>
             <div class="nav-item" onclick="mudarAba('view-financeiro')" id="nav-financeiro">
-                <span class="nav-icon">💰</span><span>Caixa</span>
+                <div class="nav-icon">💰</div>
+                <span>Caixa</span>
             </div>
         </nav>
 
@@ -621,7 +677,7 @@
                 return;
             }
             
-            document.getElementById('status-db').innerText = `Visualizando: ${codigo}`;
+            document.getElementById('status-db').innerText = `Modo Visualizador`;
             window.custosDaRodada = partida.custos_json || [];
             if(partida.valor_por_convidado) document.getElementById('valor-convidado').value = partida.valor_por_convidado;
             if(partida.valor_por_mensalista) document.getElementById('valor-mensalista').value = partida.valor_por_mensalista;
@@ -904,7 +960,7 @@
                 if (qtdTimesGlobais > 0) tamanhoPartida = titulares.length;
             }
 
-            // CORREÇÃO: Força a conversão do nível para número para não quebrar a lógica matemática
+            // Conversão de nível para número
             const getSomaNotas = (time) => time.reduce((acc, j) => acc + (Number(j.nivel) || 3), 0); 
             const getQtdPosicao = (time, pos) => time.filter(j => j.posicao === pos).length;
 
@@ -922,7 +978,6 @@
                 const posicoes = ["Zagueiro", "Lateral", "Meio-Campo", "Atacante", "Linha"]; const grupos = {}; posicoes.forEach(p => grupos[p] = []);
                 linhaChunk.forEach(j => { if (grupos[j.posicao]) grupos[j.posicao].push(j); else grupos["Linha"].push(j); });
                 
-                // CORREÇÃO: Converter para Number na hora de ordenar
                 posicoes.forEach(p => grupos[p].sort((a, b) => (Number(b.nivel) || 3) - (Number(a.nivel) || 3)));
                 
                 posicoes.forEach(pos => {
@@ -1282,20 +1337,16 @@
                 });
             }
             
-            // Soma Custos de Hoje (ainda não salvos)
             let custHoje = window.custosDaRodada.reduce((acc, c) => acc + c.valor, 0);
             cusMes += custHoje; cusAno += custHoje;
 
-            // Soma Diárias de Hoje (ainda não salvas)
             let convPagantesHoje = jogadores.filter(j => j.tipo === 'Convidado' && j.presente && j.pagou).length;
             let recHoje = (convPagantesHoje * valConv);
             recConvMes += recHoje; recConvAno += recHoje;
 
-            // Soma Mensalidades Pagas no Mês
             let qtdMensalistasMes = jogadores.filter(j => j.tipo === 'Mensalista' && j.pagamentos_json && j.pagamentos_json[mesKey] === true).length;
             let recMensalidadesMes = qtdMensalistasMes * valMens;
 
-            // Soma Mensalidades Pagas no Ano todo
             let recMensalidadesAno = 0;
             jogadores.forEach(j => {
                 if(j.tipo === 'Mensalista' && j.pagamentos_json) {
