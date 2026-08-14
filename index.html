@@ -243,6 +243,38 @@
             flex-wrap: wrap;
         }
 
+        /* ESTILOS DA SÚMULA (MODAL) */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.7);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 1000; padding: 20px;
+            backdrop-filter: blur(4px);
+        }
+        .modal-content {
+            background: white; padding: 24px; border-radius: 12px; width: 100%; max-width: 450px;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+            animation: fadeIn 0.3s ease-out;
+        }
+        .modal-content h2 { margin-top: 0; color: var(--dark); font-size: 20px; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 20px; }
+        .confronto-row {
+            display: flex; justify-content: space-between; align-items: center;
+            background: var(--light); padding: 15px 10px; border-radius: 8px; margin-bottom: 12px;
+            border: 1px solid var(--border);
+        }
+        .input-gols {
+            width: 55px; text-align: center; padding: 10px 5px; font-size: 18px; font-weight: 700;
+            border: 2px solid var(--border); border-radius: 8px; color: var(--dark);
+        }
+        .input-gols:focus { outline: none; border-color: var(--primary); }
+        .time-a, .time-b { flex: 1; font-weight: 600; font-size: 14px; }
+        .time-a { text-align: right; margin-right: 10px; }
+        .time-b { text-align: left; margin-left: 10px; }
+        .versus { font-weight: 700; color: var(--text-muted); font-size: 12px; background: white; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border); margin: 0 5px; }
+        .modal-actions { display: flex; gap: 10px; margin-top: 25px; }
+        .btn-cancelar-modal { background-color: white; color: var(--dark); border: 1px solid var(--border); }
+        .btn-cancelar-modal:hover { background-color: var(--light); }
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
@@ -305,7 +337,6 @@
                 </select>
             </div>
             
-            <!-- Grupo de botões do formulário -->
             <div style="display: flex; gap: 10px;">
                 <button id="btn-adicionar" onclick="adicionarJogador()">Incluir no Sistema</button>
                 <button id="btn-cancelar-edicao" onclick="cancelarEdicao()" style="display: none; background-color: var(--text-muted);">Cancelar</button>
@@ -354,7 +385,24 @@
         
         <div class="botoes-finais">
             <button id="btn-wpp" class="btn-whatsapp" onclick="exportarWhatsApp()">Compartilhar via WhatsApp</button>
-            <button id="btn-salvar-partida" class="btn-salvar" onclick="salvarPartidaHistorico()">💾 Salvar no Histórico</button>
+            <button id="btn-salvar-partida" class="btn-salvar" onclick="abrirModalSumula()">💾 Salvar Súmula e Histórico</button>
+        </div>
+    </div>
+
+    <!-- MODAL DE SÚMULA DE PLACARES -->
+    <div id="modal-sumula" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <h2>📝 Súmula dos Confrontos</h2>
+            <p style="font-size: 13px; color: var(--text-muted); margin-top: -15px; margin-bottom: 20px;">
+                Preencha os placares dos jogos gerados pelo sorteio para alimentar as Estatísticas.
+            </p>
+            
+            <div id="lista-confrontos"></div>
+            
+            <div class="modal-actions">
+                <button class="btn-cancelar-modal" onclick="fecharModalSumula()">Cancelar</button>
+                <button class="btn-salvar" id="btn-confirmar-sumula" style="display: block;" onclick="salvarPartidaComPlacares()">Confirmar e Gravar</button>
+            </div>
         </div>
     </div>
 
@@ -368,19 +416,19 @@
 
         window.presentesParaSalvar = [];
         window.partidaSalva = false;
+        window.confrontos = [];
 
         window.onload = async function() {
             if(typeof supabaseUrl === 'undefined' || typeof supabaseKey === 'undefined') {
                 alert("Erro crítico: Arquivo config.js não localizado no servidor.");
                 return;
             }
-
             db = window.supabase.createClient(supabaseUrl, supabaseKey);
             verificarSessao();
         };
 
         // ==========================================
-        // SISTEMA DE AUTENTICAÇÃO
+        // SISTEMA DE AUTENTICAÇÃO E NUVEM
         // ==========================================
         async function verificarSessao() {
             const { data: { session } } = await db.auth.getSession();
@@ -449,19 +497,14 @@
             document.getElementById('auth-password').value = "";
             document.getElementById('auth-msg').innerText = "";
         }
-        // ==========================================
 
         async function carregarElencoDaNuvem() {
             document.getElementById('status-db').innerText = "Sincronizando banco de dados...";
             document.getElementById('status-db').style.backgroundColor = "var(--warning)";
             
-            const { data, error } = await db
-                .from('jogadores')
-                .select('*')
-                .order('nome', { ascending: true }); 
+            const { data, error } = await db.from('jogadores').select('*').order('nome', { ascending: true }); 
 
             if (error) {
-                console.error("Erro ao buscar:", error);
                 document.getElementById('status-db').innerText = "Falha na conexão com o servidor seguro.";
                 document.getElementById('status-db').style.backgroundColor = "var(--danger)";
                 return;
@@ -482,11 +525,10 @@
         }
 
         // ==========================================
-        // SISTEMA DE EDIÇÃO DE JOGADOR
+        // GESTÃO DE JOGADORES (Cadastro/Edição/Presença)
         // ==========================================
         function prepararEdicao(indexArray) {
             const j = jogadores[indexArray];
-            
             document.getElementById('nome').value = j.nome;
             document.getElementById('tipo').value = j.tipo;
             document.getElementById('posicao').value = j.posicao;
@@ -498,13 +540,11 @@
             document.getElementById('card-formulario').classList.add("editando");
             document.getElementById('btn-adicionar').innerText = "Salvar Alterações";
             document.getElementById('btn-cancelar-edicao').style.display = "block";
-            
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function cancelarEdicao() {
             jogadorEdicaoId = null;
-            
             document.getElementById('nome').value = "";
             document.getElementById('tipo').value = "Mensalista";
             document.getElementById('posicao').value = "Meio-Campo";
@@ -525,7 +565,6 @@
 
             if (nome === "") return alert("Por favor, preencha o nome do atleta.");
 
-            // VALIDAÇÃO DE NOME DUPLICADO
             const nomeExiste = jogadores.some(j => j.nome.toLowerCase() === nome.toLowerCase() && j.id !== jogadorEdicaoId);
             if (nomeExiste) {
                 alert("⚠️ Este jogador já está cadastrado!\n\nPor favor, adicione um sobrenome ou apelido para diferenciá-lo.");
@@ -538,11 +577,7 @@
             btn.disabled = true;
 
             if (jogadorEdicaoId) {
-                const { error } = await db
-                    .from('jogadores')
-                    .update({ nome: nome, tipo: tipo, posicao: posicao, nivel: nivel })
-                    .eq('id', jogadorEdicaoId);
-
+                const { error } = await db.from('jogadores').update({ nome: nome, tipo: tipo, posicao: posicao, nivel: nivel }).eq('id', jogadorEdicaoId);
                 if (error) {
                     alert("Erro ao salvar alterações: " + error.message);
                     btn.innerText = "Salvar Alterações";
@@ -557,13 +592,8 @@
                     cancelarEdicao(); 
                     atualizarListas();
                 }
-
             } else {
-                const { data, error } = await db
-                    .from('jogadores')
-                    .insert([{ nome: nome, tipo: tipo, posicao: posicao, nivel: nivel }])
-                    .select(); 
-
+                const { data, error } = await db.from('jogadores').insert([{ nome: nome, tipo: tipo, posicao: posicao, nivel: nivel }]).select(); 
                 if (error) {
                     alert("Erro ao gravar registro: " + error.message);
                     btn.innerText = "Incluir no Sistema";
@@ -579,17 +609,12 @@
                     btn.innerText = "Incluir no Sistema";
                 }
             }
-
             btn.disabled = false;
         }
 
         async function removerJogador(idNuvem, indexArray) {
             if(confirm("Confirma a exclusão permanente deste registro do banco de dados?")) {
-                const { error } = await db
-                    .from('jogadores')
-                    .delete()
-                    .eq('id', idNuvem);
-
+                const { error } = await db.from('jogadores').delete().eq('id', idNuvem);
                 if (error) {
                     alert("Falha ao excluir: " + error.message);
                 } else {
@@ -610,37 +635,15 @@
             localStorage.setItem('baba_presencas_temp', JSON.stringify(estado));
         }
 
-        function marcarPresenca(indexArray) {
-            jogadores[indexArray].presente = true;
-            jogadores[indexArray].ordemChegada = Date.now();
-            salvarEstadoLocal();
-            atualizarListas();
-        }
-
-        function desmarcarPresenca(indexArray) {
-            jogadores[indexArray].presente = false;
-            jogadores[indexArray].ordemChegada = 0;
-            jogadores[indexArray].pagou = false; 
-            salvarEstadoLocal();
-            atualizarListas();
-        }
-
-        function alternarPagamento(indexArray) {
-            jogadores[indexArray].pagou = !jogadores[indexArray].pagou;
-            salvarEstadoLocal();
-            atualizarListas();
-        }
+        function marcarPresenca(indexArray) { jogadores[indexArray].presente = true; jogadores[indexArray].ordemChegada = Date.now(); salvarEstadoLocal(); atualizarListas(); }
+        function desmarcarPresenca(indexArray) { jogadores[indexArray].presente = false; jogadores[indexArray].ordemChegada = 0; jogadores[indexArray].pagou = false; salvarEstadoLocal(); atualizarListas(); }
+        function alternarPagamento(indexArray) { jogadores[indexArray].pagou = !jogadores[indexArray].pagou; salvarEstadoLocal(); atualizarListas(); }
         
         function zerarPresencas() {
             if(confirm("Esta ação removerá todos os jogadores da lista de chegada. Confirmar?")) {
-                jogadores.forEach(j => {
-                    j.presente = false;
-                    j.ordemChegada = 0;
-                    j.pagou = false; 
-                });
+                jogadores.forEach(j => { j.presente = false; j.ordemChegada = 0; j.pagou = false; });
                 salvarEstadoLocal();
                 atualizarListas();
-                
                 document.getElementById('resultado').innerHTML = "";
                 document.getElementById('btn-wpp').style.display = 'none';
                 document.getElementById('btn-salvar-partida').style.display = 'none';
@@ -673,28 +676,15 @@
             presentes.forEach((j, pos) => {
                 let tagConvidado = j.tipo === 'Convidado' ? '<span class="badge badge-convidado">Convidado</span>' : '';
                 let tagPosicao = (j.posicao !== 'Goleiro' && j.posicao !== 'Linha') ? `<span class="badge badge-posicao">${j.posicao}</span>` : '';
-                
                 let btnPix = '';
                 if(j.tipo === 'Convidado') {
-                    if(j.pagou) {
-                        btnPix = `<button class="btn-small btn-pagou" onclick="alternarPagamento(${j.indexArray})">Pago</button>`;
-                    } else {
-                        btnPix = `<button class="btn-small btn-devendo" onclick="alternarPagamento(${j.indexArray})">Pendente</button>`;
-                    }
+                    if(j.pagou) btnPix = `<button class="btn-small btn-pagou" onclick="alternarPagamento(${j.indexArray})">Pago</button>`;
+                    else btnPix = `<button class="btn-small btn-devendo" onclick="alternarPagamento(${j.indexArray})">Pendente</button>`;
                 }
-
                 listaPresentes.innerHTML += `
                     <li>
-                        <div class="info-jogador">
-                            <span class="badge">${pos + 1}º</span> 
-                            ${tagConvidado}
-                            <strong>${j.nome}</strong> ${tagPosicao} <small>(Nv ${j.nivel})</small>
-                        </div>
-                        <div class="actions">
-                            ${btnPix}
-                            <!-- BOTÃO DE EDIÇÃO REMOVIDO DAQUI COMO SOLICITADO -->
-                            <button class="btn-small btn-desmarcar" onclick="desmarcarPresenca(${j.indexArray})">Remover</button>
-                        </div>
+                        <div class="info-jogador"><span class="badge">${pos + 1}º</span> ${tagConvidado} <strong>${j.nome}</strong> ${tagPosicao} <small>(Nv ${j.nivel})</small></div>
+                        <div class="actions">${btnPix} <button class="btn-small btn-desmarcar" onclick="desmarcarPresenca(${j.indexArray})">Remover</button></div>
                     </li>
                 `;
             });
@@ -702,15 +692,11 @@
             ausentes.forEach(j => {
                 let tagConvidado = j.tipo === 'Convidado' ? '<span class="badge badge-convidado">Convidado</span>' : '';
                 let tagPosicao = (j.posicao !== 'Goleiro' && j.posicao !== 'Linha') ? `<span class="badge badge-posicao">${j.posicao}</span>` : '';
-                
                 listaAusentes.innerHTML += `
                     <li>
-                        <div class="info-jogador">
-                            ${tagConvidado} <strong>${j.nome}</strong> ${tagPosicao} <small>(Nv ${j.nivel})</small>
-                        </div>
+                        <div class="info-jogador">${tagConvidado} <strong>${j.nome}</strong> ${tagPosicao} <small>(Nv ${j.nivel})</small></div>
                         <div class="actions">
                             <button class="btn-small btn-chegou" onclick="marcarPresenca(${j.indexArray})">Presente</button>
-                            <!-- BOTÃO DE EDIÇÃO MANTIDO APENAS NO ELENCO -->
                             <button class="btn-small btn-editar" onclick="prepararEdicao(${j.indexArray})">Editar</button>
                             <button class="btn-small btn-excluir" onclick="removerJogador('${j.id}', ${j.indexArray})">Excluir</button>
                         </div>
@@ -720,14 +706,13 @@
 
             document.getElementById('total-presentes').innerText = presentes.length;
             document.getElementById('total-ausentes').innerText = ausentes.length;
-            
-            if(presentes.length > 0) {
-                btnZerar.style.display = "block";
-            } else {
-                btnZerar.style.display = "none";
-            }
+            if(presentes.length > 0) btnZerar.style.display = "block";
+            else btnZerar.style.display = "none";
         }
 
+        // ==========================================
+        // SISTEMA DE SORTEIO
+        // ==========================================
         function embaralhar(array) {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -754,35 +739,20 @@
             document.getElementById('btn-salvar-partida').style.display = 'none';
             const resultado = document.getElementById('resultado');
             
-            const frases = [
-                "Inicializando algoritmo de distribuição...",
-                "Processando análise tática das posições...",
-                "Calculando e balanceando nível técnico...",
-                "Montando estruturas das equipes...",
-                "Gerando relatórios finais..."
-            ];
-            
+            const frases = ["Inicializando algoritmo...", "Processando análise tática...", "Balanceando nível técnico...", "Montando estruturas..."];
             resultado.innerHTML = `<div class="animacao-suspense" id="texto-suspense">Iniciando processamento...</div>`;
             
             let contador = 0;
             let intervalo = setInterval(() => {
-                if(contador < frases.length) {
-                    document.getElementById('texto-suspense').innerText = frases[contador];
-                    contador++;
-                }
+                if(contador < frases.length) { document.getElementById('texto-suspense').innerText = frases[contador]; contador++; }
             }, 600);
 
-            setTimeout(() => {
-                clearInterval(intervalo);
-                sortearTimes(presentes);
-            }, 3500);
-            
+            setTimeout(() => { clearInterval(intervalo); sortearTimes(presentes); }, 2500); // Reduzido um pouco o tempo
             resultado.scrollIntoView({ behavior: "smooth", block: "center" });
         }
 
         function sortearTimes(presentesBrutos) {
             let presentes = presentesBrutos.filter(j => j.tipo === 'Mensalista' || (j.tipo === 'Convidado' && j.pagou));
-
             let modo = document.getElementById('modo-sorteio').value;
             let incluiGoleiros = document.getElementById('incluir-goleiros').checked;
             let priorizarOrdem = document.getElementById('priorizar-ordem').checked;
@@ -806,36 +776,29 @@
             let tamanhoIdeal = incluiGoleiros ? 7 : 6;
             let tamanhoPartida = tamanhoIdeal * 2; 
 
-            // SE NÃO PRIORIZAR ORDEM NO MODO "TODOS", JUNTA TODO MUNDO NUM ÚNICO LOTE
             if (!priorizarOrdem && (modo === 'todos' || modo === 'todos_sem_goleiro')) {
                 let qtdTimesGlobais = Math.ceil(titulares.length / tamanhoIdeal);
-                if (qtdTimesGlobais < 2 && titulares.length >= 2) qtdTimesGlobais = 2; // Força no min 2 times
-                if (qtdTimesGlobais > 0) {
-                    tamanhoPartida = titulares.length;
-                }
+                if (qtdTimesGlobais < 2 && titulares.length >= 2) qtdTimesGlobais = 2; 
+                if (qtdTimesGlobais > 0) tamanhoPartida = titulares.length;
             }
 
             for (let i = 0; i < titulares.length; i += tamanhoPartida) {
                 let chunk = titulares.slice(i, i + tamanhoPartida);
-                
                 let numTimesNoChunk;
                 if (modo === '12' || modo === '14') {
-                    numTimesNoChunk = 2; // Modos fixos de 2 times forçam 2 equipes independentemente de faltar jogador
+                    numTimesNoChunk = 2; 
                 } else {
                     if (!priorizarOrdem) {
                         numTimesNoChunk = Math.ceil(titulares.length / tamanhoIdeal);
                         if (numTimesNoChunk < 2) numTimesNoChunk = 2;
                     } else {
-                        // Math.ceil garante que se sobrar jogadores (ex: time de 5), forma-se uma equipe normal ao invés de irem pra reserva
                         numTimesNoChunk = Math.ceil(chunk.length / tamanhoIdeal);
                     }
                 }
                 
                 if (numTimesNoChunk === 0) continue;
 
-                // Todos no lote são escalados, as sobras do Math.floor não existem mais
                 let jogadoresDoTime = chunk; 
-
                 let goleirosChunk = embaralhar(jogadoresDoTime.filter(j => j.posicao === 'Goleiro'));
                 let linhaChunk = embaralhar(jogadoresDoTime.filter(j => j.posicao !== 'Goleiro'));
                 
@@ -849,21 +812,14 @@
                 }
 
                 const posicoes = ["Zagueiro", "Lateral", "Meio-Campo", "Atacante", "Linha"];
-                const grupos = {};
-                posicoes.forEach(p => grupos[p] = []);
+                const grupos = {}; posicoes.forEach(p => grupos[p] = []);
 
                 linhaChunk.forEach(j => {
-                    if (grupos[j.posicao]) {
-                        grupos[j.posicao].push(j);
-                    } else {
-                        grupos["Linha"].push(j); 
-                    }
+                    if (grupos[j.posicao]) grupos[j.posicao].push(j);
+                    else grupos["Linha"].push(j); 
                 });
 
-                posicoes.forEach(p => {
-                    grupos[p].sort((a, b) => b.nivel - a.nivel);
-                });
-
+                posicoes.forEach(p => grupos[p].sort((a, b) => b.nivel - a.nivel));
                 const getSomaNotas = (time) => time.reduce((acc, j) => acc + j.nivel, 0);
                 const getQtdPosicao = (time, pos) => time.filter(j => j.posicao === pos).length;
 
@@ -871,7 +827,6 @@
                     grupos[pos].forEach(jogador => {
                         let minTamanho = Math.min(...timesLocais.map(t => t.length));
                         let timesElegiveis = timesLocais.filter(t => t.length === minTamanho);
-
                         let minQtdPos = Math.min(...timesElegiveis.map(t => getQtdPosicao(t, pos)));
                         let timesMenosPos = timesElegiveis.filter(t => getQtdPosicao(t, pos) === minQtdPos);
 
@@ -895,54 +850,9 @@
             
             const btnSalvar = document.getElementById('btn-salvar-partida');
             btnSalvar.style.display = 'block';
-            btnSalvar.innerText = "💾 Salvar no Histórico";
+            btnSalvar.innerText = "💾 Salvar Súmula e Histórico";
             btnSalvar.disabled = false;
             btnSalvar.style.backgroundColor = "var(--primary)";
-        }
-
-        async function salvarPartidaHistorico() {
-            if(window.partidaSalva) return alert("Esta partida já foi salva no banco de dados!");
-            
-            const btn = document.getElementById('btn-salvar-partida');
-            btn.innerText = "Processando...";
-            btn.disabled = true;
-
-            try {
-                let convidadosPagantes = window.presentesParaSalvar.filter(j => j.tipo === 'Convidado' && j.pagou).length;
-                
-                const { data: partidaData, error: erroPartida } = await db
-                    .from('partidas')
-                    .insert([{ 
-                        quantidade_jogadores: window.presentesParaSalvar.length,
-                        renda_convidados: convidadosPagantes 
-                    }])
-                    .select();
-
-                if(erroPartida) throw erroPartida;
-
-                const partidaId = partidaData[0].id;
-
-                const presencasInsert = window.presentesParaSalvar.map(j => ({
-                    partida_id: partidaId,
-                    jogador_id: j.id,
-                    pagou: j.pagou || false
-                }));
-
-                const { error: erroPresencas } = await db
-                    .from('presencas')
-                    .insert(presencasInsert);
-
-                if(erroPresencas) throw erroPresencas;
-
-                window.partidaSalva = true;
-                btn.innerText = "✅ Salvo com Sucesso!";
-                btn.style.backgroundColor = "var(--supabase)";
-                
-            } catch(err) {
-                alert("Erro ao gravar histórico: " + err.message);
-                btn.innerText = "💾 Tentar Salvar Novamente";
-                btn.disabled = false;
-            }
         }
 
         function mostrarResultado(times, reservas, incluiGoleiros) {
@@ -1016,11 +926,8 @@
             const incluirGoleiros = document.getElementById('incluir-goleiros');
 
             modoSorteio.addEventListener('change', function() {
-                if (this.value === '12' || this.value === 'todos_sem_goleiro') {
-                    incluirGoleiros.checked = false;
-                } else if (this.value === '14' || this.value === 'todos') {
-                    incluirGoleiros.checked = true;
-                }
+                if (this.value === '12' || this.value === 'todos_sem_goleiro') incluirGoleiros.checked = false;
+                else if (this.value === '14' || this.value === 'todos') incluirGoleiros.checked = true;
             });
 
             incluirGoleiros.addEventListener('change', function() {
@@ -1032,8 +939,119 @@
                     else if (modoSorteio.value === 'todos_sem_goleiro') modoSorteio.value = 'todos';
                 }
             });
-
             modoSorteio.dispatchEvent(new Event('change'));
+        }
+
+        // ==========================================
+        // SISTEMA DE SÚMULA E GRAVAÇÃO DE PLACARES
+        // ==========================================
+        function abrirModalSumula() {
+            if(window.partidaSalva) return alert("A súmula desta rodada já foi registrada!");
+            
+            const container = document.getElementById('lista-confrontos');
+            container.innerHTML = '';
+            window.confrontos = [];
+            
+            // Agrupar os times de 2 em 2 para montar os confrontos no Pop-up
+            for(let i = 0; i < window.timesSorteados.length; i+=2) {
+                if(i + 1 < window.timesSorteados.length) {
+                    let corA = coresTimes[i % coresTimes.length];
+                    let emojiA = emojisTimes[i % emojisTimes.length];
+                    let corB = coresTimes[(i+1) % coresTimes.length];
+                    let emojiB = emojisTimes[(i+1) % emojisTimes.length];
+                    
+                    window.confrontos.push({ indexA: i, nomeA: corA, indexB: i+1, nomeB: corB });
+                    
+                    container.innerHTML += `
+                        <div class="confronto-row">
+                            <div class="time-a">${emojiA} ${corA}</div>
+                            <input type="number" min="0" id="gols_A_${i}" value="0" class="input-gols">
+                            <span class="versus">X</span>
+                            <input type="number" min="0" id="gols_B_${i}" value="0" class="input-gols">
+                            <div class="time-b">${corB} ${emojiB}</div>
+                        </div>
+                    `;
+                }
+            }
+            
+            if(window.confrontos.length === 0) {
+                alert("O sistema requer pelo menos 2 equipes completas para gerar um confronto na Súmula.");
+                return;
+            }
+            
+            document.getElementById('modal-sumula').style.display = 'flex';
+        }
+
+        function fecharModalSumula() {
+            document.getElementById('modal-sumula').style.display = 'none';
+        }
+
+        async function salvarPartidaComPlacares() {
+            const btn = document.getElementById('btn-confirmar-sumula');
+            btn.innerText = "Sincronizando Servidor...";
+            btn.disabled = true;
+
+            try {
+                // 1. Gravar a Partida
+                let convidadosPagantes = window.presentesParaSalvar.filter(j => j.tipo === 'Convidado' && j.pagou).length;
+                const { data: partidaData, error: erroPartida } = await db
+                    .from('partidas')
+                    .insert([{ quantidade_jogadores: window.presentesParaSalvar.length, renda_convidados: convidadosPagantes }])
+                    .select();
+
+                if(erroPartida) throw erroPartida;
+                const partidaId = partidaData[0].id;
+
+                // 2. Gravar as Presenças e a Cor do Time
+                let presencasInsert = [];
+                window.timesSorteados.forEach((time, indexTime) => {
+                    let corDoTime = coresTimes[indexTime % coresTimes.length];
+                    time.forEach(j => {
+                        presencasInsert.push({ partida_id: partidaId, jogador_id: j.id, pagou: j.pagou || false, equipe: corDoTime });
+                    });
+                });
+                
+                // Gravar os Reservas
+                window.reservasSorteados.forEach(j => {
+                    presencasInsert.push({ partida_id: partidaId, jogador_id: j.id, pagou: j.pagou || false, equipe: "Reserva" });
+                });
+
+                const { error: erroPresencas } = await db.from('presencas').insert(presencasInsert);
+                if(erroPresencas) throw erroPresencas;
+
+                // 3. Gravar os Placares (Súmula)
+                let jogosInsert = [];
+                window.confrontos.forEach(conf => {
+                    let golsA = parseInt(document.getElementById(`gols_A_${conf.indexA}`).value) || 0;
+                    let golsB = parseInt(document.getElementById(`gols_B_${conf.indexA}`).value) || 0;
+                    
+                    jogosInsert.push({
+                        partida_id: partidaId,
+                        equipe_a: conf.nomeA, gols_a: golsA,
+                        equipe_b: conf.nomeB, gols_b: golsB
+                    });
+                });
+
+                if (jogosInsert.length > 0) {
+                    const { error: erroJogos } = await db.from('jogos').insert(jogosInsert);
+                    if(erroJogos) throw erroJogos;
+                }
+
+                window.partidaSalva = true;
+                fecharModalSumula();
+                
+                const btnSalvarOriginal = document.getElementById('btn-salvar-partida');
+                btnSalvarOriginal.innerText = "✅ Súmula Gravada com Sucesso!";
+                btnSalvarOriginal.style.backgroundColor = "var(--supabase)";
+                btnSalvarOriginal.disabled = true;
+                
+                alert("Fantástico! Os times, as presenças e os placares foram registrados no banco de dados. As suas Estatísticas já estão sendo alimentadas.");
+
+            } catch(err) {
+                alert("Erro ao gravar Súmula no Servidor: " + err.message);
+                btn.innerText = "Confirmar e Gravar";
+                btn.disabled = false;
+            }
         }
     </script>
 </body>
