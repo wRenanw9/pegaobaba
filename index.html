@@ -361,7 +361,7 @@
     <script>
         let db;
         let jogadores = [];
-        let jogadorEdicaoId = null; // Variável para controlar a edição
+        let jogadorEdicaoId = null; 
 
         const coresTimes = ["Vermelho", "Azul", "Amarelo", "Verde", "Branco", "Preto", "Roxo", "Laranja"];
         const emojisTimes = ["🔴", "🔵", "🟡", "🟢", "⚪", "⚫", "🟣", "🟠"];
@@ -487,35 +487,29 @@
         function prepararEdicao(indexArray) {
             const j = jogadores[indexArray];
             
-            // Preenche o formulário com os dados
             document.getElementById('nome').value = j.nome;
             document.getElementById('tipo').value = j.tipo;
             document.getElementById('posicao').value = j.posicao;
             document.getElementById('nivel').value = j.nivel;
             
-            // Guarda o ID do jogador que está sendo editado
             jogadorEdicaoId = j.id;
             
-            // Atualiza a Interface
             document.getElementById('titulo-form').innerText = "Editando Jogador";
             document.getElementById('card-formulario').classList.add("editando");
             document.getElementById('btn-adicionar').innerText = "Salvar Alterações";
             document.getElementById('btn-cancelar-edicao').style.display = "block";
             
-            // Rola a tela para cima suavemente
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function cancelarEdicao() {
             jogadorEdicaoId = null;
             
-            // Limpa o formulário
             document.getElementById('nome').value = "";
             document.getElementById('tipo').value = "Mensalista";
             document.getElementById('posicao').value = "Meio-Campo";
             document.getElementById('nivel').value = "3";
             
-            // Restaura a Interface
             document.getElementById('titulo-form').innerText = "Adicionar Jogador";
             document.getElementById('card-formulario').classList.remove("editando");
             document.getElementById('btn-adicionar').innerText = "Incluir no Sistema";
@@ -531,14 +525,19 @@
 
             if (nome === "") return alert("Por favor, preencha o nome do atleta.");
 
+            // VALIDAÇÃO DE NOME DUPLICADO
+            const nomeExiste = jogadores.some(j => j.nome.toLowerCase() === nome.toLowerCase() && j.id !== jogadorEdicaoId);
+            if (nomeExiste) {
+                alert("⚠️ Este jogador já está cadastrado!\n\nPor favor, adicione um sobrenome ou apelido para diferenciá-lo.");
+                nomeInput.focus();
+                return;
+            }
+
             const btn = document.getElementById('btn-adicionar');
             btn.innerText = "Processando...";
             btn.disabled = true;
 
             if (jogadorEdicaoId) {
-                // ==========================
-                // MODO: ATUALIZAR EXISTENTE
-                // ==========================
                 const { error } = await db
                     .from('jogadores')
                     .update({ nome: nome, tipo: tipo, posicao: posicao, nivel: nivel })
@@ -548,7 +547,6 @@
                     alert("Erro ao salvar alterações: " + error.message);
                     btn.innerText = "Salvar Alterações";
                 } else {
-                    // Atualiza a lista na tela sem precisar recarregar
                     let jIndex = jogadores.findIndex(j => j.id === jogadorEdicaoId);
                     if (jIndex !== -1) {
                         jogadores[jIndex].nome = nome;
@@ -556,14 +554,11 @@
                         jogadores[jIndex].posicao = posicao;
                         jogadores[jIndex].nivel = nivel;
                     }
-                    cancelarEdicao(); // Limpa e volta ao estado normal
+                    cancelarEdicao(); 
                     atualizarListas();
                 }
 
             } else {
-                // ==========================
-                // MODO: CRIAR NOVO
-                // ==========================
                 const { data, error } = await db
                     .from('jogadores')
                     .insert([{ nome: nome, tipo: tipo, posicao: posicao, nivel: nivel }])
@@ -697,7 +692,7 @@
                         </div>
                         <div class="actions">
                             ${btnPix}
-                            <button class="btn-small btn-editar" onclick="prepararEdicao(${j.indexArray})">✏️</button>
+                            <!-- BOTÃO DE EDIÇÃO REMOVIDO DAQUI COMO SOLICITADO -->
                             <button class="btn-small btn-desmarcar" onclick="desmarcarPresenca(${j.indexArray})">Remover</button>
                         </div>
                     </li>
@@ -715,6 +710,7 @@
                         </div>
                         <div class="actions">
                             <button class="btn-small btn-chegou" onclick="marcarPresenca(${j.indexArray})">Presente</button>
+                            <!-- BOTÃO DE EDIÇÃO MANTIDO APENAS NO ELENCO -->
                             <button class="btn-small btn-editar" onclick="prepararEdicao(${j.indexArray})">Editar</button>
                             <button class="btn-small btn-excluir" onclick="removerJogador('${j.id}', ${j.indexArray})">Excluir</button>
                         </div>
@@ -810,24 +806,35 @@
             let tamanhoIdeal = incluiGoleiros ? 7 : 6;
             let tamanhoPartida = tamanhoIdeal * 2; 
 
-            if (!priorizarOrdem) {
-                let qtdTimesGlobais = Math.floor(titulares.length / tamanhoIdeal);
+            // SE NÃO PRIORIZAR ORDEM NO MODO "TODOS", JUNTA TODO MUNDO NUM ÚNICO LOTE
+            if (!priorizarOrdem && (modo === 'todos' || modo === 'todos_sem_goleiro')) {
+                let qtdTimesGlobais = Math.ceil(titulares.length / tamanhoIdeal);
+                if (qtdTimesGlobais < 2 && titulares.length >= 2) qtdTimesGlobais = 2; // Força no min 2 times
                 if (qtdTimesGlobais > 0) {
-                    tamanhoPartida = qtdTimesGlobais * tamanhoIdeal;
+                    tamanhoPartida = titulares.length;
                 }
             }
 
             for (let i = 0; i < titulares.length; i += tamanhoPartida) {
                 let chunk = titulares.slice(i, i + tamanhoPartida);
-                let numTimesNoChunk = Math.floor(chunk.length / tamanhoIdeal);
                 
-                if (numTimesNoChunk === 0) {
-                    reservas.push(...chunk);
-                    continue;
+                let numTimesNoChunk;
+                if (modo === '12' || modo === '14') {
+                    numTimesNoChunk = 2; // Modos fixos de 2 times forçam 2 equipes independentemente de faltar jogador
+                } else {
+                    if (!priorizarOrdem) {
+                        numTimesNoChunk = Math.ceil(titulares.length / tamanhoIdeal);
+                        if (numTimesNoChunk < 2) numTimesNoChunk = 2;
+                    } else {
+                        // Math.ceil garante que se sobrar jogadores (ex: time de 5), forma-se uma equipe normal ao invés de irem pra reserva
+                        numTimesNoChunk = Math.ceil(chunk.length / tamanhoIdeal);
+                    }
                 }
+                
+                if (numTimesNoChunk === 0) continue;
 
-                let jogadoresDoTime = chunk.slice(0, numTimesNoChunk * tamanhoIdeal);
-                reservas.push(...chunk.slice(numTimesNoChunk * tamanhoIdeal));
+                // Todos no lote são escalados, as sobras do Math.floor não existem mais
+                let jogadoresDoTime = chunk; 
 
                 let goleirosChunk = embaralhar(jogadoresDoTime.filter(j => j.posicao === 'Goleiro'));
                 let linhaChunk = embaralhar(jogadoresDoTime.filter(j => j.posicao !== 'Goleiro'));
