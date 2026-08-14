@@ -32,7 +32,7 @@
         .status-nuvem { font-size: 10px; font-weight: 600; color: white; background-color: var(--supabase); padding: 4px 8px; border-radius: 6px; }
         .btn-sair { background: transparent; color: var(--danger); border: 1px solid var(--danger); padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
 
-        /* NAVEGAÇÃO INFERIOR COM CORREÇÃO DE ALINHAMENTO */
+        /* NAVEGAÇÃO INFERIOR 100% CENTRALIZADA */
         .bottom-nav { 
             position: fixed; 
             bottom: 0; 
@@ -67,7 +67,6 @@
             margin: 0;
         }
 
-        /* Mantém o flex ativo mesmo nas abas controladas pelo modo público */
         .nav-item.hidden-public {
             display: flex !important;
         }
@@ -140,7 +139,7 @@
         .btn-acao-outline { background: transparent; border: 1px solid var(--border); color: var(--dark); }
         .btn-acao-outline:hover { background: var(--light); }
         .btn-presente { background: var(--supabase); color: white; border: 1px solid var(--supabase); }
-        .btn-pagou { background-color: var(--supabase); color: white; border: 1px solid var(--supabase); }
+        .btn-pagou { background: var(--supabase); color: white; border: 1px solid var(--supabase); }
         .btn-devendo { background-color: transparent; color: var(--danger); border: 1px solid var(--danger); }
 
         /* TIMES E EDIÇÃO DE NOMES */
@@ -1417,7 +1416,7 @@
             });
         }
 
-        // SALVAR TUDO NA NUVEM E GERAR CÓDIGO DO BABA
+        // SALVAR TUDO NA NUVEM, GERAR CÓDIGO E EXCLUIR CONVIDADOS AUTOMATICAMENTE
         async function salvarPartidaComPlacares() {
             if(window.partidaSalva) return alert("Esta rodada já foi salva no banco de dados!");
             
@@ -1466,9 +1465,15 @@
                 let jogosInsert = window.jogosDaRodada.map(j => ({ partida_id: pData[0].id, equipe_a: j.equipe_a_nome, gols_a: j.gols_a.length, equipe_b: j.equipe_b_nome, gols_b: j.gols_b.length }));
                 if (jogosInsert.length > 0) await db.from('jogos').insert(jogosInsert);
 
-                window.partidaSalva = true; btn.innerText = "✅ Baba Salvo!";
+                // EXCLUSÃO AUTOMÁTICA DE TODOS OS CONVIDADOS DA TABELA DE ELENCO APÓS SALVAR
+                await db.from('jogadores').delete().eq('tipo', 'Convidado');
+
+                window.partidaSalva = true; btn.innerText = "✅ Baba Salvo e Convidados Limpos!";
                 salvarEstadoCompleto();
                 
+                // Recarrega o elenco local atualizado sem os convidados
+                carregarElencoDaNuvem();
+
                 // GERAÇÃO DO LINK WHATSAPP
                 let linkCompartilhamento = `https://pegaobaba.vercel.app?code=${codigoAleatorio}`;
                 let textoWpp = encodeURIComponent(`🏆 *Acompanhe nosso Baba ao Vivo!*\n\nVeja a súmula, artilharia e classificação da rodada pelo link:\n\n${linkCompartilhamento}\n\n_(Código de acesso direto: ${codigoAleatorio})_`);
