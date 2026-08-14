@@ -313,6 +313,7 @@
         <div id="view-placares" class="page-view">
             <div class="card">
                 <h2>📝 Súmula de Jogo</h2>
+                <div id="data-rodada-label" style="font-size: 13px; color: var(--text-muted); text-align: center; margin-top: -10px; margin-bottom: 15px; font-weight: 600;"></div>
                 <p class="hidden-public" style="font-size: 13px; color: var(--text-muted); margin-top: -10px; margin-bottom: 20px; text-align:center;">
                     Registre o resultado. Em caso de empate, as duas equipes saem da quadra automaticamente.
                 </p>
@@ -558,6 +559,7 @@
         window.filaEquipes = []; 
         window.custosDaRodada = [];
         window.isModoPublico = false;
+        window.dataPartidaAtual = null;
         
         // Gols em Andamento
         window.golsTempA = []; 
@@ -590,6 +592,7 @@
                 filaEquipes: window.filaEquipes,
                 partidaSalva: window.partidaSalva,
                 custosDaRodada: window.custosDaRodada,
+                dataPartidaAtual: window.dataPartidaAtual,
                 valorMensalistaAtual: document.getElementById('valor-mensalista').value,
                 valorConvidadoAtual: document.getElementById('valor-convidado').value
             };
@@ -606,6 +609,7 @@
                 window.filaEquipes = state.filaEquipes || [];
                 window.partidaSalva = state.partidaSalva !== undefined ? state.partidaSalva : true;
                 window.custosDaRodada = state.custosDaRodada || [];
+                window.dataPartidaAtual = state.dataPartidaAtual || null;
                 
                 if (state.valorMensalistaAtual) document.getElementById('valor-mensalista').value = state.valorMensalistaAtual;
                 if (state.valorConvidadoAtual) document.getElementById('valor-convidado').value = state.valorConvidadoAtual;
@@ -617,6 +621,7 @@
         function limparEstadoRodada() {
             window.timesSorteadosObjs = []; window.reservasSorteados = []; window.jogosDaRodada = [];
             window.filaEquipes = []; window.custosDaRodada = []; window.golsTempA = []; window.golsTempB = [];
+            window.dataPartidaAtual = null;
             window.partidaSalva = true;
             localStorage.removeItem('baba_full_state');
         }
@@ -701,6 +706,12 @@
             window.custosDaRodada = partida.custos_json || [];
             if(partida.valor_por_convidado) document.getElementById('valor-convidado').value = partida.valor_por_convidado;
             if(partida.valor_por_mensalista) document.getElementById('valor-mensalista').value = partida.valor_por_mensalista;
+            
+            // Define data da partida pública com base no banco
+            if(partida.data_sorteio) {
+                let d = new Date(partida.data_sorteio);
+                window.dataPartidaAtual = d.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
+            }
             
             const { data: presencas } = await db.from('presencas').select('pagou, jogadores(tipo)').eq('partida_id', partida.id);
             if(presencas) {
@@ -965,6 +976,9 @@
             let modo = document.getElementById('modo-sorteio').value; let priorizarOrdem = document.getElementById('priorizar-ordem').checked;
             let incluiGoleiros = (modo === '14' || modo === 'todos'); 
             
+            // Define a data atual da partida no momento do sorteio
+            window.dataPartidaAtual = new Date().toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
+
             let jogadoresValidos = presentes; let reservas = [];
             if (!incluiGoleiros) { reservas.push(...presentes.filter(j => j.posicao === 'Goleiro')); jogadoresValidos = presentes.filter(j => j.posicao !== 'Goleiro'); }
 
@@ -980,7 +994,6 @@
                 if (qtdTimesGlobais > 0) tamanhoPartida = titulares.length;
             }
 
-            // Conversão de nível para número
             const getSomaNotas = (time) => time.reduce((acc, j) => acc + (Number(j.nivel) || 3), 0); 
             const getQtdPosicao = (time, pos) => time.filter(j => j.posicao === pos).length;
 
@@ -1057,21 +1070,32 @@
             if (document.getElementById('view-placares').classList.contains('active')) atualizarSelectsEquipes();
         }
 
-        // SÚMULA DINÂMICA
+        // SÚMULA DINÂMICA (PERMANECE ATIVA ATÉ O PRÓXIMO SORTEIO)
         function renderizarSumula() {
-            const container = document.getElementById('container-sumula'); const aviso = document.getElementById('aviso-sem-sorteio');
-            if(window.partidaSalva && window.jogosDaRodada.length === 0) {
-                container.style.display = 'none'; aviso.style.display = 'block'; return;
+            const container = document.getElementById('container-sumula'); 
+            const aviso = document.getElementById('aviso-sem-sorteio');
+            const dataLabel = document.getElementById('data-rodada-label');
+
+            if(!window.timesSorteadosObjs || window.timesSorteadosObjs.length === 0) {
+                container.style.display = 'none'; 
+                aviso.style.display = 'block'; 
+                if(dataLabel) dataLabel.innerText = "";
+                return;
             }
-            aviso.style.display = 'none'; container.style.display = 'block';
+
+            aviso.style.display = 'none'; 
+            container.style.display = 'block';
+
+            if(dataLabel) {
+                let dataExibicao = window.dataPartidaAtual || new Date().toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
+                dataLabel.innerText = `📅 Data da Rodada: ${dataExibicao}`;
+            }
             
-            if (window.jogosDaRodada.length === 0 && window.filaEquipes.length === 0) {
+            if (window.filaEquipes.length === 0) {
                 window.filaEquipes = window.timesSorteadosObjs.map(t => t.id); 
-                atualizarSelectsEquipes(); 
-            } else {
-                atualizarSelectsEquipes(); 
             }
             
+            atualizarSelectsEquipes();
             atualizarPlacarTempUI();
             atualizarListaJogosDaRodada();
         }
@@ -1471,7 +1495,6 @@
                 window.partidaSalva = true; btn.innerText = "✅ Baba Salvo e Convidados Limpos!";
                 salvarEstadoCompleto();
                 
-                // Recarrega o elenco local atualizado sem os convidados
                 carregarElencoDaNuvem();
 
                 // GERAÇÃO DO LINK WHATSAPP
