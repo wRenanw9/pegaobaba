@@ -32,7 +32,7 @@
         body {
             font-family: 'Inter', sans-serif; background-color: var(--light); color: var(--dark);
             max-width: 600px; margin: 0 auto; padding: 0; overflow-x: hidden; -webkit-font-smoothing: antialiased;
-            padding-bottom: calc(var(--nav-height) + 20px); /* Espaço para a barra inferior */
+            padding-bottom: calc(var(--nav-height) + 20px); 
         }
         
         h1, h2 { text-align: center; margin-bottom: 20px; }
@@ -42,13 +42,14 @@
 
         /* NAVEGAÇÃO SUPERIOR */
         .top-bar {
-            display: flex; justify-content: space-between; align-items: center;
+            display: flex; justify-content: center; align-items: center;
             padding: 15px 20px; background: white; border-bottom: 1px solid var(--border);
             position: sticky; top: 0; z-index: 100;
         }
-        .top-bar h1 { margin: 0; font-size: 20px; }
-        .btn-sair { background: transparent; color: var(--danger); border: 1px solid var(--danger); padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;}
-        .status-nuvem { text-align: center; font-size: 11px; font-weight: 600; color: white; background-color: var(--supabase); padding: 5px; }
+        .top-bar h1 { margin: 0; font-size: 20px; color: var(--primary); }
+        
+        /* STATUS DB (AGORA NA ABA CONTA) */
+        .status-nuvem { text-align: center; font-size: 13px; font-weight: 600; color: white; background-color: var(--supabase); padding: 10px; border-radius: 8px; margin-bottom: 20px; }
 
         /* NAVEGAÇÃO INFERIOR (ABAS) */
         .bottom-nav {
@@ -79,6 +80,21 @@
         
         button { padding: 14px; background-color: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; width: 100%; font-size: 15px; font-family: inherit; }
         button:disabled { background-color: #cbd5e1; cursor: not-allowed; }
+        
+        .btn-sortear { background-color: var(--dark); margin-top: 20px; font-size: 16px; padding: 16px; }
+        .btn-sortear:hover { background-color: #1e293b; }
+        
+        .btn-whatsapp { background-color: var(--whatsapp); flex: 1; margin: 0; display: none; }
+        .btn-whatsapp:hover { background-color: #1da851; }
+
+        .btn-salvar { background-color: var(--primary); flex: 1; margin: 0; display: none; }
+        .btn-salvar:hover { background-color: var(--primary-hover); }
+        
+        .btn-logout { background-color: var(--white); color: var(--danger); border: 1px solid var(--danger); }
+        .btn-logout:hover { background-color: var(--danger); color: var(--white); }
+
+        .btn-limpar { background-color: var(--light); color: var(--text-muted); border: 1px solid var(--border); margin-bottom: 15px; }
+        .btn-limpar:hover { background-color: #f1f5f9; color: var(--dark); }
         
         ul { list-style: none; padding: 0; margin: 0; }
         li { background: var(--light); margin: 8px 0; padding: 14px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; border: 1px solid var(--border); }
@@ -143,9 +159,7 @@
         
         <div class="top-bar">
             <h1>Sorteador Pro</h1>
-            <button class="btn-sair" onclick="fazerLogout()">Sair</button>
         </div>
-        <div class="status-nuvem" id="status-db">Aguardando conexão segura...</div>
 
         <!-- ABA 1: ELENCO (CADASTRO) -->
         <div id="view-elenco" class="page-view">
@@ -164,9 +178,9 @@
             </div>
 
             <div class="card">
-                <h2>Elenco Geral (<span id="total-ausentes">0</span>)</h2>
-                <p style="font-size: 13px; color: var(--text-muted); margin-top:-15px;">Marque "Presente" para enviar o jogador ao Sorteio.</p>
-                <ul id="lista-ausentes"></ul>
+                <h2>Elenco Geral (<span id="total-elenco">0</span>)</h2>
+                <p style="font-size: 13px; color: var(--text-muted); margin-top:-15px; text-align: center;">Gerencie e marque a presença de todos os seus atletas.</p>
+                <ul id="lista-todos"></ul>
             </div>
         </div>
 
@@ -179,17 +193,12 @@
                 
                 <div style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 20px;">
                     <label style="font-weight: 600; display: block; margin-bottom: 8px;">Modo de Sorteio:</label>
-                    <select id="modo-sorteio">
+                    <select id="modo-sorteio" style="margin-bottom: 10px;">
                         <option value="12">12 PRIMEIROS (2 times - Sem Goleiros)</option>
                         <option value="14">14 PRIMEIROS (2 times - Com Goleiros)</option>
                         <option value="todos_sem_goleiro">TODOS de linha (Múltiplos - Sem Goleiros)</option>
                         <option value="todos">TODOS (Múltiplos - Com Goleiros)</option>
                     </select>
-                    
-                    <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px; background: white; padding:10px; border-radius:8px; border:1px solid var(--border);">
-                        <input type="checkbox" id="incluir-goleiros" style="width:auto; margin:0;">
-                        <label for="incluir-goleiros" style="font-size:14px; font-weight:500;">Incluir Goleiros na distribuição</label>
-                    </div>
                     
                     <div style="display:flex; gap:10px; align-items:flex-start; background: white; padding:10px; border-radius:8px; border:1px solid var(--border);">
                         <input type="checkbox" id="priorizar-ordem" style="width:auto; margin-top:2px;">
@@ -215,7 +224,7 @@
             <div class="card">
                 <h2>📝 Súmula da Rodada</h2>
                 <p style="font-size: 14px; color: var(--text-muted); margin-top: -10px; margin-bottom: 20px; text-align:center;">
-                    Preencha os placares dos jogos gerados pelo sorteio atual para alimentar as Estatísticas.
+                    Preencha os placares dos confrontos para alimentar as Estatísticas do grupo.
                 </p>
                 
                 <div id="aviso-sem-sorteio" style="text-align: center; padding: 30px; color: var(--text-muted);">
@@ -258,6 +267,20 @@
             </div>
         </div>
 
+        <!-- ABA 5: CONTA -->
+        <div id="view-conta" class="page-view">
+            <div class="card">
+                <h2>⚙️ Gerenciamento de Conta</h2>
+                <div class="status-nuvem" id="status-db">Aguardando conexão segura...</div>
+                
+                <p style="text-align:center; color: var(--text-muted); font-size: 14px; margin-bottom: 20px; line-height: 1.5;">
+                    Seus dados estão sincronizados na nuvem e salvos de forma segura.<br>Use o botão abaixo para encerrar a sessão.
+                </p>
+                
+                <button class="btn-logout" onclick="fazerLogout()">Sair da Conta</button>
+            </div>
+        </div>
+
         <!-- BARRA DE NAVEGAÇÃO INFERIOR -->
         <nav class="bottom-nav">
             <div class="nav-item" onclick="mudarAba('view-elenco')" id="nav-elenco">
@@ -276,6 +299,10 @@
                 <span class="nav-icon">📊</span>
                 <span>Painel</span>
             </div>
+            <div class="nav-item" onclick="mudarAba('view-conta')" id="nav-conta">
+                <span class="nav-icon">⚙️</span>
+                <span>Conta</span>
+            </div>
         </nav>
 
     </div>
@@ -289,7 +316,7 @@
         const emojisTimes = ["🔴", "🔵", "🟡", "🟢", "⚪", "⚫", "🟣", "🟠"];
 
         window.presentesParaSalvar = [];
-        window.partidaSalva = true; // Começa como true para evitar tela de súmula vazia
+        window.partidaSalva = true; 
         window.confrontos = [];
 
         window.onload = async function() {
@@ -342,17 +369,35 @@
         }
 
         async function fazerLogout() { await db.auth.signOut(); mostrarLogin(); }
-        function mostrarApp() { document.getElementById('auth-container').style.display = 'none'; document.getElementById('app-container').style.display = 'block'; carregarElencoDaNuvem(); configurarFiltros(); }
-        function mostrarLogin() { document.getElementById('auth-container').style.display = 'block'; document.getElementById('app-container').style.display = 'none'; }
+        
+        function mostrarApp() { 
+            document.getElementById('auth-container').style.display = 'none'; 
+            document.getElementById('app-container').style.display = 'block'; 
+            carregarElencoDaNuvem(); 
+        }
+        
+        function mostrarLogin() { 
+            document.getElementById('auth-container').style.display = 'block'; 
+            document.getElementById('app-container').style.display = 'none'; 
+        }
 
         // SINCRONIZAÇÃO NUVEM
         async function carregarElencoDaNuvem() {
-            document.getElementById('status-db').innerText = "Sincronizando..."; document.getElementById('status-db').style.backgroundColor = "var(--warning)";
+            document.getElementById('status-db').innerText = "Sincronizando com o servidor..."; 
+            document.getElementById('status-db').style.backgroundColor = "var(--warning)";
+            
             const { data, error } = await db.from('jogadores').select('*').order('nome', { ascending: true }); 
-            if (error) { document.getElementById('status-db').innerText = "Falha na conexão."; document.getElementById('status-db').style.backgroundColor = "var(--danger)"; return; }
+            if (error) { 
+                document.getElementById('status-db').innerText = "Falha na conexão."; 
+                document.getElementById('status-db').style.backgroundColor = "var(--danger)"; 
+                return; 
+            }
+            
             let estadoLocal = JSON.parse(localStorage.getItem('baba_presencas_temp')) || {};
             jogadores = data.map(j => ({ ...j, presente: estadoLocal[j.id]?.presente || false, ordemChegada: estadoLocal[j.id]?.ordemChegada || 0, pagou: estadoLocal[j.id]?.pagou || false }));
-            document.getElementById('status-db').innerText = "Sincronizado"; document.getElementById('status-db').style.backgroundColor = "var(--supabase)";
+            
+            document.getElementById('status-db').innerText = "Sincronizado na Nuvem"; 
+            document.getElementById('status-db').style.backgroundColor = "var(--supabase)";
             atualizarListas();
         }
 
@@ -428,29 +473,64 @@
         }
 
         function atualizarListas() {
-            const listaPresentes = document.getElementById('lista-presentes'); const listaAusentes = document.getElementById('lista-ausentes');
-            listaPresentes.innerHTML = ""; listaAusentes.innerHTML = "";
-            let ausentes = []; let presentes = [];
+            const listaTodos = document.getElementById('lista-todos');
+            const listaPresentes = document.getElementById('lista-presentes');
+            
+            listaTodos.innerHTML = "";
+            listaPresentes.innerHTML = "";
 
-            jogadores.forEach((j, index) => { if (j.presente) presentes.push({ ...j, indexArray: index }); else ausentes.push({ ...j, indexArray: index }); });
-            presentes.sort((a, b) => { if (a.tipo === 'Mensalista' && b.tipo !== 'Mensalista') return -1; if (a.tipo !== 'Mensalista' && b.tipo === 'Mensalista') return 1; return a.ordemChegada - b.ordemChegada; });
+            let presentes = [];
+            
+            // 1. Renderiza ABA ELENCO (Todos ordenados alfabeticamente)
+            let todosOrdenados = [...jogadores].sort((a, b) => a.nome.localeCompare(b.nome));
+            
+            todosOrdenados.forEach((j) => {
+                let indexArray = jogadores.findIndex(jog => jog.id === j.id);
+                let tagConvidado = j.tipo === 'Convidado' ? '<span class="badge badge-convidado">C</span>' : '';
+                let tagPosicao = (j.posicao !== 'Goleiro' && j.posicao !== 'Linha') ? `<span class="badge badge-posicao">${j.posicao}</span>` : '';
+                let badgeStatus = j.presente ? '<span class="badge" style="background-color: var(--supabase);">✅ Em Campo</span>' : '';
+                
+                let btnAcao = j.presente 
+                    ? `<button class="btn-small btn-desmarcar" onclick="desmarcarPresenca(${indexArray})">Retirar</button>`
+                    : `<button class="btn-small btn-chegou" onclick="marcarPresenca(${indexArray})">Presente</button>`;
+
+                listaTodos.innerHTML += `<li>
+                    <div class="info-jogador">${tagConvidado} <strong>${j.nome}</strong> ${tagPosicao} <small>(Nv ${j.nivel})</small> ${badgeStatus}</div>
+                    <div class="actions">
+                        ${btnAcao}
+                        <button class="btn-small btn-editar" onclick="prepararEdicao(${indexArray})">Editar</button>
+                        <button class="btn-small btn-excluir" onclick="removerJogador('${j.id}', ${indexArray})">X</button>
+                    </div>
+                </li>`;
+            });
+
+            // 2. Renderiza ABA SORTEIO (Apenas presentes, ordem de chegada)
+            jogadores.forEach((j, index) => {
+                if (j.presente) presentes.push({ ...j, indexArray: index });
+            });
+
+            presentes.sort((a, b) => {
+                if (a.tipo === 'Mensalista' && b.tipo !== 'Mensalista') return -1;
+                if (a.tipo !== 'Mensalista' && b.tipo === 'Mensalista') return 1;
+                return a.ordemChegada - b.ordemChegada;
+            });
 
             presentes.forEach((j, pos) => {
-                let btnPix = j.tipo === 'Convidado' ? (j.pagou ? `<button class="btn-small btn-pagou" onclick="alternarPagamento(${j.indexArray})">Pago</button>` : `<button class="btn-small btn-devendo" onclick="alternarPagamento(${j.indexArray})">Pendente</button>`) : '';
+                let tagConvidado = j.tipo === 'Convidado' ? '<span class="badge badge-convidado">C</span>' : '';
+                let tagPosicao = (j.posicao !== 'Goleiro' && j.posicao !== 'Linha') ? `<span class="badge badge-posicao">${j.posicao}</span>` : '';
+                let btnPix = '';
+                if(j.tipo === 'Convidado') {
+                    if(j.pagou) btnPix = `<button class="btn-small btn-pagou" onclick="alternarPagamento(${j.indexArray})">Pago</button>`;
+                    else btnPix = `<button class="btn-small btn-devendo" onclick="alternarPagamento(${j.indexArray})">Pendente</button>`;
+                }
                 listaPresentes.innerHTML += `<li>
-                    <div class="info-jogador"><span class="badge">${pos + 1}º</span> ${j.tipo==='Convidado'?'<span class="badge badge-convidado">C</span>':''} <strong>${j.nome}</strong> ${j.posicao!=='Linha'?`<span class="badge badge-posicao">${j.posicao}</span>`:''}</div>
+                    <div class="info-jogador"><span class="badge">${pos + 1}º</span> ${tagConvidado} <strong>${j.nome}</strong> ${tagPosicao} <small>(Nv ${j.nivel})</small></div>
                     <div class="actions">${btnPix} <button class="btn-small btn-desmarcar" onclick="desmarcarPresenca(${j.indexArray})">Retirar</button></div>
                 </li>`;
             });
 
-            ausentes.forEach(j => {
-                listaAusentes.innerHTML += `<li>
-                    <div class="info-jogador">${j.tipo==='Convidado'?'<span class="badge badge-convidado">C</span>':''} <strong>${j.nome}</strong> ${j.posicao!=='Linha'?`<span class="badge badge-posicao">${j.posicao}</span>`:''}</div>
-                    <div class="actions"><button class="btn-small btn-chegou" onclick="marcarPresenca(${j.indexArray})">Presente</button> <button class="btn-small btn-editar" onclick="prepararEdicao(${j.indexArray})">Editar</button> <button class="btn-small btn-excluir" onclick="removerJogador('${j.id}', ${j.indexArray})">X</button></div>
-                </li>`;
-            });
-
-            document.getElementById('total-presentes').innerText = presentes.length; document.getElementById('total-ausentes').innerText = ausentes.length;
+            document.getElementById('total-presentes').innerText = presentes.length;
+            document.getElementById('total-elenco').innerText = jogadores.length;
             document.getElementById('btn-zerar').style.display = presentes.length > 0 ? "block" : "none";
         }
 
@@ -459,7 +539,7 @@
 
         function iniciarSorteioComSuspense() {
             let presentes = jogadores.filter(j => j.presente).sort((a, b) => { if (a.tipo === 'Mensalista' && b.tipo !== 'Mensalista') return -1; if (a.tipo !== 'Mensalista' && b.tipo === 'Mensalista') return 1; return a.ordemChegada - b.ordemChegada; });
-            if (presentes.length < 2) return alert("Confirme presença de pelo menos 2 atletas.");
+            if (presentes.length < 2) return alert("Confirme presença de pelo menos 2 atletas na aba Elenco.");
             
             document.getElementById('btn-wpp').style.display = 'none'; document.getElementById('btn-ir-placares').style.display = 'none';
             const resultado = document.getElementById('resultado');
@@ -474,7 +554,11 @@
 
         function sortearTimes(presentesBrutos) {
             let presentes = presentesBrutos.filter(j => j.tipo === 'Mensalista' || (j.tipo === 'Convidado' && j.pagou));
-            let modo = document.getElementById('modo-sorteio').value; let incluiGoleiros = document.getElementById('incluir-goleiros').checked; let priorizarOrdem = document.getElementById('priorizar-ordem').checked;
+            let modo = document.getElementById('modo-sorteio').value; 
+            let priorizarOrdem = document.getElementById('priorizar-ordem').checked;
+            
+            // A inteligência agora puxa se inclui goleiros através do dropdown selecionado
+            let incluiGoleiros = (modo === '14' || modo === 'todos');
             
             let jogadoresValidos = presentes; let reservas = [];
             if (!incluiGoleiros) { reservas.push(...presentes.filter(j => j.posicao === 'Goleiro')); jogadoresValidos = presentes.filter(j => j.posicao !== 'Goleiro'); }
@@ -588,7 +672,7 @@
                 if (jogosInsert.length > 0) await db.from('jogos').insert(jogosInsert);
 
                 window.partidaSalva = true; btn.innerText = "✅ Súmula Gravada!";
-                setTimeout(() => mudarAba('view-estatisticas'), 1500); // Vai pras estatisticas automatico
+                setTimeout(() => mudarAba('view-estatisticas'), 1500); 
             } catch(err) { alert("Erro: " + err.message); btn.innerText = "Tentar Novamente"; btn.disabled = false; }
         }
 
@@ -597,12 +681,12 @@
             document.getElementById('stat-partidas').innerText = "...";
             document.getElementById('stat-arrecadacao').innerText = "...";
             
-            // 1. Partidas e Renda (Simples)
+            // 1. Partidas e Renda 
             const { data: partidas } = await db.from('partidas').select('*');
             if(partidas) {
                 document.getElementById('stat-partidas').innerText = partidas.length;
                 let rendaPix = partidas.reduce((acc, p) => acc + (p.renda_convidados || 0), 0);
-                document.getElementById('stat-arrecadacao').innerText = rendaPix + " pagantes"; // Você pode multiplicar por R$ aqui
+                document.getElementById('stat-arrecadacao').innerText = rendaPix + " pagantes";
             }
 
             // 2. Ranking de Presença
@@ -615,7 +699,7 @@
                         contagem[n] = (contagem[n] || 0) + 1;
                     }
                 });
-                let ranking = Object.entries(contagem).sort((a, b) => b[1] - a[1]).slice(0, 5); // Top 5
+                let ranking = Object.entries(contagem).sort((a, b) => b[1] - a[1]).slice(0, 5);
                 
                 let htmlPresencas = "";
                 ranking.forEach((r, idx) => {
@@ -644,7 +728,6 @@
             }
         }
 
-        // Export WPP (Simplificado)
         function exportarWhatsApp() {
             let texto = "📋 *RELAÇÃO DE EQUIPES* 📋\n\n";
             window.timesSorteados.forEach((time, index) => {
@@ -652,12 +735,6 @@
                 time.forEach(j => texto += `• ${j.nome}\n`); texto += `\n`;
             });
             navigator.clipboard.writeText(texto).then(() => alert("Copiado!")).catch(() => alert("Falha ao copiar."));
-        }
-
-        function configurarFiltros() {
-            const m = document.getElementById('modo-sorteio'); const g = document.getElementById('incluir-goleiros');
-            m.addEventListener('change', () => { g.checked = m.value === '14' || m.value === 'todos'; });
-            g.addEventListener('change', () => { if(!g.checked && m.value==='14') m.value='12'; else if(!g.checked && m.value==='todos') m.value='todos_sem_goleiro'; });
         }
     </script>
 </body>
