@@ -2,18 +2,13 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Sorteador Pro | Gestão Esportiva</title>
     
-    <!-- Importação de Fonte Moderna (Inter) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Biblioteca do Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    <!-- ARQUIVO DE CONFIGURAÇÃO EXTERNO -->
     <script src="config.js"></script>
 
     <style>
@@ -31,379 +26,258 @@
             --supabase: #10b981; 
             --pos-color: #64748b;
             --border: #e2e8f0;
+            --nav-height: 65px;
         }
         
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--light);
-            color: var(--dark);
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px 15px;
-            overflow-x: hidden;
-            -webkit-font-smoothing: antialiased;
+            font-family: 'Inter', sans-serif; background-color: var(--light); color: var(--dark);
+            max-width: 600px; margin: 0 auto; padding: 0; overflow-x: hidden; -webkit-font-smoothing: antialiased;
+            padding-bottom: calc(var(--nav-height) + 20px); /* Espaço para a barra inferior */
         }
         
-        h1 { 
-            text-align: center; 
-            font-weight: 700; 
-            letter-spacing: -0.02em;
-            color: var(--dark);
-            margin-bottom: 5px;
-        }
-        
-        h2 { 
-            text-align: center; 
-            font-size: 18px; 
-            font-weight: 600;
-            margin-bottom: 20px;
-        }
+        h1, h2 { text-align: center; margin-bottom: 20px; }
+        h1 { font-weight: 700; letter-spacing: -0.02em; margin-top: 20px; }
+        h2 { font-size: 18px; font-weight: 600; }
+        .subtitle { text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 30px; margin-top: -15px;}
 
-        .subtitle {
-            text-align: center;
-            color: var(--text-muted);
-            font-size: 14px;
-            margin-bottom: 30px;
+        /* NAVEGAÇÃO SUPERIOR */
+        .top-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 20px; background: white; border-bottom: 1px solid var(--border);
+            position: sticky; top: 0; z-index: 100;
         }
+        .top-bar h1 { margin: 0; font-size: 20px; }
+        .btn-sair { background: transparent; color: var(--danger); border: 1px solid var(--danger); padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;}
+        .status-nuvem { text-align: center; font-size: 11px; font-weight: 600; color: white; background-color: var(--supabase); padding: 5px; }
 
-        .cabecalho-app {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
+        /* NAVEGAÇÃO INFERIOR (ABAS) */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; right: 0; background: white;
+            display: flex; justify-content: space-around; align-items: center;
+            height: var(--nav-height); border-top: 1px solid var(--border); z-index: 1000;
+            max-width: 600px; margin: 0 auto; box-shadow: 0 -4px 6px -1px rgba(0,0,0,0.05);
         }
-        
-        .cabecalho-app h1 { margin: 0; font-size: 24px; }
-        
-        .btn-sair {
-            background-color: white;
-            color: var(--text-muted);
-            border: 1px solid var(--border);
-            padding: 8px 12px;
-            font-size: 14px;
-            width: auto;
-            border-radius: 6px;
+        .nav-item {
+            flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            color: var(--text-muted); text-decoration: none; font-size: 11px; font-weight: 600;
+            cursor: pointer; height: 100%; transition: all 0.2s;
         }
-        .btn-sair:hover { background-color: var(--light); color: var(--danger); border-color: var(--danger); }
+        .nav-item.active { color: var(--primary); }
+        .nav-icon { font-size: 20px; margin-bottom: 3px; }
+        
+        /* TELAS (VIEWS) */
+        .page-view { display: none; padding: 20px; animation: fadeIn 0.3s ease-out; }
+        .page-view.active { display: block; }
 
-        .status-nuvem {
-            text-align: center;
-            font-size: 12px;
-            font-weight: 600;
-            color: white;
-            background-color: var(--supabase);
-            padding: 8px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-        }
-
-        .card {
-            background: var(--white);
-            padding: 24px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            margin-bottom: 24px;
-            box-sizing: border-box;
-            width: 100%;
-            border: 1px solid var(--border);
-            transition: border-color 0.3s ease;
-        }
-        
-        /* Highlight form when editing */
+        /* COMPONENTES GERAIS */
+        .card { background: var(--white); padding: 20px; border-radius: 12px; box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.05); margin-bottom: 20px; border: 1px solid var(--border); transition: border-color 0.3s ease;}
         .card.editando { border-color: var(--warning); box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1); }
         
-        /* AUTH LAYOUT */
-        #auth-container { margin-top: 40px; }
-        .auth-input {
-            width: 100%;
-            padding: 14px;
-            margin-bottom: 12px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            box-sizing: border-box;
-            font-size: 15px;
-            transition: all 0.2s;
-            font-family: inherit;
-        }
-        .auth-input:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
-        }
+        input, select { width: 100%; padding: 14px; margin-bottom: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; box-sizing: border-box; font-family: inherit; }
+        input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15); }
+        .linha-selects { display: flex; gap: 10px; margin-bottom: 5px;}
         
-        .btn-login { background-color: var(--primary); margin-bottom: 12px; }
-        .btn-register { background-color: var(--white); color: var(--dark); border: 1px solid var(--border); }
-        .btn-register:hover { background-color: var(--light); }
-        .auth-msg { margin-top: 15px; font-size: 14px; font-weight: 500; text-align: center; line-height: 1.4; }
-
-        /* APP LAYOUT */
-        .linha-nome { width: 100%; margin-bottom: 12px; }
-        .linha-nome input {
-            width: 100%; padding: 14px; border: 1px solid var(--border);
-            border-radius: 8px; font-size: 15px; box-sizing: border-box;
-            font-family: inherit; transition: all 0.2s;
-        }
-        .linha-nome input:focus {
-            outline: none; border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
-        }
-        
-        .linha-selects {
-            display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; width: 100%;
-        }
-        .linha-selects select {
-            flex: 1; min-width: 90px; padding: 12px; border: 1px solid var(--border);
-            border-radius: 8px; font-size: 14px; box-sizing: border-box;
-            background-color: var(--white); font-family: inherit; cursor: pointer;
-        }
-
-        button {
-            padding: 14px; background-color: var(--primary); color: white;
-            border: none; border-radius: 8px; cursor: pointer;
-            font-weight: 600; width: 100%; font-size: 15px;
-            transition: all 0.2s ease; font-family: inherit;
-        }
-        button:hover { background-color: var(--primary-hover); transform: translateY(-1px); }
-        button:disabled { background-color: #cbd5e1; cursor: not-allowed; transform: none; }
-        
-        .btn-sortear { background-color: var(--dark); margin-top: 20px; font-size: 16px; padding: 16px; }
-        .btn-sortear:hover { background-color: #1e293b; }
-        
-        .btn-whatsapp { background-color: var(--whatsapp); flex: 1; margin: 0; display: none; }
-        .btn-whatsapp:hover { background-color: #1da851; }
-
-        .btn-salvar { background-color: var(--primary); flex: 1; margin: 0; display: none; }
-        .btn-salvar:hover { background-color: var(--primary-hover); }
-        
-        .btn-limpar { background-color: var(--light); color: var(--text-muted); border: 1px solid var(--border); margin-bottom: 15px; }
-        .btn-limpar:hover { background-color: #f1f5f9; color: var(--dark); }
+        button { padding: 14px; background-color: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; width: 100%; font-size: 15px; font-family: inherit; }
+        button:disabled { background-color: #cbd5e1; cursor: not-allowed; }
         
         ul { list-style: none; padding: 0; margin: 0; }
-        li {
-            background: var(--light); margin: 8px 0; padding: 14px; border-radius: 8px;
-            display: flex; justify-content: space-between; align-items: center;
-            flex-wrap: wrap; gap: 10px; border: 1px solid var(--border);
-        }
-        
+        li { background: var(--light); margin: 8px 0; padding: 14px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; border: 1px solid var(--border); }
         .info-jogador { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: 15px; }
         .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
         
         .btn-small { width: auto; padding: 6px 12px; font-size: 13px; border-radius: 6px; }
-        .btn-chegou { background-color: var(--primary); }
-        .btn-editar { background-color: transparent; color: var(--primary); border: 1px solid var(--primary); }
-        .btn-editar:hover { background-color: var(--primary); color: white; }
-        .btn-desmarcar { background-color: var(--white); color: var(--dark); border: 1px solid var(--border); }
-        .btn-excluir { background-color: transparent; color: var(--danger); border: 1px solid var(--danger); }
-        .btn-excluir:hover { background-color: var(--danger); color: white; }
+        .btn-editar { background: transparent; color: var(--primary); border: 1px solid var(--primary); }
+        .btn-desmarcar { background: white; color: var(--dark); border: 1px solid var(--border); }
+        .btn-excluir { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
         .btn-pagou { background-color: var(--primary); }
         .btn-devendo { background-color: var(--danger); }
 
-        .badge {
-            background-color: var(--dark); color: white; padding: 4px 8px;
-            border-radius: 12px; font-size: 11px; font-weight: 600; margin-right: 4px;
-        }
+        .badge { background-color: var(--dark); color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;}
         .badge-posicao { background-color: var(--pos-color); font-weight: 500; }
         .badge-convidado { background-color: var(--purple); }
 
-        .team-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
-        .team {
-            background: white; padding: 20px; border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); 
-            border-top: 5px solid var(--primary);
-            border-left: 1px solid var(--border);
-            border-right: 1px solid var(--border);
-            border-bottom: 1px solid var(--border);
-            animation: fadeIn 0.4s ease-out;
-        }
-        .team h3 { margin-top: 0; font-size: 16px; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 12px; }
-        .team li { border: none; padding: 8px 0; background: transparent; border-bottom: 1px dashed var(--border); border-radius: 0; }
+        .team-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-top:20px; }
+        .team { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-top: 5px solid var(--primary); border-left: 1px solid var(--border); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+        .team h3 { margin-top: 0; font-size: 16px; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 10px; }
+        .team li { border: none; padding: 6px 0; background: transparent; border-bottom: 1px dashed var(--border); border-radius: 0; margin:0;}
         .team li:last-child { border-bottom: none; }
         .team-reservas { border-top-color: var(--danger); }
-        
-        .checkbox-group {
-            display: flex; align-items: flex-start; gap: 10px; margin-top: 12px;
-            font-weight: 500; flex-wrap: wrap; background: #f8fafc;
-            padding: 12px; border-radius: 8px; border: 1px solid var(--border);
-        }
-        .checkbox-group input { width: 18px; height: 18px; margin-top: 2px; cursor: pointer; accent-color: var(--primary); }
-        .checkbox-group label { cursor: pointer; font-size: 14px; line-height: 1.4; color: var(--dark); }
 
-        .animacao-suspense {
-            text-align: center; padding: 40px 20px; background: white;
-            border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            font-size: 20px; font-weight: 600; color: var(--primary);
-            border: 1px solid var(--border);
-        }
-
-        .botoes-finais {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-            flex-wrap: wrap;
-        }
-
-        /* ESTILOS DA SÚMULA (MODAL) */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(15, 23, 42, 0.7);
-            display: flex; justify-content: center; align-items: center;
-            z-index: 1000; padding: 20px;
-            backdrop-filter: blur(4px);
-        }
-        .modal-content {
-            background: white; padding: 24px; border-radius: 12px; width: 100%; max-width: 450px;
-            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
-            animation: fadeIn 0.3s ease-out;
-        }
-        .modal-content h2 { margin-top: 0; color: var(--dark); font-size: 20px; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 20px; }
-        .confronto-row {
-            display: flex; justify-content: space-between; align-items: center;
-            background: var(--light); padding: 15px 10px; border-radius: 8px; margin-bottom: 12px;
-            border: 1px solid var(--border);
-        }
-        .input-gols {
-            width: 55px; text-align: center; padding: 10px 5px; font-size: 18px; font-weight: 700;
-            border: 2px solid var(--border); border-radius: 8px; color: var(--dark);
-        }
-        .input-gols:focus { outline: none; border-color: var(--primary); }
-        .time-a, .time-b { flex: 1; font-weight: 600; font-size: 14px; }
+        /* SÚMULA */
+        .confronto-row { display: flex; justify-content: space-between; align-items: center; background: var(--light); padding: 15px 10px; border-radius: 8px; margin-bottom: 12px; border: 1px solid var(--border); }
+        .input-gols { width: 55px; text-align: center; padding: 10px 5px; font-size: 18px; font-weight: 700; border: 2px solid var(--border); margin: 0; }
+        .time-a, .time-b { flex: 1; font-weight: 600; font-size: 13px; line-height: 1.2;}
         .time-a { text-align: right; margin-right: 10px; }
         .time-b { text-align: left; margin-left: 10px; }
-        .versus { font-weight: 700; color: var(--text-muted); font-size: 12px; background: white; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border); margin: 0 5px; }
-        .modal-actions { display: flex; gap: 10px; margin-top: 25px; }
-        .btn-cancelar-modal { background-color: white; color: var(--dark); border: 1px solid var(--border); }
-        .btn-cancelar-modal:hover { background-color: var(--light); }
+        
+        /* ESTATÍSTICAS */
+        .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .dash-card { background: white; padding: 20px; border-radius: 12px; border: 1px solid var(--border); text-align: center; }
+        .dash-valor { font-size: 28px; font-weight: 700; color: var(--primary); margin: 5px 0;}
+        .dash-titulo { font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
+        .tabela-stats { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .tabela-stats th { text-align: left; padding: 10px; border-bottom: 2px solid var(--border); color: var(--text-muted); }
+        .tabela-stats td { padding: 12px 10px; border-bottom: 1px solid var(--border); font-weight: 500; }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
     
     <!-- TELA DE LOGIN / CADASTRO -->
-    <div id="auth-container">
+    <div id="auth-container" style="padding: 20px;">
         <h1>Sorteador Pro</h1>
         <p class="subtitle">Plataforma Profissional de Gestão de Elencos</p>
-        
         <div class="card">
             <h2>Acesso do Organizador</h2>
-            <input type="email" id="auth-email" class="auth-input" placeholder="Seu E-mail Profissional">
-            <input type="password" id="auth-password" class="auth-input" placeholder="Sua Senha Segura">
-            
-            <button class="btn-login" onclick="fazerLogin()">Acessar Painel</button>
-            <button class="btn-register" onclick="criarConta()">Criar Nova Conta</button>
-            
-            <div id="auth-msg" class="auth-msg"></div>
+            <input type="email" id="auth-email" placeholder="Seu E-mail Profissional">
+            <input type="password" id="auth-password" placeholder="Sua Senha Segura">
+            <button onclick="fazerLogin()" style="margin-bottom: 10px;">Acessar Painel</button>
+            <button onclick="criarConta()" style="background: white; color: var(--dark); border: 1px solid var(--border);">Criar Nova Conta</button>
+            <div id="auth-msg" style="margin-top: 15px; font-size: 14px; text-align: center;"></div>
         </div>
     </div>
 
-    <!-- APLICATIVO PRINCIPAL (Escondido até fazer login) -->
+    <!-- APLICATIVO PRINCIPAL -->
     <div id="app-container" style="display: none;">
         
-        <div class="cabecalho-app">
+        <div class="top-bar">
             <h1>Sorteador Pro</h1>
-            <button class="btn-sair" onclick="fazerLogout()">Sair da Conta</button>
+            <button class="btn-sair" onclick="fazerLogout()">Sair</button>
         </div>
-        
         <div class="status-nuvem" id="status-db">Aguardando conexão segura...</div>
 
-        <!-- Formulário de Cadastro e Edição -->
-        <div class="card" id="card-formulario">
-            <h2 id="titulo-form">Adicionar Jogador</h2>
-            <div class="linha-nome">
+        <!-- ABA 1: ELENCO (CADASTRO) -->
+        <div id="view-elenco" class="page-view">
+            <div class="card" id="card-formulario">
+                <h2 id="titulo-form">Adicionar ao Elenco</h2>
                 <input type="text" id="nome" placeholder="Nome Completo ou Apelido" autocomplete="off">
-            </div>
-            <div class="linha-selects">
-                <select id="tipo">
-                    <option value="Mensalista">Mensalista</option>
-                    <option value="Convidado">Convidado</option>
-                </select>
-                <select id="posicao">
-                    <option value="Atacante">Atacante</option>
-                    <option value="Meio-Campo" selected>Meio-Campo</option>
-                    <option value="Lateral">Lateral</option>
-                    <option value="Zagueiro">Zagueiro</option>
-                    <option value="Goleiro">Goleiro</option>
-                </select>
-                <select id="nivel">
-                    <option value="5">Craque (5)</option>
-                    <option value="4">Bom (4)</option>
-                    <option value="3" selected>Médio (3)</option>
-                    <option value="2">Iniciante (2)</option>
-                    <option value="1">Perna (1)</option>
-                </select>
-            </div>
-            
-            <div style="display: flex; gap: 10px;">
-                <button id="btn-adicionar" onclick="adicionarJogador()">Incluir no Sistema</button>
-                <button id="btn-cancelar-edicao" onclick="cancelarEdicao()" style="display: none; background-color: var(--text-muted);">Cancelar</button>
-            </div>
-        </div>
-
-        <!-- Lista de Presença -->
-        <div class="card" style="border: 2px solid var(--primary); background-color: #f8fafc;">
-            <h2>Chegaram Hoje (<span id="total-presentes">0</span>)</h2>
-            <button class="btn-limpar" onclick="zerarPresencas()" id="btn-zerar" style="display: none;">Zerar Lista de Presença</button>
-            <ul id="lista-presentes"></ul>
-            
-            <div class="form-group" style="margin-top: 24px; border-top: 1px solid var(--border); padding-top: 20px;">
-                <label style="width: 100%; font-weight: 600; display: block; margin-bottom: 8px;">Configurações do Sorteio:</label>
-                <select id="modo-sorteio" style="width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 1px solid var(--border); font-family: inherit; font-size: 14px; cursor: pointer;">
-                    <option value="12">12 PRIMEIROS (2 times - Sem Goleiros)</option>
-                    <option value="14">14 PRIMEIROS (2 times - Com Goleiros)</option>
-                    <option value="todos_sem_goleiro">TODOS de linha (Múltiplos - Sem Goleiros)</option>
-                    <option value="todos">TODOS (Múltiplos - Com Goleiros)</option>
-                </select>
-                
-                <div class="checkbox-group">
-                    <input type="checkbox" id="incluir-goleiros">
-                    <label for="incluir-goleiros">Incluir Goleiros na distribuição</label>
+                <div class="linha-selects">
+                    <select id="tipo"><option value="Mensalista">Mensalista</option><option value="Convidado">Convidado</option></select>
+                    <select id="posicao"><option value="Atacante">Atacante</option><option value="Meio-Campo" selected>Meio-Campo</option><option value="Lateral">Lateral</option><option value="Zagueiro">Zagueiro</option><option value="Goleiro">Goleiro</option></select>
+                    <select id="nivel"><option value="5">Craque (5)</option><option value="4">Bom (4)</option><option value="3" selected>Médio (3)</option><option value="2">Iniciante (2)</option><option value="1">Perna (1)</option></select>
                 </div>
-                
-                <div class="checkbox-group">
-                    <input type="checkbox" id="priorizar-ordem">
-                    <label for="priorizar-ordem">
-                        <strong>Priorizar Ordem de Chegada</strong><br>
-                        <span style="color: var(--text-muted); font-size: 13px; font-weight: normal; margin-top: 4px; display: block;">Se desmarcado, a inteligência artificial distribuirá todos os presentes focando 100% no equilíbrio técnico e posicional.</span>
-                    </label>
+                <div style="display: flex; gap: 10px;">
+                    <button id="btn-adicionar" onclick="adicionarJogador()">Incluir Jogador</button>
+                    <button id="btn-cancelar-edicao" onclick="cancelarEdicao()" style="display: none; background-color: var(--text-muted);">Cancelar</button>
                 </div>
             </div>
-            <button class="btn-sortear" onclick="iniciarSorteioComSuspense()">Gerar Equipes</button>
-        </div>
 
-        <!-- Lista de Elenco -->
-        <div class="card">
-            <h2>Elenco Cadastrado (<span id="total-ausentes">0</span>)</h2>
-            <ul id="lista-ausentes"></ul>
-        </div>
-
-        <!-- Resultado do Sorteio -->
-        <div id="resultado" class="team-container"></div>
-        
-        <div class="botoes-finais">
-            <button id="btn-wpp" class="btn-whatsapp" onclick="exportarWhatsApp()">Compartilhar via WhatsApp</button>
-            <button id="btn-salvar-partida" class="btn-salvar" onclick="abrirModalSumula()">💾 Salvar Súmula e Histórico</button>
-        </div>
-    </div>
-
-    <!-- MODAL DE SÚMULA DE PLACARES -->
-    <div id="modal-sumula" class="modal-overlay" style="display: none;">
-        <div class="modal-content">
-            <h2>📝 Súmula dos Confrontos</h2>
-            <p style="font-size: 13px; color: var(--text-muted); margin-top: -15px; margin-bottom: 20px;">
-                Preencha os placares dos jogos gerados pelo sorteio para alimentar as Estatísticas.
-            </p>
-            
-            <div id="lista-confrontos"></div>
-            
-            <div class="modal-actions">
-                <button class="btn-cancelar-modal" onclick="fecharModalSumula()">Cancelar</button>
-                <button class="btn-salvar" id="btn-confirmar-sumula" style="display: block;" onclick="salvarPartidaComPlacares()">Confirmar e Gravar</button>
+            <div class="card">
+                <h2>Elenco Geral (<span id="total-ausentes">0</span>)</h2>
+                <p style="font-size: 13px; color: var(--text-muted); margin-top:-15px;">Marque "Presente" para enviar o jogador ao Sorteio.</p>
+                <ul id="lista-ausentes"></ul>
             </div>
         </div>
+
+        <!-- ABA 2: SORTEIO -->
+        <div id="view-sorteio" class="page-view active">
+            <div class="card" style="border: 2px solid var(--primary); background: #f8fafc;">
+                <h2>Prontos pro Jogo (<span id="total-presentes">0</span>)</h2>
+                <button class="btn-limpar" onclick="zerarPresencas()" id="btn-zerar" style="display: none; width:100%; margin-bottom:15px;">🔄 Zerar Lista de Chegada</button>
+                <ul id="lista-presentes"></ul>
+                
+                <div style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 20px;">
+                    <label style="font-weight: 600; display: block; margin-bottom: 8px;">Modo de Sorteio:</label>
+                    <select id="modo-sorteio">
+                        <option value="12">12 PRIMEIROS (2 times - Sem Goleiros)</option>
+                        <option value="14">14 PRIMEIROS (2 times - Com Goleiros)</option>
+                        <option value="todos_sem_goleiro">TODOS de linha (Múltiplos - Sem Goleiros)</option>
+                        <option value="todos">TODOS (Múltiplos - Com Goleiros)</option>
+                    </select>
+                    
+                    <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px; background: white; padding:10px; border-radius:8px; border:1px solid var(--border);">
+                        <input type="checkbox" id="incluir-goleiros" style="width:auto; margin:0;">
+                        <label for="incluir-goleiros" style="font-size:14px; font-weight:500;">Incluir Goleiros na distribuição</label>
+                    </div>
+                    
+                    <div style="display:flex; gap:10px; align-items:flex-start; background: white; padding:10px; border-radius:8px; border:1px solid var(--border);">
+                        <input type="checkbox" id="priorizar-ordem" style="width:auto; margin-top:2px;">
+                        <label for="priorizar-ordem" style="font-size:14px; font-weight:500;">
+                            Priorizar Ordem de Chegada
+                            <span style="display:block; font-size:12px; color:var(--text-muted); font-weight:normal; margin-top:4px;">Se desmarcado, mistura todos focando 100% no equilíbrio técnico.</span>
+                        </label>
+                    </div>
+                </div>
+                <button onclick="iniciarSorteioComSuspense()" style="background: var(--dark); margin-top: 15px; font-size:16px; padding:16px;">🎲 Gerar Equipes</button>
+            </div>
+
+            <div id="resultado" class="team-container"></div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button id="btn-wpp" style="background: var(--whatsapp); display: none;" onclick="exportarWhatsApp()">Compartilhar WhatsApp</button>
+                <button id="btn-ir-placares" style="background: var(--primary); display: none;" onclick="mudarAba('view-placares')">📝 Preencher Súmula</button>
+            </div>
+        </div>
+
+        <!-- ABA 3: PLACARES (SÚMULA) -->
+        <div id="view-placares" class="page-view">
+            <div class="card">
+                <h2>📝 Súmula da Rodada</h2>
+                <p style="font-size: 14px; color: var(--text-muted); margin-top: -10px; margin-bottom: 20px; text-align:center;">
+                    Preencha os placares dos jogos gerados pelo sorteio atual para alimentar as Estatísticas.
+                </p>
+                
+                <div id="aviso-sem-sorteio" style="text-align: center; padding: 30px; color: var(--text-muted);">
+                    Nenhum sorteio ativo no momento.<br>Faça o sorteio na aba "Sorteio" primeiro.
+                </div>
+
+                <div id="lista-confrontos"></div>
+                
+                <button id="btn-confirmar-sumula" style="display: none; margin-top: 20px;" onclick="salvarPartidaComPlacares()">💾 Salvar Partida e Placares</button>
+            </div>
+        </div>
+
+        <!-- ABA 4: ESTATÍSTICAS -->
+        <div id="view-estatisticas" class="page-view">
+            <h2 style="text-align: left; font-size:22px; margin-bottom: 20px;">Visão Geral</h2>
+            
+            <div class="dash-grid">
+                <div class="dash-card">
+                    <div class="dash-titulo">Partidas Realizadas</div>
+                    <div class="dash-valor" id="stat-partidas">0</div>
+                </div>
+                <div class="dash-card">
+                    <div class="dash-titulo">Pix Arrecadado</div>
+                    <div class="dash-valor" id="stat-arrecadacao" style="color:var(--supabase);">0</div>
+                </div>
+            </div>
+
+            <div class="card" style="padding:0; overflow:hidden;">
+                <h3 style="padding: 15px 20px; margin:0; border-bottom: 1px solid var(--border); font-size:16px;">🏆 Jogadores Mais Assíduos</h3>
+                <table class="tabela-stats" id="tabela-presencas">
+                    <tr><td style="text-align:center; color:var(--text-muted);">Carregando dados...</td></tr>
+                </table>
+            </div>
+
+            <div class="card" style="padding:0; overflow:hidden;">
+                <h3 style="padding: 15px 20px; margin:0; border-bottom: 1px solid var(--border); font-size:16px;">🔥 Times com Mais Vitórias</h3>
+                <table class="tabela-stats" id="tabela-times">
+                    <tr><td style="text-align:center; color:var(--text-muted);">Carregando dados...</td></tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- BARRA DE NAVEGAÇÃO INFERIOR -->
+        <nav class="bottom-nav">
+            <div class="nav-item" onclick="mudarAba('view-elenco')" id="nav-elenco">
+                <span class="nav-icon">👥</span>
+                <span>Elenco</span>
+            </div>
+            <div class="nav-item active" onclick="mudarAba('view-sorteio')" id="nav-sorteio">
+                <span class="nav-icon">🎲</span>
+                <span>Sorteio</span>
+            </div>
+            <div class="nav-item" onclick="mudarAba('view-placares')" id="nav-placares">
+                <span class="nav-icon">⚽</span>
+                <span>Súmula</span>
+            </div>
+            <div class="nav-item" onclick="mudarAba('view-estatisticas')" id="nav-estatisticas">
+                <span class="nav-icon">📊</span>
+                <span>Painel</span>
+            </div>
+        </nav>
+
     </div>
 
     <script>
@@ -415,223 +289,129 @@
         const emojisTimes = ["🔴", "🔵", "🟡", "🟢", "⚪", "⚫", "🟣", "🟠"];
 
         window.presentesParaSalvar = [];
-        window.partidaSalva = false;
+        window.partidaSalva = true; // Começa como true para evitar tela de súmula vazia
         window.confrontos = [];
 
         window.onload = async function() {
             if(typeof supabaseUrl === 'undefined' || typeof supabaseKey === 'undefined') {
-                alert("Erro crítico: Arquivo config.js não localizado no servidor.");
-                return;
+                alert("Erro crítico: Arquivo config.js não localizado."); return;
             }
             db = window.supabase.createClient(supabaseUrl, supabaseKey);
             verificarSessao();
         };
 
-        // ==========================================
-        // SISTEMA DE AUTENTICAÇÃO E NUVEM
-        // ==========================================
+        // NAVEGAÇÃO DE ABAS
+        function mudarAba(viewId) {
+            document.querySelectorAll('.page-view').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById(viewId).classList.add('active');
+            let navId = viewId.replace('view-', 'nav-');
+            document.getElementById(navId).classList.add('active');
+            window.scrollTo(0, 0);
+
+            if(viewId === 'view-estatisticas') carregarEstatisticas();
+            if(viewId === 'view-placares') renderizarSumula();
+        }
+
+        // AUTENTICAÇÃO
         async function verificarSessao() {
             const { data: { session } } = await db.auth.getSession();
-            if (session) {
-                mostrarApp();
-            } else {
-                mostrarLogin();
-            }
+            if (session) mostrarApp(); else mostrarLogin();
         }
 
         async function criarConta() {
             const email = document.getElementById('auth-email').value;
             const password = document.getElementById('auth-password').value;
             const msg = document.getElementById('auth-msg');
-
-            if(password.length < 6) return msg.innerText = "A senha deve conter no mínimo 6 caracteres de segurança.";
-            
-            msg.style.color = "var(--text-muted)";
-            msg.innerText = "Processando criação de conta...";
-
-            const { data, error } = await db.auth.signUp({ email, password });
-            
-            if (error) {
-                msg.style.color = "var(--danger)";
-                msg.innerText = "Erro na validação: " + error.message;
-            } else {
-                msg.style.color = "var(--primary)";
-                msg.innerHTML = "✅ <b>Conta criada com sucesso!</b><br><br>Por favor, acesse sua caixa de entrada (ou pasta de spam) e clique no link de confirmação enviado para o seu e-mail antes de fazer o login.";
-            }
+            if(password.length < 6) return msg.innerText = "A senha deve ter 6+ caracteres.";
+            msg.innerText = "Processando...";
+            const { error } = await db.auth.signUp({ email, password });
+            if (error) { msg.style.color = "var(--danger)"; msg.innerText = error.message; } 
+            else { msg.style.color = "var(--primary)"; msg.innerHTML = "✅ Conta criada! Verifique seu e-mail."; }
         }
 
         async function fazerLogin() {
             const email = document.getElementById('auth-email').value;
             const password = document.getElementById('auth-password').value;
             const msg = document.getElementById('auth-msg');
-
-            msg.style.color = "var(--text-muted)";
-            msg.innerText = "Autenticando credenciais...";
-            
-            const { data, error } = await db.auth.signInWithPassword({ email, password });
-            
-            if (error) {
-                msg.style.color = "var(--danger)";
-                msg.innerText = "Credenciais inválidas ou e-mail não confirmado.";
-            } else {
-                mostrarApp();
-            }
+            msg.innerText = "Conectando...";
+            const { error } = await db.auth.signInWithPassword({ email, password });
+            if (error) { msg.style.color = "var(--danger)"; msg.innerText = "Credenciais inválidas."; } 
+            else mostrarApp();
         }
 
-        async function fazerLogout() {
-            await db.auth.signOut();
-            mostrarLogin();
-        }
+        async function fazerLogout() { await db.auth.signOut(); mostrarLogin(); }
+        function mostrarApp() { document.getElementById('auth-container').style.display = 'none'; document.getElementById('app-container').style.display = 'block'; carregarElencoDaNuvem(); configurarFiltros(); }
+        function mostrarLogin() { document.getElementById('auth-container').style.display = 'block'; document.getElementById('app-container').style.display = 'none'; }
 
-        function mostrarApp() {
-            document.getElementById('auth-container').style.display = 'none';
-            document.getElementById('app-container').style.display = 'block';
-            carregarElencoDaNuvem();
-            configurarFiltros();
-        }
-
-        function mostrarLogin() {
-            document.getElementById('auth-container').style.display = 'block';
-            document.getElementById('app-container').style.display = 'none';
-            document.getElementById('auth-email').value = "";
-            document.getElementById('auth-password').value = "";
-            document.getElementById('auth-msg').innerText = "";
-        }
-
+        // SINCRONIZAÇÃO NUVEM
         async function carregarElencoDaNuvem() {
-            document.getElementById('status-db').innerText = "Sincronizando banco de dados...";
-            document.getElementById('status-db').style.backgroundColor = "var(--warning)";
-            
+            document.getElementById('status-db').innerText = "Sincronizando..."; document.getElementById('status-db').style.backgroundColor = "var(--warning)";
             const { data, error } = await db.from('jogadores').select('*').order('nome', { ascending: true }); 
-
-            if (error) {
-                document.getElementById('status-db').innerText = "Falha na conexão com o servidor seguro.";
-                document.getElementById('status-db').style.backgroundColor = "var(--danger)";
-                return;
-            }
-
+            if (error) { document.getElementById('status-db').innerText = "Falha na conexão."; document.getElementById('status-db').style.backgroundColor = "var(--danger)"; return; }
             let estadoLocal = JSON.parse(localStorage.getItem('baba_presencas_temp')) || {};
-
-            jogadores = data.map(j => ({
-                ...j,
-                presente: estadoLocal[j.id]?.presente || false,
-                ordemChegada: estadoLocal[j.id]?.ordemChegada || 0,
-                pagou: estadoLocal[j.id]?.pagou || false
-            }));
-
-            document.getElementById('status-db').innerText = "Sincronização Ativa - Banco de Dados Protegido";
-            document.getElementById('status-db').style.backgroundColor = "var(--supabase)";
+            jogadores = data.map(j => ({ ...j, presente: estadoLocal[j.id]?.presente || false, ordemChegada: estadoLocal[j.id]?.ordemChegada || 0, pagou: estadoLocal[j.id]?.pagou || false }));
+            document.getElementById('status-db').innerText = "Sincronizado"; document.getElementById('status-db').style.backgroundColor = "var(--supabase)";
             atualizarListas();
         }
 
-        // ==========================================
-        // GESTÃO DE JOGADORES (Cadastro/Edição/Presença)
-        // ==========================================
+        // CADASTRO E EDIÇÃO
         function prepararEdicao(indexArray) {
             const j = jogadores[indexArray];
-            document.getElementById('nome').value = j.nome;
-            document.getElementById('tipo').value = j.tipo;
-            document.getElementById('posicao').value = j.posicao;
-            document.getElementById('nivel').value = j.nivel;
-            
+            document.getElementById('nome').value = j.nome; document.getElementById('tipo').value = j.tipo;
+            document.getElementById('posicao').value = j.posicao; document.getElementById('nivel').value = j.nivel;
             jogadorEdicaoId = j.id;
-            
-            document.getElementById('titulo-form').innerText = "Editando Jogador";
-            document.getElementById('card-formulario').classList.add("editando");
-            document.getElementById('btn-adicionar').innerText = "Salvar Alterações";
-            document.getElementById('btn-cancelar-edicao').style.display = "block";
+            document.getElementById('titulo-form').innerText = "Editando Jogador"; document.getElementById('card-formulario').classList.add("editando");
+            document.getElementById('btn-adicionar').innerText = "Salvar Alterações"; document.getElementById('btn-cancelar-edicao').style.display = "block";
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function cancelarEdicao() {
             jogadorEdicaoId = null;
-            document.getElementById('nome').value = "";
-            document.getElementById('tipo').value = "Mensalista";
-            document.getElementById('posicao').value = "Meio-Campo";
-            document.getElementById('nivel').value = "3";
-            
-            document.getElementById('titulo-form').innerText = "Adicionar Jogador";
-            document.getElementById('card-formulario').classList.remove("editando");
-            document.getElementById('btn-adicionar').innerText = "Incluir no Sistema";
-            document.getElementById('btn-cancelar-edicao').style.display = "none";
+            document.getElementById('nome').value = ""; document.getElementById('tipo').value = "Mensalista";
+            document.getElementById('posicao').value = "Meio-Campo"; document.getElementById('nivel').value = "3";
+            document.getElementById('titulo-form').innerText = "Adicionar ao Elenco"; document.getElementById('card-formulario').classList.remove("editando");
+            document.getElementById('btn-adicionar').innerText = "Incluir Jogador"; document.getElementById('btn-cancelar-edicao').style.display = "none";
         }
 
         async function adicionarJogador() {
-            const nomeInput = document.getElementById('nome');
-            const tipo = document.getElementById('tipo').value;
-            const posicao = document.getElementById('posicao').value;
-            const nivel = parseInt(document.getElementById('nivel').value);
+            const nomeInput = document.getElementById('nome'); const tipo = document.getElementById('tipo').value;
+            const posicao = document.getElementById('posicao').value; const nivel = parseInt(document.getElementById('nivel').value);
             const nome = nomeInput.value.trim();
+            if (nome === "") return alert("Preencha o nome.");
+            if (jogadores.some(j => j.nome.toLowerCase() === nome.toLowerCase() && j.id !== jogadorEdicaoId)) return alert("⚠️ Jogador já cadastrado!");
 
-            if (nome === "") return alert("Por favor, preencha o nome do atleta.");
-
-            const nomeExiste = jogadores.some(j => j.nome.toLowerCase() === nome.toLowerCase() && j.id !== jogadorEdicaoId);
-            if (nomeExiste) {
-                alert("⚠️ Este jogador já está cadastrado!\n\nPor favor, adicione um sobrenome ou apelido para diferenciá-lo.");
-                nomeInput.focus();
-                return;
-            }
-
-            const btn = document.getElementById('btn-adicionar');
-            btn.innerText = "Processando...";
-            btn.disabled = true;
+            const btn = document.getElementById('btn-adicionar'); btn.innerText = "Processando..."; btn.disabled = true;
 
             if (jogadorEdicaoId) {
-                const { error } = await db.from('jogadores').update({ nome: nome, tipo: tipo, posicao: posicao, nivel: nivel }).eq('id', jogadorEdicaoId);
-                if (error) {
-                    alert("Erro ao salvar alterações: " + error.message);
-                    btn.innerText = "Salvar Alterações";
-                } else {
+                const { error } = await db.from('jogadores').update({ nome, tipo, posicao, nivel }).eq('id', jogadorEdicaoId);
+                if (!error) {
                     let jIndex = jogadores.findIndex(j => j.id === jogadorEdicaoId);
-                    if (jIndex !== -1) {
-                        jogadores[jIndex].nome = nome;
-                        jogadores[jIndex].tipo = tipo;
-                        jogadores[jIndex].posicao = posicao;
-                        jogadores[jIndex].nivel = nivel;
-                    }
-                    cancelarEdicao(); 
-                    atualizarListas();
-                }
+                    if (jIndex !== -1) { jogadores[jIndex].nome = nome; jogadores[jIndex].tipo = tipo; jogadores[jIndex].posicao = posicao; jogadores[jIndex].nivel = nivel; }
+                    cancelarEdicao(); atualizarListas();
+                } else alert("Erro: " + error.message);
             } else {
-                const { data, error } = await db.from('jogadores').insert([{ nome: nome, tipo: tipo, posicao: posicao, nivel: nivel }]).select(); 
-                if (error) {
-                    alert("Erro ao gravar registro: " + error.message);
-                    btn.innerText = "Incluir no Sistema";
-                } else {
-                    nomeInput.value = "";
-                    nomeInput.focus();
-                    let novoJogador = data[0];
-                    novoJogador.presente = false;
-                    novoJogador.ordemChegada = 0;
-                    novoJogador.pagou = false;
-                    jogadores.push(novoJogador);
-                    atualizarListas();
-                    btn.innerText = "Incluir no Sistema";
-                }
+                const { data, error } = await db.from('jogadores').insert([{ nome, tipo, posicao, nivel }]).select(); 
+                if (!error) {
+                    nomeInput.value = ""; nomeInput.focus();
+                    jogadores.push({ ...data[0], presente: false, ordemChegada: 0, pagou: false });
+                    atualizarListas(); btn.innerText = "Incluir Jogador";
+                } else alert("Erro: " + error.message);
             }
             btn.disabled = false;
         }
 
         async function removerJogador(idNuvem, indexArray) {
-            if(confirm("Confirma a exclusão permanente deste registro do banco de dados?")) {
+            if(confirm("Excluir jogador permanentemente?")) {
                 const { error } = await db.from('jogadores').delete().eq('id', idNuvem);
-                if (error) {
-                    alert("Falha ao excluir: " + error.message);
-                } else {
-                    jogadores.splice(indexArray, 1);
-                    salvarEstadoLocal();
-                    atualizarListas();
-                }
+                if (!error) { jogadores.splice(indexArray, 1); salvarEstadoLocal(); atualizarListas(); }
             }
         }
 
         function salvarEstadoLocal() {
             let estado = {};
-            jogadores.forEach(j => {
-                if (j.presente || j.pagou) {
-                    estado[j.id] = { presente: j.presente, ordemChegada: j.ordemChegada, pagou: j.pagou };
-                }
-            });
+            jogadores.forEach(j => { if (j.presente || j.pagou) estado[j.id] = { presente: j.presente, ordemChegada: j.ordemChegada, pagou: j.pagou }; });
             localStorage.setItem('baba_presencas_temp', JSON.stringify(estado));
         }
 
@@ -640,141 +420,70 @@
         function alternarPagamento(indexArray) { jogadores[indexArray].pagou = !jogadores[indexArray].pagou; salvarEstadoLocal(); atualizarListas(); }
         
         function zerarPresencas() {
-            if(confirm("Esta ação removerá todos os jogadores da lista de chegada. Confirmar?")) {
+            if(confirm("Remover todos da lista de chegada?")) {
                 jogadores.forEach(j => { j.presente = false; j.ordemChegada = 0; j.pagou = false; });
-                salvarEstadoLocal();
-                atualizarListas();
-                document.getElementById('resultado').innerHTML = "";
-                document.getElementById('btn-wpp').style.display = 'none';
-                document.getElementById('btn-salvar-partida').style.display = 'none';
+                salvarEstadoLocal(); atualizarListas(); document.getElementById('resultado').innerHTML = "";
+                document.getElementById('btn-wpp').style.display = 'none'; document.getElementById('btn-ir-placares').style.display = 'none'; window.partidaSalva = true;
             }
         }
 
         function atualizarListas() {
-            const listaPresentes = document.getElementById('lista-presentes');
-            const listaAusentes = document.getElementById('lista-ausentes');
-            const btnZerar = document.getElementById('btn-zerar');
-            
-            listaPresentes.innerHTML = "";
-            listaAusentes.innerHTML = "";
+            const listaPresentes = document.getElementById('lista-presentes'); const listaAusentes = document.getElementById('lista-ausentes');
+            listaPresentes.innerHTML = ""; listaAusentes.innerHTML = "";
+            let ausentes = []; let presentes = [];
 
-            let ausentes = [];
-            let presentes = [];
-
-            jogadores.forEach((j, index) => {
-                let jogadorComIndex = { ...j, indexArray: index };
-                if (j.presente) presentes.push(jogadorComIndex);
-                else ausentes.push(jogadorComIndex);
-            });
-
-            presentes.sort((a, b) => {
-                if (a.tipo === 'Mensalista' && b.tipo !== 'Mensalista') return -1;
-                if (a.tipo !== 'Mensalista' && b.tipo === 'Mensalista') return 1;
-                return a.ordemChegada - b.ordemChegada;
-            });
+            jogadores.forEach((j, index) => { if (j.presente) presentes.push({ ...j, indexArray: index }); else ausentes.push({ ...j, indexArray: index }); });
+            presentes.sort((a, b) => { if (a.tipo === 'Mensalista' && b.tipo !== 'Mensalista') return -1; if (a.tipo !== 'Mensalista' && b.tipo === 'Mensalista') return 1; return a.ordemChegada - b.ordemChegada; });
 
             presentes.forEach((j, pos) => {
-                let tagConvidado = j.tipo === 'Convidado' ? '<span class="badge badge-convidado">Convidado</span>' : '';
-                let tagPosicao = (j.posicao !== 'Goleiro' && j.posicao !== 'Linha') ? `<span class="badge badge-posicao">${j.posicao}</span>` : '';
-                let btnPix = '';
-                if(j.tipo === 'Convidado') {
-                    if(j.pagou) btnPix = `<button class="btn-small btn-pagou" onclick="alternarPagamento(${j.indexArray})">Pago</button>`;
-                    else btnPix = `<button class="btn-small btn-devendo" onclick="alternarPagamento(${j.indexArray})">Pendente</button>`;
-                }
-                listaPresentes.innerHTML += `
-                    <li>
-                        <div class="info-jogador"><span class="badge">${pos + 1}º</span> ${tagConvidado} <strong>${j.nome}</strong> ${tagPosicao} <small>(Nv ${j.nivel})</small></div>
-                        <div class="actions">${btnPix} <button class="btn-small btn-desmarcar" onclick="desmarcarPresenca(${j.indexArray})">Remover</button></div>
-                    </li>
-                `;
+                let btnPix = j.tipo === 'Convidado' ? (j.pagou ? `<button class="btn-small btn-pagou" onclick="alternarPagamento(${j.indexArray})">Pago</button>` : `<button class="btn-small btn-devendo" onclick="alternarPagamento(${j.indexArray})">Pendente</button>`) : '';
+                listaPresentes.innerHTML += `<li>
+                    <div class="info-jogador"><span class="badge">${pos + 1}º</span> ${j.tipo==='Convidado'?'<span class="badge badge-convidado">C</span>':''} <strong>${j.nome}</strong> ${j.posicao!=='Linha'?`<span class="badge badge-posicao">${j.posicao}</span>`:''}</div>
+                    <div class="actions">${btnPix} <button class="btn-small btn-desmarcar" onclick="desmarcarPresenca(${j.indexArray})">Retirar</button></div>
+                </li>`;
             });
 
             ausentes.forEach(j => {
-                let tagConvidado = j.tipo === 'Convidado' ? '<span class="badge badge-convidado">Convidado</span>' : '';
-                let tagPosicao = (j.posicao !== 'Goleiro' && j.posicao !== 'Linha') ? `<span class="badge badge-posicao">${j.posicao}</span>` : '';
-                listaAusentes.innerHTML += `
-                    <li>
-                        <div class="info-jogador">${tagConvidado} <strong>${j.nome}</strong> ${tagPosicao} <small>(Nv ${j.nivel})</small></div>
-                        <div class="actions">
-                            <button class="btn-small btn-chegou" onclick="marcarPresenca(${j.indexArray})">Presente</button>
-                            <button class="btn-small btn-editar" onclick="prepararEdicao(${j.indexArray})">Editar</button>
-                            <button class="btn-small btn-excluir" onclick="removerJogador('${j.id}', ${j.indexArray})">Excluir</button>
-                        </div>
-                    </li>
-                `;
+                listaAusentes.innerHTML += `<li>
+                    <div class="info-jogador">${j.tipo==='Convidado'?'<span class="badge badge-convidado">C</span>':''} <strong>${j.nome}</strong> ${j.posicao!=='Linha'?`<span class="badge badge-posicao">${j.posicao}</span>`:''}</div>
+                    <div class="actions"><button class="btn-small btn-chegou" onclick="marcarPresenca(${j.indexArray})">Presente</button> <button class="btn-small btn-editar" onclick="prepararEdicao(${j.indexArray})">Editar</button> <button class="btn-small btn-excluir" onclick="removerJogador('${j.id}', ${j.indexArray})">X</button></div>
+                </li>`;
             });
 
-            document.getElementById('total-presentes').innerText = presentes.length;
-            document.getElementById('total-ausentes').innerText = ausentes.length;
-            if(presentes.length > 0) btnZerar.style.display = "block";
-            else btnZerar.style.display = "none";
+            document.getElementById('total-presentes').innerText = presentes.length; document.getElementById('total-ausentes').innerText = ausentes.length;
+            document.getElementById('btn-zerar').style.display = presentes.length > 0 ? "block" : "none";
         }
 
-        // ==========================================
-        // SISTEMA DE SORTEIO
-        // ==========================================
-        function embaralhar(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-            return array;
-        }
+        // SORTEIO
+        function embaralhar(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } return array; }
 
         function iniciarSorteioComSuspense() {
-            let presentes = jogadores.filter(j => j.presente).sort((a, b) => {
-                if (a.tipo === 'Mensalista' && b.tipo !== 'Mensalista') return -1;
-                if (a.tipo !== 'Mensalista' && b.tipo === 'Mensalista') return 1;
-                return a.ordemChegada - b.ordemChegada;
-            });
+            let presentes = jogadores.filter(j => j.presente).sort((a, b) => { if (a.tipo === 'Mensalista' && b.tipo !== 'Mensalista') return -1; if (a.tipo !== 'Mensalista' && b.tipo === 'Mensalista') return 1; return a.ordemChegada - b.ordemChegada; });
+            if (presentes.length < 2) return alert("Confirme presença de pelo menos 2 atletas.");
             
-            if (presentes.length < 2) return alert("É necessário confirmar a presença de pelo menos 2 atletas.");
-
-            let inadimplentes = presentes.filter(j => j.tipo === 'Convidado' && !j.pagou);
-            if(inadimplentes.length > 0) {
-                alert(`Alerta do Sistema: Existem convidados com pagamento pendente que serão excluídos do sorteio automático:\n\n- ${inadimplentes.map(i => i.nome).join('\n- ')}\n\n(Altere o status para "Pago" para incluí-los)`);
-            }
-
-            document.getElementById('btn-wpp').style.display = 'none';
-            document.getElementById('btn-salvar-partida').style.display = 'none';
+            document.getElementById('btn-wpp').style.display = 'none'; document.getElementById('btn-ir-placares').style.display = 'none';
             const resultado = document.getElementById('resultado');
-            
-            const frases = ["Inicializando algoritmo...", "Processando análise tática...", "Balanceando nível técnico...", "Montando estruturas..."];
             resultado.innerHTML = `<div class="animacao-suspense" id="texto-suspense">Iniciando processamento...</div>`;
             
-            let contador = 0;
-            let intervalo = setInterval(() => {
-                if(contador < frases.length) { document.getElementById('texto-suspense').innerText = frases[contador]; contador++; }
-            }, 600);
+            let frases = ["Analisando tática...", "Balanceando nível...", "Montando equipes..."]; let contador = 0;
+            let intervalo = setInterval(() => { if(contador < frases.length) { document.getElementById('texto-suspense').innerText = frases[contador]; contador++; } }, 600);
 
-            setTimeout(() => { clearInterval(intervalo); sortearTimes(presentes); }, 2500); // Reduzido um pouco o tempo
+            setTimeout(() => { clearInterval(intervalo); sortearTimes(presentes); }, 2200);
             resultado.scrollIntoView({ behavior: "smooth", block: "center" });
         }
 
         function sortearTimes(presentesBrutos) {
             let presentes = presentesBrutos.filter(j => j.tipo === 'Mensalista' || (j.tipo === 'Convidado' && j.pagou));
-            let modo = document.getElementById('modo-sorteio').value;
-            let incluiGoleiros = document.getElementById('incluir-goleiros').checked;
-            let priorizarOrdem = document.getElementById('priorizar-ordem').checked;
+            let modo = document.getElementById('modo-sorteio').value; let incluiGoleiros = document.getElementById('incluir-goleiros').checked; let priorizarOrdem = document.getElementById('priorizar-ordem').checked;
             
-            let jogadoresValidos = presentes;
-            let reservas = [];
-            
-            if (!incluiGoleiros) {
-                reservas.push(...presentes.filter(j => j.posicao === 'Goleiro'));
-                jogadoresValidos = presentes.filter(j => j.posicao !== 'Goleiro');
-            }
+            let jogadoresValidos = presentes; let reservas = [];
+            if (!incluiGoleiros) { reservas.push(...presentes.filter(j => j.posicao === 'Goleiro')); jogadoresValidos = presentes.filter(j => j.posicao !== 'Goleiro'); }
 
             let maxTitulares = jogadoresValidos.length;
-            if (modo === '12') maxTitulares = 12;
-            if (modo === '14') maxTitulares = 14;
+            if (modo === '12') maxTitulares = 12; if (modo === '14') maxTitulares = 14;
 
-            let titulares = jogadoresValidos.slice(0, maxTitulares);
-            reservas.push(...jogadoresValidos.slice(maxTitulares));
-
-            let times = [];
-            let tamanhoIdeal = incluiGoleiros ? 7 : 6;
-            let tamanhoPartida = tamanhoIdeal * 2; 
+            let titulares = jogadoresValidos.slice(0, maxTitulares); reservas.push(...jogadoresValidos.slice(maxTitulares));
+            let times = []; let tamanhoIdeal = incluiGoleiros ? 7 : 6; let tamanhoPartida = tamanhoIdeal * 2; 
 
             if (!priorizarOrdem && (modo === 'todos' || modo === 'todos_sem_goleiro')) {
                 let qtdTimesGlobais = Math.ceil(titulares.length / tamanhoIdeal);
@@ -785,273 +494,170 @@
             for (let i = 0; i < titulares.length; i += tamanhoPartida) {
                 let chunk = titulares.slice(i, i + tamanhoPartida);
                 let numTimesNoChunk;
-                if (modo === '12' || modo === '14') {
-                    numTimesNoChunk = 2; 
-                } else {
-                    if (!priorizarOrdem) {
-                        numTimesNoChunk = Math.ceil(titulares.length / tamanhoIdeal);
-                        if (numTimesNoChunk < 2) numTimesNoChunk = 2;
-                    } else {
-                        numTimesNoChunk = Math.ceil(chunk.length / tamanhoIdeal);
-                    }
-                }
-                
+                if (modo === '12' || modo === '14') numTimesNoChunk = 2; 
+                else { if (!priorizarOrdem) { numTimesNoChunk = Math.ceil(titulares.length / tamanhoIdeal); if (numTimesNoChunk < 2) numTimesNoChunk = 2; } else numTimesNoChunk = Math.ceil(chunk.length / tamanhoIdeal); }
                 if (numTimesNoChunk === 0) continue;
 
-                let jogadoresDoTime = chunk; 
-                let goleirosChunk = embaralhar(jogadoresDoTime.filter(j => j.posicao === 'Goleiro'));
-                let linhaChunk = embaralhar(jogadoresDoTime.filter(j => j.posicao !== 'Goleiro'));
-                
+                let goleirosChunk = embaralhar(chunk.filter(j => j.posicao === 'Goleiro')); let linhaChunk = embaralhar(chunk.filter(j => j.posicao !== 'Goleiro'));
                 let timesLocais = Array.from({ length: numTimesNoChunk }, () => []);
 
-                if (incluiGoleiros) {
-                    for (let t = 0; t < numTimesNoChunk; t++) {
-                        if (goleirosChunk.length > 0) timesLocais[t].push(goleirosChunk.shift());
-                    }
-                    reservas.push(...goleirosChunk);
-                }
+                if (incluiGoleiros) { for (let t = 0; t < numTimesNoChunk; t++) { if (goleirosChunk.length > 0) timesLocais[t].push(goleirosChunk.shift()); } reservas.push(...goleirosChunk); }
 
-                const posicoes = ["Zagueiro", "Lateral", "Meio-Campo", "Atacante", "Linha"];
-                const grupos = {}; posicoes.forEach(p => grupos[p] = []);
-
-                linhaChunk.forEach(j => {
-                    if (grupos[j.posicao]) grupos[j.posicao].push(j);
-                    else grupos["Linha"].push(j); 
-                });
-
+                const posicoes = ["Zagueiro", "Lateral", "Meio-Campo", "Atacante", "Linha"]; const grupos = {}; posicoes.forEach(p => grupos[p] = []);
+                linhaChunk.forEach(j => { if (grupos[j.posicao]) grupos[j.posicao].push(j); else grupos["Linha"].push(j); });
                 posicoes.forEach(p => grupos[p].sort((a, b) => b.nivel - a.nivel));
-                const getSomaNotas = (time) => time.reduce((acc, j) => acc + j.nivel, 0);
-                const getQtdPosicao = (time, pos) => time.filter(j => j.posicao === pos).length;
+                
+                const getSomaNotas = (time) => time.reduce((acc, j) => acc + j.nivel, 0); const getQtdPosicao = (time, pos) => time.filter(j => j.posicao === pos).length;
 
                 posicoes.forEach(pos => {
                     grupos[pos].forEach(jogador => {
-                        let minTamanho = Math.min(...timesLocais.map(t => t.length));
-                        let timesElegiveis = timesLocais.filter(t => t.length === minTamanho);
-                        let minQtdPos = Math.min(...timesElegiveis.map(t => getQtdPosicao(t, pos)));
-                        let timesMenosPos = timesElegiveis.filter(t => getQtdPosicao(t, pos) === minQtdPos);
-
-                        timesMenosPos.sort((a, b) => getSomaNotas(a) - getSomaNotas(b));
-                        timesMenosPos[0].push(jogador);
+                        let minTam = Math.min(...timesLocais.map(t => t.length)); let elegiveis = timesLocais.filter(t => t.length === minTam);
+                        let minPos = Math.min(...elegiveis.map(t => getQtdPosicao(t, pos))); let menosPos = elegiveis.filter(t => getQtdPosicao(t, pos) === minPos);
+                        menosPos.sort((a, b) => getSomaNotas(a) - getSomaNotas(b)); menosPos[0].push(jogador);
                     });
                 });
-
                 times.push(...timesLocais);
             }
 
-            window.timesSorteados = times;
-            window.reservasSorteados = reservas;
-
-            mostrarResultado(times, reservas, incluiGoleiros);
+            window.timesSorteados = times; window.reservasSorteados = reservas;
+            window.presentesParaSalvar = presentes; window.partidaSalva = false;
             
-            window.presentesParaSalvar = presentes;
-            window.partidaSalva = false;
-            
-            document.getElementById('btn-wpp').style.display = 'block';
-            
-            const btnSalvar = document.getElementById('btn-salvar-partida');
-            btnSalvar.style.display = 'block';
-            btnSalvar.innerText = "💾 Salvar Súmula e Histórico";
-            btnSalvar.disabled = false;
-            btnSalvar.style.backgroundColor = "var(--primary)";
-        }
-
-        function mostrarResultado(times, reservas, incluiGoleiros) {
-            const resultado = document.getElementById('resultado');
-            resultado.innerHTML = "";
-            
-            times.forEach((time, index) => {
-                const media = time.length ? (time.reduce((acc, j) => acc + j.nivel, 0) / time.length).toFixed(1) : 0;
-                let corReal = coresTimes[index % coresTimes.length];
-                let emoji = emojisTimes[index % emojisTimes.length];
-                let tituloTime = incluiGoleiros ? `Equipe ${corReal}` : `Equipe ${corReal} (Sem Gol)`;
-                
-                let html = `<div class="team"><h3>${emoji} ${tituloTime} <small style="color:var(--text-muted); font-weight:normal;">(Força: ${media})</small></h3><ul>`;
-                time.forEach(j => {
-                    let tagPosicao = (j.posicao !== 'Goleiro' && j.posicao !== 'Linha') ? ` <span class="badge badge-posicao">${j.posicao}</span>` : '';
-                    let tagPix = (j.tipo === 'Convidado') ? ' <span style="font-size:11px; color:var(--primary); font-weight:bold;">[PAGO]</span>' : '';
-                    html += `<li><strong>${j.nome}</strong> ${tagPosicao}${tagPix}</li>`;
-                });
-                html += `</ul></div>`;
-                resultado.innerHTML += html;
+            document.getElementById('resultado').innerHTML = "";
+            times.forEach((time, idx) => {
+                let cor = coresTimes[idx % coresTimes.length]; let emoji = emojisTimes[idx % emojisTimes.length];
+                let html = `<div class="team"><h3>${emoji} Equipe ${cor}</h3><ul>`;
+                time.forEach(j => { html += `<li><strong>${j.nome}</strong> ${j.posicao!=='Linha'?`<span class="badge badge-posicao">${j.posicao}</span>`:''}</li>`; });
+                document.getElementById('resultado').innerHTML += html + `</ul></div>`;
             });
-
             if (reservas.length > 0) {
-                let htmlReservas = `<div class="team team-reservas"><h3>Reservas / Próximos</h3><ul>`;
-                reservas.forEach(j => {
-                    let tagPosicao = (j.posicao !== 'Goleiro' && j.posicao !== 'Linha') ? ` <span class="badge badge-posicao">${j.posicao}</span>` : '';
-                    let tagPix = (j.tipo === 'Convidado') ? ' <span style="font-size:11px; color:var(--primary); font-weight:bold;">[PAGO]</span>' : '';
-                    htmlReservas += `<li><strong>${j.nome}</strong> ${tagPosicao}${tagPix}</li>`;
-                });
-                htmlReservas += `</ul></div>`;
-                resultado.innerHTML += htmlReservas;
+                let html = `<div class="team team-reservas"><h3>Reservas</h3><ul>`;
+                reservas.forEach(j => html += `<li><strong>${j.nome}</strong></li>`);
+                document.getElementById('resultado').innerHTML += html + `</ul></div>`;
             }
+            document.getElementById('btn-wpp').style.display = 'block'; document.getElementById('btn-ir-placares').style.display = 'block';
         }
 
-        function exportarWhatsApp() {
-            let texto = "📋 *RELAÇÃO DE EQUIPES* 📋\n\n";
-            let incluiGoleiros = document.getElementById('incluir-goleiros').checked;
-            
-            window.timesSorteados.forEach((time, index) => {
-                let corReal = coresTimes[index % coresTimes.length];
-                let emoji = emojisTimes[index % emojisTimes.length];
-                let tituloTime = incluiGoleiros ? `*Equipe ${corReal}*` : `*Equipe ${corReal} (Sem Goleiro)*`;
-                
-                texto += `${emoji} ${tituloTime}\n`;
-                time.forEach(j => {
-                    let iconPix = (j.tipo === 'Convidado') ? ' ✅' : '';
-                    let tagPosicao = (j.posicao !== 'Goleiro' && j.posicao !== 'Linha') ? ` (${j.posicao})` : '';
-                    texto += `• ${j.nome}${tagPosicao}${iconPix}\n`;
-                });
-                texto += `\n`;
-            });
-
-            if (window.reservasSorteados.length > 0) {
-                texto += `*Reservas / Próximos:*\n`;
-                window.reservasSorteados.forEach(j => {
-                    let iconPix = (j.tipo === 'Convidado') ? ' ✅' : '';
-                    let tagPosicao = (j.posicao !== 'Goleiro' && j.posicao !== 'Linha') ? ` (${j.posicao})` : '';
-                    texto += `• ${j.nome}${tagPosicao}${iconPix}\n`;
-                });
-            }
-
-            navigator.clipboard.writeText(texto).then(() => {
-                alert("Conteúdo copiado! Pronto para colar no WhatsApp.");
-            }).catch(() => {
-                alert("Falha ao copiar. Selecione o texto manualmente.");
-            });
-        }
-        
-        function configurarFiltros() {
-            const modoSorteio = document.getElementById('modo-sorteio');
-            const incluirGoleiros = document.getElementById('incluir-goleiros');
-
-            modoSorteio.addEventListener('change', function() {
-                if (this.value === '12' || this.value === 'todos_sem_goleiro') incluirGoleiros.checked = false;
-                else if (this.value === '14' || this.value === 'todos') incluirGoleiros.checked = true;
-            });
-
-            incluirGoleiros.addEventListener('change', function() {
-                if (!this.checked) {
-                    if (modoSorteio.value === '14') modoSorteio.value = '12';
-                    else if (modoSorteio.value === 'todos') modoSorteio.value = 'todos_sem_goleiro';
-                } else {
-                    if (modoSorteio.value === '12') modoSorteio.value = '14';
-                    else if (modoSorteio.value === 'todos_sem_goleiro') modoSorteio.value = 'todos';
-                }
-            });
-            modoSorteio.dispatchEvent(new Event('change'));
-        }
-
-        // ==========================================
-        // SISTEMA DE SÚMULA E GRAVAÇÃO DE PLACARES
-        // ==========================================
-        function abrirModalSumula() {
-            if(window.partidaSalva) return alert("A súmula desta rodada já foi registrada!");
-            
+        // SÚMULA (PLACARES)
+        function renderizarSumula() {
             const container = document.getElementById('lista-confrontos');
-            container.innerHTML = '';
-            window.confrontos = [];
+            const aviso = document.getElementById('aviso-sem-sorteio');
+            const btn = document.getElementById('btn-confirmar-sumula');
             
-            // Agrupar os times de 2 em 2 para montar os confrontos no Pop-up
+            if(window.partidaSalva || !window.timesSorteados || window.timesSorteados.length < 2) {
+                container.innerHTML = ''; aviso.style.display = 'block'; btn.style.display = 'none'; return;
+            }
+            
+            aviso.style.display = 'none'; container.innerHTML = ''; window.confrontos = [];
+            
             for(let i = 0; i < window.timesSorteados.length; i+=2) {
                 if(i + 1 < window.timesSorteados.length) {
-                    let corA = coresTimes[i % coresTimes.length];
-                    let emojiA = emojisTimes[i % emojisTimes.length];
-                    let corB = coresTimes[(i+1) % coresTimes.length];
-                    let emojiB = emojisTimes[(i+1) % emojisTimes.length];
-                    
+                    let corA = coresTimes[i % coresTimes.length]; let emojiA = emojisTimes[i % emojisTimes.length];
+                    let corB = coresTimes[(i+1) % coresTimes.length]; let emojiB = emojisTimes[(i+1) % emojisTimes.length];
                     window.confrontos.push({ indexA: i, nomeA: corA, indexB: i+1, nomeB: corB });
-                    
                     container.innerHTML += `
                         <div class="confronto-row">
                             <div class="time-a">${emojiA} ${corA}</div>
                             <input type="number" min="0" id="gols_A_${i}" value="0" class="input-gols">
-                            <span class="versus">X</span>
+                            <span style="font-weight:700; color:var(--text-muted); font-size:12px; margin:0 5px;">X</span>
                             <input type="number" min="0" id="gols_B_${i}" value="0" class="input-gols">
                             <div class="time-b">${corB} ${emojiB}</div>
-                        </div>
-                    `;
+                        </div>`;
                 }
             }
-            
-            if(window.confrontos.length === 0) {
-                alert("O sistema requer pelo menos 2 equipes completas para gerar um confronto na Súmula.");
-                return;
-            }
-            
-            document.getElementById('modal-sumula').style.display = 'flex';
-        }
-
-        function fecharModalSumula() {
-            document.getElementById('modal-sumula').style.display = 'none';
+            btn.style.display = 'block'; btn.innerText = "💾 Salvar Partida e Placares"; btn.disabled = false;
         }
 
         async function salvarPartidaComPlacares() {
-            const btn = document.getElementById('btn-confirmar-sumula');
-            btn.innerText = "Sincronizando Servidor...";
-            btn.disabled = true;
-
+            const btn = document.getElementById('btn-confirmar-sumula'); btn.innerText = "Gravando..."; btn.disabled = true;
             try {
-                // 1. Gravar a Partida
-                let convidadosPagantes = window.presentesParaSalvar.filter(j => j.tipo === 'Convidado' && j.pagou).length;
-                const { data: partidaData, error: erroPartida } = await db
-                    .from('partidas')
-                    .insert([{ quantidade_jogadores: window.presentesParaSalvar.length, renda_convidados: convidadosPagantes }])
-                    .select();
+                let convidados = window.presentesParaSalvar.filter(j => j.tipo === 'Convidado' && j.pagou).length;
+                const { data: pData, error: errP } = await db.from('partidas').insert([{ quantidade_jogadores: window.presentesParaSalvar.length, renda_convidados: convidados }]).select();
+                if(errP) throw errP;
 
-                if(erroPartida) throw erroPartida;
-                const partidaId = partidaData[0].id;
+                let presencas = [];
+                window.timesSorteados.forEach((time, idx) => { let cor = coresTimes[idx % coresTimes.length]; time.forEach(j => presencas.push({ partida_id: pData[0].id, jogador_id: j.id, pagou: j.pagou || false, equipe: cor })); });
+                window.reservasSorteados.forEach(j => presencas.push({ partida_id: pData[0].id, jogador_id: j.id, pagou: j.pagou || false, equipe: "Reserva" }));
+                const { error: errPres } = await db.from('presencas').insert(presencas);
+                if(errPres) throw errPres;
 
-                // 2. Gravar as Presenças e a Cor do Time
-                let presencasInsert = [];
-                window.timesSorteados.forEach((time, indexTime) => {
-                    let corDoTime = coresTimes[indexTime % coresTimes.length];
-                    time.forEach(j => {
-                        presencasInsert.push({ partida_id: partidaId, jogador_id: j.id, pagou: j.pagou || false, equipe: corDoTime });
-                    });
-                });
-                
-                // Gravar os Reservas
-                window.reservasSorteados.forEach(j => {
-                    presencasInsert.push({ partida_id: partidaId, jogador_id: j.id, pagou: j.pagou || false, equipe: "Reserva" });
-                });
+                let jogosInsert = window.confrontos.map(conf => ({
+                    partida_id: pData[0].id,
+                    equipe_a: conf.nomeA, gols_a: parseInt(document.getElementById(`gols_A_${conf.indexA}`).value)||0,
+                    equipe_b: conf.nomeB, gols_b: parseInt(document.getElementById(`gols_B_${conf.indexA}`).value)||0
+                }));
+                if (jogosInsert.length > 0) await db.from('jogos').insert(jogosInsert);
 
-                const { error: erroPresencas } = await db.from('presencas').insert(presencasInsert);
-                if(erroPresencas) throw erroPresencas;
+                window.partidaSalva = true; btn.innerText = "✅ Súmula Gravada!";
+                setTimeout(() => mudarAba('view-estatisticas'), 1500); // Vai pras estatisticas automatico
+            } catch(err) { alert("Erro: " + err.message); btn.innerText = "Tentar Novamente"; btn.disabled = false; }
+        }
 
-                // 3. Gravar os Placares (Súmula)
-                let jogosInsert = [];
-                window.confrontos.forEach(conf => {
-                    let golsA = parseInt(document.getElementById(`gols_A_${conf.indexA}`).value) || 0;
-                    let golsB = parseInt(document.getElementById(`gols_B_${conf.indexA}`).value) || 0;
-                    
-                    jogosInsert.push({
-                        partida_id: partidaId,
-                        equipe_a: conf.nomeA, gols_a: golsA,
-                        equipe_b: conf.nomeB, gols_b: golsB
-                    });
-                });
-
-                if (jogosInsert.length > 0) {
-                    const { error: erroJogos } = await db.from('jogos').insert(jogosInsert);
-                    if(erroJogos) throw erroJogos;
-                }
-
-                window.partidaSalva = true;
-                fecharModalSumula();
-                
-                const btnSalvarOriginal = document.getElementById('btn-salvar-partida');
-                btnSalvarOriginal.innerText = "✅ Súmula Gravada com Sucesso!";
-                btnSalvarOriginal.style.backgroundColor = "var(--supabase)";
-                btnSalvarOriginal.disabled = true;
-                
-                alert("Fantástico! Os times, as presenças e os placares foram registrados no banco de dados. As suas Estatísticas já estão sendo alimentadas.");
-
-            } catch(err) {
-                alert("Erro ao gravar Súmula no Servidor: " + err.message);
-                btn.innerText = "Confirmar e Gravar";
-                btn.disabled = false;
+        // ESTATÍSTICAS
+        async function carregarEstatisticas() {
+            document.getElementById('stat-partidas').innerText = "...";
+            document.getElementById('stat-arrecadacao').innerText = "...";
+            
+            // 1. Partidas e Renda (Simples)
+            const { data: partidas } = await db.from('partidas').select('*');
+            if(partidas) {
+                document.getElementById('stat-partidas').innerText = partidas.length;
+                let rendaPix = partidas.reduce((acc, p) => acc + (p.renda_convidados || 0), 0);
+                document.getElementById('stat-arrecadacao').innerText = rendaPix + " pagantes"; // Você pode multiplicar por R$ aqui
             }
+
+            // 2. Ranking de Presença
+            const { data: presencas } = await db.from('presencas').select('jogador_id, jogadores(nome)');
+            if(presencas) {
+                let contagem = {};
+                presencas.forEach(p => {
+                    if(p.jogadores && p.jogadores.nome) {
+                        let n = p.jogadores.nome;
+                        contagem[n] = (contagem[n] || 0) + 1;
+                    }
+                });
+                let ranking = Object.entries(contagem).sort((a, b) => b[1] - a[1]).slice(0, 5); // Top 5
+                
+                let htmlPresencas = "";
+                ranking.forEach((r, idx) => {
+                    let medalha = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : '⚽'));
+                    htmlPresencas += `<tr><td style="width:30px;">${medalha}</td><td><strong>${r[0]}</strong></td><td style="text-align:right;">${r[1]} jogos</td></tr>`;
+                });
+                document.getElementById('tabela-presencas').innerHTML = htmlPresencas || "<tr><td style='text-align:center; color:var(--text-muted);'>Sem dados ainda</td></tr>";
+            }
+
+            // 3. Times mais vitoriosos
+            const { data: jogos } = await db.from('jogos').select('*');
+            if(jogos) {
+                let vitorias = {};
+                jogos.forEach(j => {
+                    if(j.gols_a > j.gols_b) vitorias[j.equipe_a] = (vitorias[j.equipe_a] || 0) + 1;
+                    else if(j.gols_b > j.gols_a) vitorias[j.equipe_b] = (vitorias[j.equipe_b] || 0) + 1;
+                });
+                let rankingV = Object.entries(vitorias).sort((a, b) => b[1] - a[1]).slice(0, 5);
+                
+                let htmlTimes = "";
+                rankingV.forEach(r => {
+                    let emoji = emojisTimes[coresTimes.indexOf(r[0])] || '🔥';
+                    htmlTimes += `<tr><td style="width:30px;">${emoji}</td><td><strong>${r[0]}</strong></td><td style="text-align:right; color:var(--supabase); font-weight:700;">${r[1]} vitórias</td></tr>`;
+                });
+                document.getElementById('tabela-times').innerHTML = htmlTimes || "<tr><td style='text-align:center; color:var(--text-muted);'>Nenhum jogo salvo ainda</td></tr>";
+            }
+        }
+
+        // Export WPP (Simplificado)
+        function exportarWhatsApp() {
+            let texto = "📋 *RELAÇÃO DE EQUIPES* 📋\n\n";
+            window.timesSorteados.forEach((time, index) => {
+                texto += `*Equipe ${coresTimes[index % coresTimes.length]}*\n`;
+                time.forEach(j => texto += `• ${j.nome}\n`); texto += `\n`;
+            });
+            navigator.clipboard.writeText(texto).then(() => alert("Copiado!")).catch(() => alert("Falha ao copiar."));
+        }
+
+        function configurarFiltros() {
+            const m = document.getElementById('modo-sorteio'); const g = document.getElementById('incluir-goleiros');
+            m.addEventListener('change', () => { g.checked = m.value === '14' || m.value === 'todos'; });
+            g.addEventListener('change', () => { if(!g.checked && m.value==='14') m.value='12'; else if(!g.checked && m.value==='todos') m.value='todos_sem_goleiro'; });
         }
     </script>
 </body>
