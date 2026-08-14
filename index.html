@@ -18,7 +18,7 @@
 
     <style>
         :root {
-            --primary: #4f46e5; /* Azul Índigo Profissional */
+            --primary: #4f46e5;
             --primary-hover: #4338ca;
             --dark: #0f172a;
             --text-muted: #64748b;
@@ -166,8 +166,11 @@
         .btn-sortear { background-color: var(--dark); margin-top: 20px; font-size: 16px; padding: 16px; }
         .btn-sortear:hover { background-color: #1e293b; }
         
-        .btn-whatsapp { background-color: var(--whatsapp); margin-top: 15px; display: none; }
+        .btn-whatsapp { background-color: var(--whatsapp); flex: 1; margin: 0; display: none; }
         .btn-whatsapp:hover { background-color: #1da851; }
+
+        .btn-salvar { background-color: var(--primary); flex: 1; margin: 0; display: none; }
+        .btn-salvar:hover { background-color: var(--primary-hover); }
         
         .btn-limpar { background-color: var(--light); color: var(--text-muted); border: 1px solid var(--border); margin-bottom: 15px; }
         .btn-limpar:hover { background-color: #f1f5f9; color: var(--dark); }
@@ -225,6 +228,13 @@
             border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             font-size: 20px; font-weight: 600; color: var(--primary);
             border: 1px solid var(--border);
+        }
+
+        .botoes-finais {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
         }
 
         @keyframes fadeIn {
@@ -330,7 +340,11 @@
 
         <!-- Resultado do Sorteio -->
         <div id="resultado" class="team-container"></div>
-        <button id="btn-wpp" class="btn-whatsapp" onclick="exportarWhatsApp()">Compartilhar via WhatsApp</button>
+        
+        <div class="botoes-finais">
+            <button id="btn-wpp" class="btn-whatsapp" onclick="exportarWhatsApp()">Compartilhar via WhatsApp</button>
+            <button id="btn-salvar-partida" class="btn-salvar" onclick="salvarPartidaHistorico()">💾 Salvar no Histórico</button>
+        </div>
     </div>
 
     <script>
@@ -338,6 +352,10 @@
         let jogadores = [];
         const coresTimes = ["Vermelho", "Azul", "Amarelo", "Verde", "Branco", "Preto", "Roxo", "Laranja"];
         const emojisTimes = ["🔴", "🔵", "🟡", "🟢", "⚪", "⚫", "🟣", "🟠"];
+
+        // Variáveis para gravação no banco
+        window.presentesParaSalvar = [];
+        window.partidaSalva = false;
 
         window.onload = async function() {
             if(typeof supabaseUrl === 'undefined' || typeof supabaseKey === 'undefined') {
@@ -546,6 +564,7 @@
                 
                 document.getElementById('resultado').innerHTML = "";
                 document.getElementById('btn-wpp').style.display = 'none';
+                document.getElementById('btn-salvar-partida').style.display = 'none';
             }
         }
 
@@ -650,6 +669,7 @@
             }
 
             document.getElementById('btn-wpp').style.display = 'none';
+            document.getElementById('btn-salvar-partida').style.display = 'none';
             const resultado = document.getElementById('resultado');
             
             const frases = [
@@ -774,8 +794,71 @@
             window.reservasSorteados = reservas;
 
             mostrarResultado(times, reservas, incluiGoleiros);
+            
+            // Prepara as variáveis para salvar a partida
+            window.presentesParaSalvar = presentes;
+            window.partidaSalva = false;
+            
             document.getElementById('btn-wpp').style.display = 'block';
+            
+            const btnSalvar = document.getElementById('btn-salvar-partida');
+            btnSalvar.style.display = 'block';
+            btnSalvar.innerText = "💾 Salvar no Histórico";
+            btnSalvar.disabled = false;
+            btnSalvar.style.backgroundColor = "var(--primary)";
         }
+
+        // ==========================================
+        // FUNÇÃO DE GRAVAÇÃO DO HISTÓRICO
+        // ==========================================
+        async function salvarPartidaHistorico() {
+            if(window.partidaSalva) return alert("Esta partida já foi salva no banco de dados!");
+            
+            const btn = document.getElementById('btn-salvar-partida');
+            btn.innerText = "Processando...";
+            btn.disabled = true;
+
+            try {
+                // Conta quantos convidados pagaram para registrar a renda
+                let convidadosPagantes = window.presentesParaSalvar.filter(j => j.tipo === 'Convidado' && j.pagou).length;
+                
+                // 1. Cria o registro geral da partida
+                const { data: partidaData, error: erroPartida } = await db
+                    .from('partidas')
+                    .insert([{ 
+                        quantidade_jogadores: window.presentesParaSalvar.length,
+                        renda_convidados: convidadosPagantes 
+                    }])
+                    .select();
+
+                if(erroPartida) throw erroPartida;
+
+                const partidaId = partidaData[0].id;
+
+                // 2. Prepara e salva a presença de cada jogador vinculado àquela partida
+                const presencasInsert = window.presentesParaSalvar.map(j => ({
+                    partida_id: partidaId,
+                    jogador_id: j.id,
+                    pagou: j.pagou || false
+                }));
+
+                const { error: erroPresencas } = await db
+                    .from('presencas')
+                    .insert(presencasInsert);
+
+                if(erroPresencas) throw erroPresencas;
+
+                window.partidaSalva = true;
+                btn.innerText = "✅ Salvo com Sucesso!";
+                btn.style.backgroundColor = "var(--supabase)";
+                
+            } catch(err) {
+                alert("Erro ao gravar histórico: " + err.message);
+                btn.innerText = "💾 Tentar Salvar Novamente";
+                btn.disabled = false;
+            }
+        }
+        // ==========================================
 
         function mostrarResultado(times, reservas, incluiGoleiros) {
             const resultado = document.getElementById('resultado');
