@@ -3,147 +3,228 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sorteador do Baba (Pro)</title>
+    <title>Sorteador Pro | Gestão Esportiva</title>
+    
+    <!-- Importação de Fonte Moderna (Inter) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Biblioteca do Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- ARQUIVO DE CONFIGURAÇÃO EXTERNO -->
     <script src="config.js"></script>
 
     <style>
         :root {
-            --primary: #10b981;
-            --dark: #1f2937;
-            --light: #f3f4f6;
+            --primary: #4f46e5; /* Azul Índigo Profissional */
+            --primary-hover: #4338ca;
+            --dark: #0f172a;
+            --text-muted: #64748b;
+            --light: #f8fafc;
+            --white: #ffffff;
             --whatsapp: #25D366;
             --danger: #ef4444;
             --warning: #f59e0b;
             --purple: #8b5cf6;
-            --supabase: #3ecf8e;
-            --pos-color: #6b7280;
+            --supabase: #10b981; 
+            --pos-color: #64748b;
+            --border: #e2e8f0;
         }
+        
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', sans-serif;
             background-color: var(--light);
             color: var(--dark);
             max-width: 600px;
             margin: 0 auto;
-            padding: 15px;
+            padding: 20px 15px;
             overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
         }
-        h1, h2 { text-align: center; }
+        
+        h1 { 
+            text-align: center; 
+            font-weight: 700; 
+            letter-spacing: -0.02em;
+            color: var(--dark);
+            margin-bottom: 5px;
+        }
+        
+        h2 { 
+            text-align: center; 
+            font-size: 18px; 
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+
         .cabecalho-app {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
+            margin-bottom: 20px;
         }
+        
+        .cabecalho-app h1 { margin: 0; font-size: 24px; }
+        
         .btn-sair {
-            background-color: var(--danger);
-            padding: 5px 10px;
+            background-color: white;
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+            padding: 8px 12px;
             font-size: 14px;
             width: auto;
-            border-radius: 4px;
+            border-radius: 6px;
         }
+        .btn-sair:hover { background-color: var(--light); color: var(--danger); border-color: var(--danger); }
+
         .status-nuvem {
             text-align: center;
             font-size: 12px;
-            font-weight: bold;
+            font-weight: 600;
             color: white;
             background-color: var(--supabase);
-            padding: 5px;
-            border-radius: 4px;
-            margin-bottom: 15px;
-        }
-        .card {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 8px;
+            border-radius: 6px;
             margin-bottom: 20px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .card {
+            background: var(--white);
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            margin-bottom: 24px;
             box-sizing: border-box;
             width: 100%;
+            border: 1px solid var(--border);
         }
         
         /* AUTH LAYOUT */
-        #auth-container { text-align: center; }
+        #auth-container { margin-top: 40px; }
         .auth-input {
             width: 100%;
-            padding: 12px;
-            margin-bottom: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
+            padding: 14px;
+            margin-bottom: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
             box-sizing: border-box;
-            font-size: 16px;
+            font-size: 15px;
+            transition: all 0.2s;
+            font-family: inherit;
         }
-        .btn-login { background-color: var(--primary); margin-bottom: 10px; }
-        .btn-register { background-color: var(--dark); }
-        .auth-msg { margin-top: 10px; font-size: 14px; color: var(--danger); font-weight: bold; }
+        .auth-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+        }
+        
+        .btn-login { background-color: var(--primary); margin-bottom: 12px; }
+        .btn-register { background-color: var(--white); color: var(--dark); border: 1px solid var(--border); }
+        .btn-register:hover { background-color: var(--light); }
+        .auth-msg { margin-top: 15px; font-size: 14px; font-weight: 500; text-align: center; line-height: 1.4; }
 
         /* APP LAYOUT */
-        .linha-nome { width: 100%; margin-bottom: 10px; }
+        .linha-nome { width: 100%; margin-bottom: 12px; }
         .linha-nome input {
-            width: 100%; padding: 12px; border: 1px solid #ccc;
-            border-radius: 4px; font-size: 16px; box-sizing: border-box;
+            width: 100%; padding: 14px; border: 1px solid var(--border);
+            border-radius: 8px; font-size: 15px; box-sizing: border-box;
+            font-family: inherit; transition: all 0.2s;
         }
+        .linha-nome input:focus {
+            outline: none; border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+        }
+        
         .linha-selects {
-            display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; width: 100%;
+            display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; width: 100%;
         }
         .linha-selects select {
-            flex: 1; min-width: 90px; padding: 10px; border: 1px solid #ccc;
-            border-radius: 4px; font-size: 15px; box-sizing: border-box;
+            flex: 1; min-width: 90px; padding: 12px; border: 1px solid var(--border);
+            border-radius: 8px; font-size: 14px; box-sizing: border-box;
+            background-color: var(--white); font-family: inherit; cursor: pointer;
         }
 
         button {
-            padding: 12px; background-color: var(--primary); color: white;
-            border: none; border-radius: 4px; cursor: pointer;
-            font-weight: bold; width: 100%; font-size: 16px;
+            padding: 14px; background-color: var(--primary); color: white;
+            border: none; border-radius: 8px; cursor: pointer;
+            font-weight: 600; width: 100%; font-size: 15px;
+            transition: all 0.2s ease; font-family: inherit;
         }
-        button:hover { opacity: 0.9; }
-        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        button:hover { background-color: var(--primary-hover); transform: translateY(-1px); }
+        button:disabled { background-color: #cbd5e1; cursor: not-allowed; transform: none; }
         
-        .btn-sortear { background-color: var(--dark); margin-top: 15px; font-size: 18px; padding: 15px; }
+        .btn-sortear { background-color: var(--dark); margin-top: 20px; font-size: 16px; padding: 16px; }
+        .btn-sortear:hover { background-color: #1e293b; }
+        
         .btn-whatsapp { background-color: var(--whatsapp); margin-top: 15px; display: none; }
-        .btn-limpar { background-color: var(--warning); color: black; margin-bottom: 15px; }
+        .btn-whatsapp:hover { background-color: #1da851; }
+        
+        .btn-limpar { background-color: var(--light); color: var(--text-muted); border: 1px solid var(--border); margin-bottom: 15px; }
+        .btn-limpar:hover { background-color: #f1f5f9; color: var(--dark); }
         
         ul { list-style: none; padding: 0; margin: 0; }
         li {
-            background: var(--light); margin: 8px 0; padding: 12px; border-radius: 4px;
+            background: var(--light); margin: 8px 0; padding: 14px; border-radius: 8px;
             display: flex; justify-content: space-between; align-items: center;
-            flex-wrap: wrap; gap: 10px;
+            flex-wrap: wrap; gap: 10px; border: 1px solid var(--border);
         }
-        .info-jogador { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
+        
+        .info-jogador { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: 15px; }
         .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-        .btn-small { width: auto; padding: 5px 10px; font-size: 14px; }
+        
+        .btn-small { width: auto; padding: 6px 12px; font-size: 13px; border-radius: 6px; }
         .btn-chegou { background-color: var(--primary); }
-        .btn-desmarcar { background-color: var(--warning); color: black; }
+        .btn-desmarcar { background-color: var(--white); color: var(--dark); border: 1px solid var(--border); }
         .btn-excluir { background-color: transparent; color: var(--danger); border: 1px solid var(--danger); }
+        .btn-excluir:hover { background-color: var(--danger); color: white; }
         .btn-pagou { background-color: var(--primary); }
         .btn-devendo { background-color: var(--danger); }
 
         .badge {
-            background-color: var(--dark); color: white; padding: 2px 8px;
-            border-radius: 12px; font-size: 12px; font-weight: bold; margin-right: 5px;
+            background-color: var(--dark); color: white; padding: 4px 8px;
+            border-radius: 12px; font-size: 11px; font-weight: 600; margin-right: 4px;
         }
-        .badge-posicao { background-color: var(--pos-color); font-weight: normal; }
+        .badge-posicao { background-color: var(--pos-color); font-weight: 500; }
         .badge-convidado { background-color: var(--purple); }
 
-        .team-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; }
+        .team-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
         .team {
-            background: white; padding: 15px; border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-top: 4px solid var(--primary);
-            animation: fadeIn 0.5s ease-in-out;
+            background: white; padding: 20px; border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); 
+            border-top: 5px solid var(--primary);
+            border-left: 1px solid var(--border);
+            border-right: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            animation: fadeIn 0.4s ease-out;
         }
+        .team h3 { margin-top: 0; font-size: 16px; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 12px; }
+        .team li { border: none; padding: 8px 0; background: transparent; border-bottom: 1px dashed var(--border); border-radius: 0; }
+        .team li:last-child { border-bottom: none; }
         .team-reservas { border-top-color: var(--danger); }
         
         .checkbox-group {
-            display: flex; align-items: center; gap: 10px; margin-top: 10px;
-            font-weight: bold; flex-wrap: wrap; background: #f9fafb;
-            padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb;
+            display: flex; align-items: flex-start; gap: 10px; margin-top: 12px;
+            font-weight: 500; flex-wrap: wrap; background: #f8fafc;
+            padding: 12px; border-radius: 8px; border: 1px solid var(--border);
         }
-        .checkbox-group input { width: auto; min-width: auto; transform: scale(1.3); margin-left: 5px; }
+        .checkbox-group input { width: 18px; height: 18px; margin-top: 2px; cursor: pointer; accent-color: var(--primary); }
+        .checkbox-group label { cursor: pointer; font-size: 14px; line-height: 1.4; color: var(--dark); }
 
         .animacao-suspense {
             text-align: center; padding: 40px 20px; background: white;
-            border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            font-size: 22px; font-weight: bold; color: var(--dark);
+            border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            font-size: 20px; font-weight: 600; color: var(--primary);
+            border: 1px solid var(--border);
         }
 
         @keyframes fadeIn {
@@ -156,15 +237,15 @@
     
     <!-- TELA DE LOGIN / CADASTRO -->
     <div id="auth-container">
-        <h1>⚽ Sorteador do Baba ⚽</h1>
-        <p style="color: var(--pos-color); font-size: 14px;">Plataforma de Gestão de Babas</p>
+        <h1>Sorteador Pro</h1>
+        <p class="subtitle">Plataforma Profissional de Gestão de Elencos</p>
         
         <div class="card">
             <h2>Acesso do Organizador</h2>
-            <input type="email" id="auth-email" class="auth-input" placeholder="Seu E-mail">
-            <input type="password" id="auth-password" class="auth-input" placeholder="Sua Senha">
+            <input type="email" id="auth-email" class="auth-input" placeholder="Seu E-mail Profissional">
+            <input type="password" id="auth-password" class="auth-input" placeholder="Sua Senha Segura">
             
-            <button class="btn-login" onclick="fazerLogin()">Entrar</button>
+            <button class="btn-login" onclick="fazerLogin()">Acessar Painel</button>
             <button class="btn-register" onclick="criarConta()">Criar Nova Conta</button>
             
             <div id="auth-msg" class="auth-msg"></div>
@@ -175,16 +256,17 @@
     <div id="app-container" style="display: none;">
         
         <div class="cabecalho-app">
-            <h1 style="margin: 0;">⚽ Sorteador</h1>
-            <button class="btn-sair" onclick="fazerLogout()">Sair</button>
+            <h1>Sorteador Pro</h1>
+            <button class="btn-sair" onclick="fazerLogout()">Sair da Conta</button>
         </div>
         
-        <div class="status-nuvem" id="status-db">Aguardando conexão...</div>
+        <div class="status-nuvem" id="status-db">Aguardando conexão segura...</div>
 
         <!-- Formulário de Cadastro -->
         <div class="card">
+            <h2>Adicionar Jogador</h2>
             <div class="linha-nome">
-                <input type="text" id="nome" placeholder="Nome do Jogador" autocomplete="off">
+                <input type="text" id="nome" placeholder="Nome Completo ou Apelido" autocomplete="off">
             </div>
             <div class="linha-selects">
                 <select id="tipo">
@@ -206,18 +288,18 @@
                     <option value="1">Perna (1)</option>
                 </select>
             </div>
-            <button id="btn-adicionar" onclick="adicionarJogador()">Adicionar ao Elenco</button>
+            <button id="btn-adicionar" onclick="adicionarJogador()">Incluir no Sistema</button>
         </div>
 
         <!-- Lista de Presença -->
-        <div class="card" style="border: 2px solid var(--primary);">
-            <h2>✅ Chegaram Hoje (<span id="total-presentes">0</span>)</h2>
-            <button class="btn-limpar" onclick="zerarPresencas()" id="btn-zerar" style="display: none;">🔄 Novo Baba (Zerar Presenças)</button>
+        <div class="card" style="border: 2px solid var(--primary); background-color: #f8fafc;">
+            <h2>Chegaram Hoje (<span id="total-presentes">0</span>)</h2>
+            <button class="btn-limpar" onclick="zerarPresencas()" id="btn-zerar" style="display: none;">Zerar Lista de Presença</button>
             <ul id="lista-presentes"></ul>
             
-            <div class="form-group" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">
-                <label style="width: 100%; font-weight: bold;">Regra do Sorteio:</label>
-                <select id="modo-sorteio" style="width: 100%; padding: 10px; margin-bottom: 5px;">
+            <div class="form-group" style="margin-top: 24px; border-top: 1px solid var(--border); padding-top: 20px;">
+                <label style="width: 100%; font-weight: 600; display: block; margin-bottom: 8px;">Configurações do Sorteio:</label>
+                <select id="modo-sorteio" style="width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 1px solid var(--border); font-family: inherit; font-size: 14px; cursor: pointer;">
                     <option value="12">12 PRIMEIROS (2 times - Sem Goleiros)</option>
                     <option value="14">14 PRIMEIROS (2 times - Com Goleiros)</option>
                     <option value="todos_sem_goleiro">TODOS de linha (Múltiplos - Sem Goleiros)</option>
@@ -226,39 +308,40 @@
                 
                 <div class="checkbox-group">
                     <input type="checkbox" id="incluir-goleiros">
-                    <label for="incluir-goleiros">Incluir Goleiros no Sorteio</label>
+                    <label for="incluir-goleiros">Incluir Goleiros na distribuição</label>
                 </div>
                 
                 <div class="checkbox-group">
                     <input type="checkbox" id="priorizar-ordem">
-                    <label for="priorizar-ordem" style="font-size: 14px;">
+                    <label for="priorizar-ordem">
                         <strong>Priorizar Ordem de Chegada</strong><br>
-                        <small style="color: #6b7280; font-weight: normal;">Se desmarcado, mistura todos os jogadores globalmente para focar 100% no equilíbrio.</small>
+                        <span style="color: var(--text-muted); font-size: 13px; font-weight: normal; margin-top: 4px; display: block;">Se desmarcado, a inteligência artificial distribuirá todos os presentes focando 100% no equilíbrio técnico e posicional.</span>
                     </label>
                 </div>
             </div>
-            <button class="btn-sortear" onclick="iniciarSorteioComSuspense()">🎲 Sortear Times</button>
+            <button class="btn-sortear" onclick="iniciarSorteioComSuspense()">Gerar Equipes</button>
         </div>
 
         <!-- Lista de Elenco -->
         <div class="card">
-            <h2>❌ Elenco na Nuvem (<span id="total-ausentes">0</span>)</h2>
+            <h2>Elenco Cadastrado (<span id="total-ausentes">0</span>)</h2>
             <ul id="lista-ausentes"></ul>
         </div>
 
         <!-- Resultado do Sorteio -->
         <div id="resultado" class="team-container"></div>
-        <button id="btn-wpp" class="btn-whatsapp" onclick="exportarWhatsApp()">📱 Copiar para WhatsApp</button>
+        <button id="btn-wpp" class="btn-whatsapp" onclick="exportarWhatsApp()">Compartilhar via WhatsApp</button>
     </div>
 
     <script>
         let db;
         let jogadores = [];
-        const coresTimes = ["🔴 Vermelho", "🔵 Azul", "🟡 Amarelo", "🟢 Verde", "⚪ Branco", "⚫ Preto", "🟣 Roxo", "🟠 Laranja"];
+        const coresTimes = ["Vermelho", "Azul", "Amarelo", "Verde", "Branco", "Preto", "Roxo", "Laranja"];
+        const emojisTimes = ["🔴", "🔵", "🟡", "🟢", "⚪", "⚫", "🟣", "🟠"];
 
         window.onload = async function() {
             if(typeof supabaseUrl === 'undefined' || typeof supabaseKey === 'undefined') {
-                alert("Erro: Arquivo config.js não encontrado!");
+                alert("Erro crítico: Arquivo config.js não localizado no servidor.");
                 return;
             }
 
@@ -267,7 +350,7 @@
         };
 
         // ==========================================
-        // SISTEMA DE AUTENTICAÇÃO (SaaS)
+        // SISTEMA DE AUTENTICAÇÃO
         // ==========================================
         async function verificarSessao() {
             const { data: { session } } = await db.auth.getSession();
@@ -283,16 +366,19 @@
             const password = document.getElementById('auth-password').value;
             const msg = document.getElementById('auth-msg');
 
-            if(password.length < 6) return msg.innerText = "A senha deve ter no mínimo 6 caracteres.";
-            msg.innerText = "Criando conta...";
+            if(password.length < 6) return msg.innerText = "A senha deve conter no mínimo 6 caracteres de segurança.";
+            
+            msg.style.color = "var(--text-muted)";
+            msg.innerText = "Processando criação de conta...";
 
             const { data, error } = await db.auth.signUp({ email, password });
             
             if (error) {
-                msg.innerText = "Erro: " + error.message;
+                msg.style.color = "var(--danger)";
+                msg.innerText = "Erro na validação: " + error.message;
             } else {
                 msg.style.color = "var(--primary)";
-                msg.innerText = "Conta criada com sucesso! Você já pode entrar.";
+                msg.innerHTML = "✅ <b>Conta criada com sucesso!</b><br><br>Por favor, acesse sua caixa de entrada (ou pasta de spam) e clique no link de confirmação enviado para o seu e-mail antes de fazer o login.";
             }
         }
 
@@ -301,11 +387,14 @@
             const password = document.getElementById('auth-password').value;
             const msg = document.getElementById('auth-msg');
 
-            msg.innerText = "Conectando...";
+            msg.style.color = "var(--text-muted)";
+            msg.innerText = "Autenticando credenciais...";
+            
             const { data, error } = await db.auth.signInWithPassword({ email, password });
             
             if (error) {
-                msg.innerText = "Email ou senha incorretos.";
+                msg.style.color = "var(--danger)";
+                msg.innerText = "Credenciais inválidas ou e-mail não confirmado.";
             } else {
                 mostrarApp();
             }
@@ -333,7 +422,7 @@
         // ==========================================
 
         async function carregarElencoDaNuvem() {
-            document.getElementById('status-db').innerText = "🔄 Sincronizando seu elenco...";
+            document.getElementById('status-db').innerText = "Sincronizando banco de dados...";
             document.getElementById('status-db').style.backgroundColor = "var(--warning)";
             
             const { data, error } = await db
@@ -343,7 +432,7 @@
 
             if (error) {
                 console.error("Erro ao buscar:", error);
-                document.getElementById('status-db').innerText = "❌ Erro de permissão ou conexão";
+                document.getElementById('status-db').innerText = "Falha na conexão com o servidor seguro.";
                 document.getElementById('status-db').style.backgroundColor = "var(--danger)";
                 return;
             }
@@ -357,7 +446,7 @@
                 pagou: estadoLocal[j.id]?.pagou || false
             }));
 
-            document.getElementById('status-db').innerText = "✅ Conectado - Seu Elenco Protegido";
+            document.getElementById('status-db').innerText = "Sincronização Ativa - Banco de Dados Protegido";
             document.getElementById('status-db').style.backgroundColor = "var(--supabase)";
             atualizarListas();
         }
@@ -369,10 +458,10 @@
             const nivel = parseInt(document.getElementById('nivel').value);
             const nome = nomeInput.value.trim();
 
-            if (nome === "") return alert("Digite o nome do jogador!");
+            if (nome === "") return alert("Por favor, preencha o nome do atleta.");
 
             const btn = document.getElementById('btn-adicionar');
-            btn.innerText = "Adicionando...";
+            btn.innerText = "Processando...";
             btn.disabled = true;
 
             const { data, error } = await db
@@ -381,7 +470,7 @@
                 .select(); 
 
             if (error) {
-                alert("Erro ao salvar: " + error.message);
+                alert("Erro ao gravar registro: " + error.message);
             } else {
                 nomeInput.value = "";
                 nomeInput.focus();
@@ -393,19 +482,19 @@
                 atualizarListas();
             }
 
-            btn.innerText = "Adicionar ao Elenco";
+            btn.innerText = "Incluir no Sistema";
             btn.disabled = false;
         }
 
         async function removerJogador(idNuvem, indexArray) {
-            if(confirm("Tem certeza que deseja excluir este jogador definitivamente?")) {
+            if(confirm("Confirma a exclusão permanente deste registro do banco de dados?")) {
                 const { error } = await db
                     .from('jogadores')
                     .delete()
                     .eq('id', idNuvem);
 
                 if (error) {
-                    alert("Erro ao excluir: " + error.message);
+                    alert("Falha ao excluir: " + error.message);
                 } else {
                     jogadores.splice(indexArray, 1);
                     salvarEstadoLocal();
@@ -446,7 +535,7 @@
         }
         
         function zerarPresencas() {
-            if(confirm("Deseja desmarcar todos os jogadores? O elenco continuará salvo na nuvem.")) {
+            if(confirm("Esta ação removerá todos os jogadores da lista de chegada. Confirmar?")) {
                 jogadores.forEach(j => {
                     j.presente = false;
                     j.ordemChegada = 0;
@@ -484,16 +573,15 @@
             });
 
             presentes.forEach((j, pos) => {
-                let icone = j.posicao === 'Goleiro' ? '🧤' : '⚽';
                 let tagConvidado = j.tipo === 'Convidado' ? '<span class="badge badge-convidado">Convidado</span>' : '';
                 let tagPosicao = (j.posicao !== 'Goleiro' && j.posicao !== 'Linha') ? `<span class="badge badge-posicao">${j.posicao}</span>` : '';
                 
                 let btnPix = '';
                 if(j.tipo === 'Convidado') {
                     if(j.pagou) {
-                        btnPix = `<button class="btn-small btn-pagou" onclick="alternarPagamento(${j.indexArray})">💸 Pago</button>`;
+                        btnPix = `<button class="btn-small btn-pagou" onclick="alternarPagamento(${j.indexArray})">Pago</button>`;
                     } else {
-                        btnPix = `<button class="btn-small btn-devendo" onclick="alternarPagamento(${j.indexArray})">⚠️ Devendo</button>`;
+                        btnPix = `<button class="btn-small btn-devendo" onclick="alternarPagamento(${j.indexArray})">Pendente</button>`;
                     }
                 }
 
@@ -502,29 +590,28 @@
                         <div class="info-jogador">
                             <span class="badge">${pos + 1}º</span> 
                             ${tagConvidado}
-                            ${icone} <strong>${j.nome}</strong> ${tagPosicao} <small>(Nv ${j.nivel})</small>
+                            <strong>${j.nome}</strong> ${tagPosicao} <small>(Nv ${j.nivel})</small>
                         </div>
                         <div class="actions">
                             ${btnPix}
-                            <button class="btn-small btn-desmarcar" onclick="desmarcarPresenca(${j.indexArray})">Voltar</button>
+                            <button class="btn-small btn-desmarcar" onclick="desmarcarPresenca(${j.indexArray})">Remover</button>
                         </div>
                     </li>
                 `;
             });
 
             ausentes.forEach(j => {
-                let icone = j.posicao === 'Goleiro' ? '🧤' : '⚽';
                 let tagConvidado = j.tipo === 'Convidado' ? '<span class="badge badge-convidado">Convidado</span>' : '';
                 let tagPosicao = (j.posicao !== 'Goleiro' && j.posicao !== 'Linha') ? `<span class="badge badge-posicao">${j.posicao}</span>` : '';
                 
                 listaAusentes.innerHTML += `
                     <li>
                         <div class="info-jogador">
-                            ${tagConvidado} ${icone} <strong>${j.nome}</strong> ${tagPosicao} <small>(Nv ${j.nivel})</small>
+                            ${tagConvidado} <strong>${j.nome}</strong> ${tagPosicao} <small>(Nv ${j.nivel})</small>
                         </div>
                         <div class="actions">
-                            <button class="btn-small btn-chegou" onclick="marcarPresenca(${j.indexArray})">Chegou +</button>
-                            <button class="btn-small btn-excluir" onclick="removerJogador('${j.id}', ${j.indexArray})">X</button>
+                            <button class="btn-small btn-chegou" onclick="marcarPresenca(${j.indexArray})">Presente</button>
+                            <button class="btn-small btn-excluir" onclick="removerJogador('${j.id}', ${j.indexArray})">Excluir</button>
                         </div>
                     </li>
                 `;
@@ -555,25 +642,25 @@
                 return a.ordemChegada - b.ordemChegada;
             });
             
-            if (presentes.length < 2) return alert("Marque a presença de pelo menos 2 jogadores para sortear!");
+            if (presentes.length < 2) return alert("É necessário confirmar a presença de pelo menos 2 atletas.");
 
             let inadimplentes = presentes.filter(j => j.tipo === 'Convidado' && !j.pagou);
             if(inadimplentes.length > 0) {
-                alert(`⚠️ ATENÇÃO: Os convidados abaixo ainda NÃO PAGARAM O PIX e ficarão de fora do sorteio:\n\n👉 ${inadimplentes.map(i => i.nome).join(', ')}\n\n(Para incluí-los, marque o pagamento)`);
+                alert(`Alerta do Sistema: Existem convidados com pagamento pendente que serão excluídos do sorteio automático:\n\n- ${inadimplentes.map(i => i.nome).join('\n- ')}\n\n(Altere o status para "Pago" para incluí-los)`);
             }
 
             document.getElementById('btn-wpp').style.display = 'none';
             const resultado = document.getElementById('resultado');
             
             const frases = [
-                "Analisando formações táticas... 📋",
-                "Calculando a média das notas... ⚖️",
-                "Separando as panelinhas... 🍳",
-                "Equilibrando os times... ☁️",
-                "Preparando a resenha do Baba! 🍻"
+                "Inicializando algoritmo de distribuição...",
+                "Processando análise tática das posições...",
+                "Calculando e balanceando nível técnico...",
+                "Montando estruturas das equipes...",
+                "Gerando relatórios finais..."
             ];
             
-            resultado.innerHTML = `<div class="animacao-suspense" id="texto-suspense">🎲 Misturando os times...</div>`;
+            resultado.innerHTML = `<div class="animacao-suspense" id="texto-suspense">Iniciando processamento...</div>`;
             
             let contador = 0;
             let intervalo = setInterval(() => {
@@ -696,27 +783,26 @@
             
             times.forEach((time, index) => {
                 const media = time.length ? (time.reduce((acc, j) => acc + j.nivel, 0) / time.length).toFixed(1) : 0;
-                let nomeCor = coresTimes[index % coresTimes.length];
-                let tituloTime = incluiGoleiros ? `Time ${nomeCor}` : `Time ${nomeCor} (Sem Gol)`;
+                let corReal = coresTimes[index % coresTimes.length];
+                let emoji = emojisTimes[index % emojisTimes.length];
+                let tituloTime = incluiGoleiros ? `Equipe ${corReal}` : `Equipe ${corReal} (Sem Gol)`;
                 
-                let html = `<div class="team"><h3>${tituloTime} <small>(⭐️ ${media})</small></h3><ul>`;
+                let html = `<div class="team"><h3>${emoji} ${tituloTime} <small style="color:var(--text-muted); font-weight:normal;">(Força: ${media})</small></h3><ul>`;
                 time.forEach(j => {
-                    let icone = j.posicao === 'Goleiro' ? '🧤' : '⚽';
                     let tagPosicao = (j.posicao !== 'Goleiro' && j.posicao !== 'Linha') ? ` <span class="badge badge-posicao">${j.posicao}</span>` : '';
-                    let tagPix = (j.tipo === 'Convidado') ? ' <span style="font-size:12px;">💸</span>' : '';
-                    html += `<li>${icone} ${j.nome}${tagPosicao}${tagPix}</li>`;
+                    let tagPix = (j.tipo === 'Convidado') ? ' <span style="font-size:11px; color:var(--primary); font-weight:bold;">[PAGO]</span>' : '';
+                    html += `<li><strong>${j.nome}</strong> ${tagPosicao}${tagPix}</li>`;
                 });
                 html += `</ul></div>`;
                 resultado.innerHTML += html;
             });
 
             if (reservas.length > 0) {
-                let htmlReservas = `<div class="team team-reservas"><h3>De Fora / Próximos</h3><ul>`;
+                let htmlReservas = `<div class="team team-reservas"><h3>Reservas / Próximos</h3><ul>`;
                 reservas.forEach(j => {
-                    let icone = j.posicao === 'Goleiro' ? '🧤' : '⚽';
                     let tagPosicao = (j.posicao !== 'Goleiro' && j.posicao !== 'Linha') ? ` <span class="badge badge-posicao">${j.posicao}</span>` : '';
-                    let tagPix = (j.tipo === 'Convidado') ? ' <span style="font-size:12px;">💸</span>' : '';
-                    htmlReservas += `<li>${icone} ${j.nome}${tagPosicao}${tagPix}</li>`;
+                    let tagPix = (j.tipo === 'Convidado') ? ' <span style="font-size:11px; color:var(--primary); font-weight:bold;">[PAGO]</span>' : '';
+                    htmlReservas += `<li><strong>${j.nome}</strong> ${tagPosicao}${tagPix}</li>`;
                 });
                 htmlReservas += `</ul></div>`;
                 resultado.innerHTML += htmlReservas;
@@ -724,35 +810,36 @@
         }
 
         function exportarWhatsApp() {
-            let texto = "⚽ *TIMES DO BABA* ⚽\n\n";
+            let texto = "📋 *RELAÇÃO DE EQUIPES* 📋\n\n";
             let incluiGoleiros = document.getElementById('incluir-goleiros').checked;
             
             window.timesSorteados.forEach((time, index) => {
-                let nomeCor = coresTimes[index % coresTimes.length];
-                let tituloTime = incluiGoleiros ? `*Time ${nomeCor}*` : `*Time ${nomeCor} (Sem Goleiro)*`;
+                let corReal = coresTimes[index % coresTimes.length];
+                let emoji = emojisTimes[index % emojisTimes.length];
+                let tituloTime = incluiGoleiros ? `*Equipe ${corReal}*` : `*Equipe ${corReal} (Sem Goleiro)*`;
                 
-                texto += `${tituloTime}\n`;
+                texto += `${emoji} ${tituloTime}\n`;
                 time.forEach(j => {
-                    let iconPix = (j.tipo === 'Convidado') ? ' 💸' : '';
+                    let iconPix = (j.tipo === 'Convidado') ? ' ✅' : '';
                     let tagPosicao = (j.posicao !== 'Goleiro' && j.posicao !== 'Linha') ? ` (${j.posicao})` : '';
-                    texto += `${j.posicao === 'Goleiro' ? '🧤' : '⚽'} ${j.nome}${tagPosicao}${iconPix}\n`;
+                    texto += `• ${j.nome}${tagPosicao}${iconPix}\n`;
                 });
                 texto += `\n`;
             });
 
             if (window.reservasSorteados.length > 0) {
-                texto += `*De fora / Próximos:*\n`;
+                texto += `*Reservas / Próximos:*\n`;
                 window.reservasSorteados.forEach(j => {
-                    let iconPix = (j.tipo === 'Convidado') ? ' 💸' : '';
+                    let iconPix = (j.tipo === 'Convidado') ? ' ✅' : '';
                     let tagPosicao = (j.posicao !== 'Goleiro' && j.posicao !== 'Linha') ? ` (${j.posicao})` : '';
-                    texto += `${j.posicao === 'Goleiro' ? '🧤' : '⚽'} ${j.nome}${tagPosicao}${iconPix}\n`;
+                    texto += `• ${j.nome}${tagPosicao}${iconPix}\n`;
                 });
             }
 
             navigator.clipboard.writeText(texto).then(() => {
-                alert("✅ Times copiados! Agora é só colar no grupo do WhatsApp.");
+                alert("Conteúdo copiado! Pronto para colar no WhatsApp.");
             }).catch(() => {
-                alert("❌ Erro ao copiar. Tente selecionar o texto manualmente.");
+                alert("Falha ao copiar. Selecione o texto manualmente.");
             });
         }
         
