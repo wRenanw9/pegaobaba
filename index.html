@@ -13,65 +13,39 @@
 
     <style>
         :root {
-            --primary: #4f46e5;
-            --primary-hover: #4338ca;
-            --dark: #0f172a;
-            --text-muted: #64748b;
-            --light: #f8fafc;
-            --white: #ffffff;
-            --whatsapp: #25D366;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --purple: #8b5cf6;
-            --supabase: #10b981; 
-            --pos-color: #64748b;
-            --border: #e2e8f0;
-            --nav-height: 65px;
+            --primary: #4f46e5; --primary-hover: #4338ca; --dark: #0f172a; --text-muted: #64748b;
+            --light: #f8fafc; --white: #ffffff; --whatsapp: #25D366; --danger: #ef4444;
+            --warning: #f59e0b; --purple: #8b5cf6; --supabase: #10b981; --pos-color: #64748b;
+            --border: #e2e8f0; --nav-height: 65px;
         }
         
-        body {
-            font-family: 'Inter', sans-serif; background-color: var(--light); color: var(--dark);
-            max-width: 600px; margin: 0 auto; padding: 0; overflow-x: hidden; -webkit-font-smoothing: antialiased;
-            padding-bottom: calc(var(--nav-height) + 20px); 
-        }
-        
-        h1, h2 { text-align: center; margin-bottom: 20px; }
-        h1 { font-weight: 700; letter-spacing: -0.02em; margin-top: 20px; }
-        h2 { font-size: 18px; font-weight: 600; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--light); color: var(--dark); max-width: 600px; margin: 0 auto; padding: 0; overflow-x: hidden; -webkit-font-smoothing: antialiased; padding-bottom: calc(var(--nav-height) + 20px); }
+        h1, h2, h3 { margin-bottom: 20px; }
+        h1 { text-align: center; font-weight: 700; letter-spacing: -0.02em; margin-top: 20px; }
+        h2 { text-align: center; font-size: 18px; font-weight: 600; }
         .subtitle { text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 30px; margin-top: -15px;}
 
         /* NAVEGAÇÃO SUPERIOR */
-        .top-bar {
-            display: flex; justify-content: center; align-items: center;
-            padding: 15px 20px; background: white; border-bottom: 1px solid var(--border);
-            position: sticky; top: 0; z-index: 100;
-        }
-        .top-bar h1 { margin: 0; font-size: 20px; color: var(--primary); }
-        
-        .status-nuvem { text-align: center; font-size: 13px; font-weight: 600; color: white; background-color: var(--supabase); padding: 10px; border-radius: 8px; margin-bottom: 20px; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: white; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+        .top-bar h1 { margin: 0; font-size: 18px; color: var(--primary); }
+        .top-actions { display: flex; align-items: center; gap: 10px; }
+        .status-nuvem { font-size: 10px; font-weight: 600; color: white; background-color: var(--supabase); padding: 4px 8px; border-radius: 6px; }
+        .btn-sair { background: transparent; color: var(--danger); border: 1px solid var(--danger); padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
 
         /* NAVEGAÇÃO INFERIOR */
-        .bottom-nav {
-            position: fixed; bottom: 0; left: 0; right: 0; background: white;
-            display: flex; justify-content: space-around; align-items: center;
-            height: var(--nav-height); border-top: 1px solid var(--border); z-index: 1000;
-            max-width: 600px; margin: 0 auto; box-shadow: 0 -4px 6px -1px rgba(0,0,0,0.05);
-        }
-        .nav-item {
-            flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center;
-            color: var(--text-muted); text-decoration: none; font-size: 11px; font-weight: 600;
-            cursor: pointer; height: 100%; transition: all 0.2s;
-        }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; justify-content: space-around; align-items: center; height: var(--nav-height); border-top: 1px solid var(--border); z-index: 1000; max-width: 600px; margin: 0 auto; box-shadow: 0 -4px 6px -1px rgba(0,0,0,0.05); }
+        .nav-item { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; color: var(--text-muted); text-decoration: none; font-size: 11px; font-weight: 600; cursor: pointer; height: 100%; transition: all 0.2s; }
         .nav-item.active { color: var(--primary); }
         .nav-icon { font-size: 20px; margin-bottom: 3px; }
         
         .page-view { display: none; padding: 20px; animation: fadeIn 0.3s ease-out; }
         .page-view.active { display: block; }
 
+        /* COMPONENTES */
         .card { background: var(--white); padding: 20px; border-radius: 12px; box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.05); margin-bottom: 20px; border: 1px solid var(--border); transition: border-color 0.3s ease;}
         .card.editando { border-color: var(--warning); box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1); }
         
-        input, select { width: 100%; padding: 14px; margin-bottom: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; box-sizing: border-box; font-family: inherit; }
+        input, select { width: 100%; padding: 14px; margin-bottom: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; box-sizing: border-box; font-family: inherit; }
         input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15); }
         .linha-selects { display: flex; gap: 10px; margin-bottom: 5px;}
         
@@ -81,33 +55,35 @@
         .btn-sortear { background-color: var(--dark); margin-top: 20px; font-size: 16px; padding: 16px; }
         .btn-whatsapp { background-color: var(--whatsapp); flex: 1; margin: 0; display: none; }
         .btn-salvar { background-color: var(--supabase); color: white; margin-top: 15px; font-size: 16px;}
-        .btn-logout { background-color: var(--white); color: var(--danger); border: 1px solid var(--danger); }
         .btn-limpar { background-color: var(--light); color: var(--text-muted); border: 1px solid var(--border); margin-bottom: 15px; }
-        
-        ul { list-style: none; padding: 0; margin: 0; }
-        li { background: var(--light); margin: 8px 0; padding: 14px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; border: 1px solid var(--border); }
-        .info-jogador { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: 15px; }
-        .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-        
-        .btn-small { width: auto; padding: 6px 12px; font-size: 13px; border-radius: 6px; }
-        .btn-editar { background: transparent; color: var(--primary); border: 1px solid var(--primary); }
-        .btn-desmarcar { background: white; color: var(--dark); border: 1px solid var(--border); }
-        .btn-excluir { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
-        .btn-pagou { background-color: var(--primary); }
-        .btn-devendo { background-color: var(--danger); }
+        .btn-small { width: auto; padding: 6px 10px; font-size: 12px; border-radius: 6px; }
 
-        .badge { background-color: var(--dark); color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;}
-        .badge-posicao { background-color: var(--pos-color); font-weight: 500; }
+        /* ELENCO ALINHADO (GRID) */
+        .busca-container { position: relative; margin-bottom: 15px; }
+        .linha-jogador { display: grid; grid-template-columns: 2fr 1fr 1fr auto; align-items: center; padding: 12px 10px; border-bottom: 1px solid var(--border); background: white; border-radius: 8px; margin-bottom: 8px; font-size: 13px; }
+        .linha-jogador:hover { background: var(--light); }
+        .col-nome { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 5px;}
+        .col-pos { color: var(--text-muted); font-size: 12px;}
+        .col-status { text-align: center; }
+        .col-acoes { display: flex; gap: 5px; justify-content: flex-end; }
+        
+        .badge { background-color: var(--dark); color: white; padding: 3px 6px; border-radius: 12px; font-size: 10px; font-weight: 600;}
         .badge-convidado { background-color: var(--purple); }
+        .badge-em-campo { background-color: var(--supabase); }
+        .btn-acao-outline { background: transparent; border: 1px solid var(--border); color: var(--dark); }
+        .btn-acao-outline:hover { background: var(--light); }
+        .btn-presente { background: var(--primary); color: white; }
 
+        /* TIMES */
         .team-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-top:20px; }
-        .team { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-top: 5px solid var(--primary); border-left: 1px solid var(--border); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+        .team { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-top: 5px solid var(--primary); border: 1px solid var(--border); }
         .team h3 { margin-top: 0; font-size: 16px; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 10px; }
-        .team li { border: none; padding: 6px 0; background: transparent; border-bottom: 1px dashed var(--border); border-radius: 0; margin:0;}
+        .team ul { list-style: none; padding:0; margin:0;}
+        .team li { padding: 6px 0; border-bottom: 1px dashed var(--border); font-size: 14px;}
         .team li:last-child { border-bottom: none; }
         .team-reservas { border-top-color: var(--danger); }
 
-        /* REI DA QUADRA SÚMULA */
+        /* SÚMULA */
         .sumula-painel { background: var(--light); padding: 15px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px;}
         .sumula-linha-placar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px;}
         .sumula-coluna { flex: 1; display: flex; flex-direction: column; align-items: center;}
@@ -119,14 +95,20 @@
         .jogo-registrado { display: flex; justify-content: space-between; align-items: center; background: white; padding: 12px; border-radius: 8px; margin-bottom: 8px; border: 1px solid var(--border); font-size: 14px; font-weight: 600; }
         .placar-box { background: var(--light); padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border); font-size: 16px; }
 
-        /* ESTATÍSTICAS */
+        /* ESTATÍSTICAS DO DIA */
+        .tabela-stats { width: 100%; border-collapse: collapse; font-size: 13px; text-align: center; }
+        .tabela-stats th { padding: 10px 5px; border-bottom: 2px solid var(--border); color: var(--text-muted); font-weight: 600; }
+        .tabela-stats td { padding: 12px 5px; border-bottom: 1px solid var(--border); font-weight: 500; }
+        .tabela-stats td:first-child, .tabela-stats th:first-child { text-align: left; }
+
+        /* FINANCEIRO */
         .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
-        .dash-card { background: white; padding: 20px; border-radius: 12px; border: 1px solid var(--border); text-align: center; }
-        .dash-valor { font-size: 28px; font-weight: 700; color: var(--primary); margin: 5px 0;}
-        .dash-titulo { font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
-        .tabela-stats { width: 100%; border-collapse: collapse; font-size: 14px; }
-        .tabela-stats th { text-align: left; padding: 10px; border-bottom: 2px solid var(--border); color: var(--text-muted); }
-        .tabela-stats td { padding: 12px 10px; border-bottom: 1px solid var(--border); font-weight: 500; }
+        .dash-card { background: white; padding: 15px; border-radius: 12px; border: 1px solid var(--border); text-align: center; }
+        .dash-valor { font-size: 24px; font-weight: 700; margin: 5px 0;}
+        .dash-titulo { font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
+        .valor-positivo { color: var(--supabase); }
+        .valor-negativo { color: var(--danger); }
+        .valor-neutro { color: var(--primary); }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
@@ -150,6 +132,10 @@
         
         <div class="top-bar">
             <h1>Sorteador Pro</h1>
+            <div class="top-actions">
+                <div class="status-nuvem" id="status-db">...</div>
+                <button class="btn-sair" onclick="fazerLogout()">Sair</button>
+            </div>
         </div>
 
         <!-- ABA 1: ELENCO -->
@@ -168,10 +154,14 @@
                 </div>
             </div>
 
-            <div class="card">
-                <h2>Elenco Geral (<span id="total-elenco">0</span>)</h2>
-                <p style="font-size: 13px; color: var(--text-muted); margin-top:-15px; text-align: center;">Gerencie e marque a presença de todos os seus atletas.</p>
-                <ul id="lista-todos"></ul>
+            <div class="card" style="padding: 15px;">
+                <h2 style="margin-bottom: 10px;">Elenco Geral (<span id="total-elenco">0</span>)</h2>
+                
+                <div class="busca-container">
+                    <input type="text" id="busca-jogador" placeholder="🔍 Buscar jogador pelo nome..." onkeyup="filtrarElenco()">
+                </div>
+
+                <div id="lista-todos"></div>
             </div>
         </div>
 
@@ -179,8 +169,10 @@
         <div id="view-sorteio" class="page-view active">
             <div class="card" style="border: 2px solid var(--primary); background: #f8fafc;">
                 <h2>Prontos pro Jogo (<span id="total-presentes">0</span>)</h2>
-                <button class="btn-limpar" onclick="zerarPresencas()" id="btn-zerar" style="display: none; width:100%; margin-bottom:15px;">🔄 Retirar Todos da Chegada</button>
-                <ul id="lista-presentes"></ul>
+                <button class="btn-limpar" onclick="zerarPresencas()" id="btn-zerar" style="display: none; width:100%; margin-bottom:15px;">🔄 Retirar Todos da Quadra</button>
+                
+                <!-- Lista Simplificada dos Presentes -->
+                <div id="lista-presentes"></div>
                 
                 <div style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 20px;">
                     <label style="font-weight: 600; display: block; margin-bottom: 8px;">Modo de Sorteio:</label>
@@ -210,12 +202,12 @@
             </div>
         </div>
 
-        <!-- ABA 3: PLACARES (SÚMULA REI DA QUADRA) -->
+        <!-- ABA 3: SÚMULA & ARTILHARIA -->
         <div id="view-placares" class="page-view">
             <div class="card">
                 <h2>📝 Súmula Dinâmica</h2>
-                <p style="font-size: 14px; color: var(--text-muted); margin-top: -10px; margin-bottom: 20px; text-align:center;">
-                    Registre os confrontos jogo a jogo. Em caso de empate, as duas equipes saem da quadra automaticamente.
+                <p style="font-size: 13px; color: var(--text-muted); margin-top: -10px; margin-bottom: 20px; text-align:center;">
+                    Registre confrontos e gols da rodada atual.
                 </p>
                 
                 <div id="aviso-sem-sorteio" style="text-align: center; padding: 30px; color: var(--text-muted);">
@@ -224,19 +216,18 @@
 
                 <div id="container-sumula" style="display: none;">
                     
+                    <!-- Placar -->
                     <div class="sumula-painel">
                         <div id="texto-fila"></div>
                         <div class="sumula-linha-placar">
                             <div class="sumula-coluna">
-                                <label style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom:4px;">Em Quadra</label>
+                                <label style="font-size: 11px; font-weight: 600; color: var(--text-muted);">Em Quadra</label>
                                 <select id="sumula_equipe_a"></select>
                                 <input type="number" min="0" value="0" id="sumula_gols_a" class="input-gols">
                             </div>
-                            
                             <div class="versus-badge">X</div>
-                            
                             <div class="sumula-coluna">
-                                <label style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom:4px;">Adversário</label>
+                                <label style="font-size: 11px; font-weight: 600; color: var(--text-muted);">Adversário</label>
                                 <select id="sumula_equipe_b"></select>
                                 <input type="number" min="0" value="0" id="sumula_gols_b" class="input-gols">
                             </div>
@@ -244,52 +235,81 @@
                         <button onclick="adicionarJogoNaSumula()" style="background: var(--dark); padding: 10px;">➕ Adicionar Resultado</button>
                     </div>
 
-                    <h3 style="font-size: 15px; margin-bottom: 10px;">Jogos Registrados:</h3>
                     <div id="lista-jogos-registrados" style="margin-bottom: 20px;"></div>
+
+                    <!-- Artilharia do Dia -->
+                    <div class="sumula-painel" style="background: white;">
+                        <h3 style="font-size: 14px; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:8px;">⚽ Artilharia do Dia</h3>
+                        <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 15px;">
+                            <select id="select-artilheiro" style="margin:0;"></select>
+                            <input type="number" id="qtd-gols-artilheiro" value="1" min="1" style="width: 70px; margin:0; text-align:center;">
+                            <button onclick="adicionarGolArtilheiro()" style="width:auto; padding: 12px 15px;">Add</button>
+                        </div>
+                        <div id="lista-artilheiros-rodada" style="font-size: 13px;"></div>
+                    </div>
 
                     <button class="btn-salvar" id="btn-encerrar-baba" style="display: block;" onclick="salvarPartidaComPlacares()">✅ Finalizar Baba e Salvar Tudo</button>
                 </div>
             </div>
         </div>
 
-        <!-- ABA 4: ESTATÍSTICAS -->
+        <!-- ABA 4: PAINEL DO DIA -->
         <div id="view-estatisticas" class="page-view">
-            <h2 style="text-align: left; font-size:22px; margin-bottom: 20px;">Visão Geral</h2>
-            <div class="dash-grid">
-                <div class="dash-card">
-                    <div class="dash-titulo">Partidas Realizadas</div>
-                    <div class="dash-valor" id="stat-partidas">0</div>
-                </div>
-                <div class="dash-card">
-                    <div class="dash-titulo">Pix Arrecadado</div>
-                    <div class="dash-valor" id="stat-arrecadacao" style="color:var(--supabase);">0</div>
+            <h2 style="text-align: left; font-size:20px; margin-bottom: 20px;">Estatísticas do Dia</h2>
+            
+            <div class="card" style="padding:0; overflow:hidden;">
+                <h3 style="padding: 12px 15px; margin:0; border-bottom: 1px solid var(--border); font-size:14px; background: var(--light);">🏆 Classificação das Equipes</h3>
+                <div style="overflow-x: auto;">
+                    <table class="tabela-stats" id="tabela-classificacao">
+                        <thead><tr><th>Time</th><th>PTS</th><th>J</th><th>V</th><th>E</th><th>D</th><th>SG</th></tr></thead>
+                        <tbody id="body-classificacao"><tr><td colspan="7" style="color:var(--text-muted);">Jogue uma partida para ver a classificação.</td></tr></tbody>
+                    </table>
                 </div>
             </div>
 
             <div class="card" style="padding:0; overflow:hidden;">
-                <h3 style="padding: 15px 20px; margin:0; border-bottom: 1px solid var(--border); font-size:16px;">🏆 Jogadores Mais Assíduos</h3>
-                <table class="tabela-stats" id="tabela-presencas">
-                    <tr><td style="text-align:center; color:var(--text-muted);">Carregando dados...</td></tr>
-                </table>
-            </div>
-
-            <div class="card" style="padding:0; overflow:hidden;">
-                <h3 style="padding: 15px 20px; margin:0; border-bottom: 1px solid var(--border); font-size:16px;">🔥 Times com Mais Vitórias</h3>
-                <table class="tabela-stats" id="tabela-times">
-                    <tr><td style="text-align:center; color:var(--text-muted);">Carregando dados...</td></tr>
+                <h3 style="padding: 12px 15px; margin:0; border-bottom: 1px solid var(--border); font-size:14px; background: var(--light);">⚽ Artilheiros do Dia</h3>
+                <table class="tabela-stats">
+                    <thead><tr><th>Jogador</th><th style="width:60px;">Gols</th></tr></thead>
+                    <tbody id="body-artilheiros-painel"><tr><td colspan="2" style="color:var(--text-muted);">Nenhum gol registrado.</td></tr></tbody>
                 </table>
             </div>
         </div>
 
-        <!-- ABA 5: CONTA -->
-        <div id="view-conta" class="page-view">
+        <!-- ABA 5: FINANCEIRO -->
+        <div id="view-financeiro" class="page-view">
+            <h2 style="text-align: left; font-size:20px; margin-bottom: 20px;">Gestão Financeira</h2>
+            
             <div class="card">
-                <h2>⚙️ Gerenciamento de Conta</h2>
-                <div class="status-nuvem" id="status-db">Aguardando conexão segura...</div>
-                <p style="text-align:center; color: var(--text-muted); font-size: 14px; margin-bottom: 20px; line-height: 1.5;">
-                    Seus dados estão sincronizados na nuvem e salvos de forma segura.<br>Use o botão abaixo para encerrar a sessão.
-                </p>
-                <button class="btn-logout" onclick="fazerLogout()">Sair da Conta</button>
+                <label style="font-size: 13px; font-weight: 600; color: var(--text-muted);">Valor cobrado por Convidado (R$):</label>
+                <input type="number" id="valor-convidado" value="20" onchange="atualizarFinanceiro()" style="font-size: 18px; font-weight: 700;">
+            </div>
+
+            <div class="dash-grid">
+                <div class="dash-card">
+                    <div class="dash-titulo">Arrecadado</div>
+                    <div class="dash-valor valor-positivo" id="fin-receita">R$ 0</div>
+                </div>
+                <div class="dash-card">
+                    <div class="dash-titulo">Custos</div>
+                    <div class="dash-valor valor-negativo" id="fin-custos">R$ 0</div>
+                </div>
+            </div>
+            
+            <div class="card" style="text-align: center; padding: 15px;">
+                <div class="dash-titulo">Saldo Líquido da Rodada</div>
+                <div class="dash-valor valor-neutro" id="fin-saldo" style="font-size: 32px;">R$ 0</div>
+            </div>
+
+            <div class="card">
+                <h3 style="font-size: 15px; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:10px;">Lançar Despesa</h3>
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <input type="text" id="desc-custo" placeholder="Ex: Aluguel Quadra" style="flex:2; margin:0;">
+                    <input type="number" id="valor-custo" placeholder="R$" style="flex:1; margin:0;">
+                </div>
+                <button onclick="adicionarCusto()" style="background: var(--dark); padding: 12px;">Adicionar</button>
+                
+                <div id="lista-custos" style="margin-top: 15px;"></div>
             </div>
         </div>
 
@@ -299,7 +319,7 @@
             <div class="nav-item active" onclick="mudarAba('view-sorteio')" id="nav-sorteio"><span class="nav-icon">🎲</span><span>Sorteio</span></div>
             <div class="nav-item" onclick="mudarAba('view-placares')" id="nav-placares"><span class="nav-icon">⚽</span><span>Súmula</span></div>
             <div class="nav-item" onclick="mudarAba('view-estatisticas')" id="nav-estatisticas"><span class="nav-icon">📊</span><span>Painel</span></div>
-            <div class="nav-item" onclick="mudarAba('view-conta')" id="nav-conta"><span class="nav-icon">⚙️</span><span>Conta</span></div>
+            <div class="nav-item" onclick="mudarAba('view-financeiro')" id="nav-financeiro"><span class="nav-icon">💰</span><span>Financeiro</span></div>
         </nav>
 
     </div>
@@ -312,16 +332,32 @@
         const coresTimes = ["Vermelho", "Azul", "Amarelo", "Verde", "Branco", "Preto", "Roxo", "Laranja"];
         const emojisTimes = ["🔴", "🔵", "🟡", "🟢", "⚪", "⚫", "🟣", "🟠"];
 
+        // Variáveis de Estado da Rodada Atual
         window.presentesParaSalvar = [];
         window.partidaSalva = true; 
         window.jogosDaRodada = [];
-        window.filaEquipes = []; // Mantém o controle da fila do Rei da Quadra
+        window.filaEquipes = []; 
+        window.artilheirosDaRodada = {}; // { "João": 2 }
+        window.custosDaRodada = []; // [ {desc: "Bola", valor: 50} ]
 
         window.onload = async function() {
-            if(typeof supabaseUrl === 'undefined' || typeof supabaseKey === 'undefined') { alert("Erro crítico: Arquivo config.js não localizado."); return; }
+            if(typeof supabaseUrl === 'undefined' || typeof supabaseKey === 'undefined') { alert("Erro crítico: config.js ausente."); return; }
             db = window.supabase.createClient(supabaseUrl, supabaseKey);
+            checarReset24h();
             verificarSessao();
         };
+
+        function checarReset24h() {
+            let ultimoReset = localStorage.getItem('baba_last_reset');
+            let agora = Date.now();
+            // 86400000 ms = 24 horas
+            if(!ultimoReset || (agora - parseInt(ultimoReset)) > 86400000) {
+                localStorage.removeItem('baba_presencas_temp');
+                localStorage.setItem('baba_last_reset', agora);
+                return true;
+            }
+            return false;
+        }
 
         // NAVEGAÇÃO
         function mudarAba(viewId) {
@@ -331,11 +367,12 @@
             document.getElementById(viewId.replace('view-', 'nav-')).classList.add('active');
             window.scrollTo(0, 0);
 
-            if(viewId === 'view-estatisticas') carregarEstatisticas();
+            if(viewId === 'view-estatisticas') renderizarPainelDoDia();
             if(viewId === 'view-placares') renderizarSumula();
+            if(viewId === 'view-financeiro') atualizarFinanceiro();
         }
 
-        // AUTENTICAÇÃO E NUVEM
+        // AUTENTICAÇÃO
         async function verificarSessao() { const { data: { session } } = await db.auth.getSession(); if (session) mostrarApp(); else mostrarLogin(); }
         async function criarConta() { 
             const email = document.getElementById('auth-email').value; const password = document.getElementById('auth-password').value; const msg = document.getElementById('auth-msg');
@@ -353,13 +390,14 @@
         function mostrarApp() { document.getElementById('auth-container').style.display = 'none'; document.getElementById('app-container').style.display = 'block'; carregarElencoDaNuvem(); }
         function mostrarLogin() { document.getElementById('auth-container').style.display = 'block'; document.getElementById('app-container').style.display = 'none'; }
 
+        // NUVEM
         async function carregarElencoDaNuvem() {
-            document.getElementById('status-db').innerText = "Sincronizando com o servidor..."; document.getElementById('status-db').style.backgroundColor = "var(--warning)";
+            document.getElementById('status-db').innerText = "Sincronizando..."; document.getElementById('status-db').style.backgroundColor = "var(--warning)";
             const { data, error } = await db.from('jogadores').select('*').order('nome', { ascending: true }); 
-            if (error) { document.getElementById('status-db').innerText = "Falha na conexão."; document.getElementById('status-db').style.backgroundColor = "var(--danger)"; return; }
+            if (error) { document.getElementById('status-db').innerText = "Off-line"; document.getElementById('status-db').style.backgroundColor = "var(--danger)"; return; }
             let estadoLocal = JSON.parse(localStorage.getItem('baba_presencas_temp')) || {};
-            jogadores = data.map(j => ({ ...j, presente: estadoLocal[j.id]?.presente || false, ordemChegada: estadoLocal[j.id]?.ordemChegada || 0, pagou: estadoLocal[j.id]?.pagou || false }));
-            document.getElementById('status-db').innerText = "Sincronizado na Nuvem"; document.getElementById('status-db').style.backgroundColor = "var(--supabase)";
+            jogadores = data.map(j => ({ ...j, presente: estadoLocal[j.id]?.presente || false, ordemChegada: estadoLocal[j.id]?.ordemChegada || 0 }));
+            document.getElementById('status-db').innerText = "Online"; document.getElementById('status-db').style.backgroundColor = "var(--supabase)";
             atualizarListas();
         }
 
@@ -388,52 +426,73 @@
                 if (!error) { let jIndex = jogadores.findIndex(j => j.id === jogadorEdicaoId); if (jIndex !== -1) { jogadores[jIndex].nome = nome; jogadores[jIndex].tipo = tipo; jogadores[jIndex].posicao = posicao; jogadores[jIndex].nivel = nivel; } cancelarEdicao(); atualizarListas(); } else alert("Erro: " + error.message);
             } else {
                 const { data, error } = await db.from('jogadores').insert([{ nome, tipo, posicao, nivel }]).select(); 
-                if (!error) { nomeInput.value = ""; nomeInput.focus(); jogadores.push({ ...data[0], presente: false, ordemChegada: 0, pagou: false }); atualizarListas(); btn.innerText = "Incluir Jogador"; } else alert("Erro: " + error.message);
+                if (!error) { nomeInput.value = ""; nomeInput.focus(); jogadores.push({ ...data[0], presente: false, ordemChegada: 0 }); atualizarListas(); btn.innerText = "Incluir Jogador"; } else alert("Erro: " + error.message);
             }
             btn.disabled = false;
         }
 
         async function removerJogador(idNuvem, indexArray) { if(confirm("Excluir jogador permanentemente?")) { const { error } = await db.from('jogadores').delete().eq('id', idNuvem); if (!error) { jogadores.splice(indexArray, 1); salvarEstadoLocal(); atualizarListas(); } } }
 
-        function salvarEstadoLocal() { let estado = {}; jogadores.forEach(j => { if (j.presente || j.pagou) estado[j.id] = { presente: j.presente, ordemChegada: j.ordemChegada, pagou: j.pagou }; }); localStorage.setItem('baba_presencas_temp', JSON.stringify(estado)); }
+        function salvarEstadoLocal() { let estado = {}; jogadores.forEach(j => { if (j.presente) estado[j.id] = { presente: j.presente, ordemChegada: j.ordemChegada }; }); localStorage.setItem('baba_presencas_temp', JSON.stringify(estado)); }
         function marcarPresenca(indexArray) { jogadores[indexArray].presente = true; jogadores[indexArray].ordemChegada = Date.now(); salvarEstadoLocal(); atualizarListas(); }
-        function desmarcarPresenca(indexArray) { jogadores[indexArray].presente = false; jogadores[indexArray].ordemChegada = 0; jogadores[indexArray].pagou = false; salvarEstadoLocal(); atualizarListas(); }
-        function alternarPagamento(indexArray) { jogadores[indexArray].pagou = !jogadores[indexArray].pagou; salvarEstadoLocal(); atualizarListas(); }
-        function zerarPresencas() { if(confirm("Retirar todos os jogadores de quadra?")) { jogadores.forEach(j => { j.presente = false; j.ordemChegada = 0; j.pagou = false; }); salvarEstadoLocal(); atualizarListas(); document.getElementById('resultado').innerHTML = ""; document.getElementById('btn-wpp').style.display = 'none'; document.getElementById('btn-ir-placares').style.display = 'none'; window.partidaSalva = true; } }
+        function desmarcarPresenca(indexArray) { jogadores[indexArray].presente = false; jogadores[indexArray].ordemChegada = 0; salvarEstadoLocal(); atualizarListas(); }
+        function zerarPresencas() { if(confirm("Retirar todos os jogadores de quadra?")) { jogadores.forEach(j => { j.presente = false; j.ordemChegada = 0; }); salvarEstadoLocal(); atualizarListas(); document.getElementById('resultado').innerHTML = ""; document.getElementById('btn-wpp').style.display = 'none'; document.getElementById('btn-ir-placares').style.display = 'none'; window.partidaSalva = true; } }
+
+        // BUSCA NO ELENCO
+        function filtrarElenco() {
+            let termo = document.getElementById('busca-jogador').value.toLowerCase();
+            let linhas = document.querySelectorAll('.linha-jogador');
+            linhas.forEach(linha => {
+                let nome = linha.getAttribute('data-nome').toLowerCase();
+                linha.style.display = nome.includes(termo) ? 'grid' : 'none';
+            });
+        }
 
         function atualizarListas() {
             const listaTodos = document.getElementById('lista-todos'); const listaPresentes = document.getElementById('lista-presentes');
             listaTodos.innerHTML = ""; listaPresentes.innerHTML = ""; let presentes = [];
             
+            // ELENCO (Grid Alinhado)
             let todosOrdenados = [...jogadores].sort((a, b) => a.nome.localeCompare(b.nome));
             todosOrdenados.forEach((j) => {
                 let indexArray = jogadores.findIndex(jog => jog.id === j.id);
                 let tagConvidado = j.tipo === 'Convidado' ? '<span class="badge badge-convidado">C</span>' : '';
-                let tagPosicao = (j.posicao !== 'Goleiro' && j.posicao !== 'Linha') ? `<span class="badge badge-posicao">${j.posicao}</span>` : '';
-                let badgeStatus = j.presente ? '<span class="badge" style="background-color: var(--supabase);">✅ Em Campo</span>' : '';
-                let btnAcao = j.presente ? `<button class="btn-small btn-desmarcar" onclick="desmarcarPresenca(${indexArray})">Retirar</button>` : `<button class="btn-small btn-chegou" onclick="marcarPresenca(${indexArray})">Presente</button>`;
+                let badgeStatus = j.presente ? '<span class="badge badge-em-campo">✅ Em Campo</span>' : '';
                 
-                listaTodos.innerHTML += `<li>
-                    <div class="info-jogador">${tagConvidado} <strong>${j.nome}</strong> ${tagPosicao} <small>(Nv ${j.nivel})</small> ${badgeStatus}</div>
-                    <div class="actions">${btnAcao} <button class="btn-small btn-editar" onclick="prepararEdicao(${indexArray})">Editar</button> <button class="btn-small btn-excluir" onclick="removerJogador('${j.id}', ${indexArray})">X</button></div>
-                </li>`;
+                let btnAcao = j.presente 
+                    ? `<button class="btn-small btn-acao-outline" onclick="desmarcarPresenca(${indexArray})">Retirar</button>` 
+                    : `<button class="btn-small btn-presente" onclick="marcarPresenca(${indexArray})">Presente</button>`;
+                
+                listaTodos.innerHTML += `
+                <div class="linha-jogador" data-nome="${j.nome}">
+                    <div class="col-nome">${tagConvidado} ${j.nome}</div>
+                    <div class="col-pos">${j.posicao}</div>
+                    <div class="col-status">${badgeStatus}</div>
+                    <div class="col-acoes">
+                        ${btnAcao}
+                        <button class="btn-small btn-acao-outline" onclick="prepararEdicao(${indexArray})">✏️</button>
+                    </div>
+                </div>`;
             });
 
+            // SORTEIO
             jogadores.forEach((j, index) => { if (j.presente) presentes.push({ ...j, indexArray: index }); });
             presentes.sort((a, b) => { if (a.tipo === 'Mensalista' && b.tipo !== 'Mensalista') return -1; if (a.tipo !== 'Mensalista' && b.tipo === 'Mensalista') return 1; return a.ordemChegada - b.ordemChegada; });
 
             presentes.forEach((j, pos) => {
                 let tagConvidado = j.tipo === 'Convidado' ? '<span class="badge badge-convidado">C</span>' : '';
                 let tagPosicao = (j.posicao !== 'Goleiro' && j.posicao !== 'Linha') ? `<span class="badge badge-posicao">${j.posicao}</span>` : '';
-                let btnPix = j.tipo === 'Convidado' ? (j.pagou ? `<button class="btn-small btn-pagou" onclick="alternarPagamento(${j.indexArray})">Pago</button>` : `<button class="btn-small btn-devendo" onclick="alternarPagamento(${j.indexArray})">Pendente</button>`) : '';
-                listaPresentes.innerHTML += `<li>
-                    <div class="info-jogador"><span class="badge">${pos + 1}º</span> ${tagConvidado} <strong>${j.nome}</strong> ${tagPosicao} <small>(Nv ${j.nivel})</small></div>
-                    <div class="actions">${btnPix} <button class="btn-small btn-desmarcar" onclick="desmarcarPresenca(${j.indexArray})">Retirar</button></div>
-                </li>`;
+                listaPresentes.innerHTML += `
+                <div class="linha-jogador" style="grid-template-columns: 2fr 1fr auto;">
+                    <div class="col-nome"><span class="badge">${pos + 1}º</span> ${tagConvidado} ${j.nome}</div>
+                    <div class="col-pos">${tagPosicao}</div>
+                    <div class="col-acoes"><button class="btn-small btn-acao-outline" onclick="desmarcarPresenca(${j.indexArray})">Retirar</button></div>
+                </div>`;
             });
 
             document.getElementById('total-presentes').innerText = presentes.length; document.getElementById('total-elenco').innerText = jogadores.length;
             document.getElementById('btn-zerar').style.display = presentes.length > 0 ? "block" : "none";
+            filtrarElenco(); // Aplica o filtro se tiver algo digitado
         }
 
         // SORTEIO
@@ -441,7 +500,7 @@
 
         function iniciarSorteioComSuspense() {
             let presentes = jogadores.filter(j => j.presente).sort((a, b) => { if (a.tipo === 'Mensalista' && b.tipo !== 'Mensalista') return -1; if (a.tipo !== 'Mensalista' && b.tipo === 'Mensalista') return 1; return a.ordemChegada - b.ordemChegada; });
-            if (presentes.length < 2) return alert("Confirme presença de pelo menos 2 atletas na aba Elenco.");
+            if (presentes.length < 2) return alert("Confirme presença de pelo menos 2 atletas.");
             
             document.getElementById('btn-wpp').style.display = 'none'; document.getElementById('btn-ir-placares').style.display = 'none';
             const resultado = document.getElementById('resultado');
@@ -455,7 +514,7 @@
         }
 
         function sortearTimes(presentesBrutos) {
-            let presentes = presentesBrutos.filter(j => j.tipo === 'Mensalista' || (j.tipo === 'Convidado' && j.pagou));
+            let presentes = presentesBrutos; 
             let modo = document.getElementById('modo-sorteio').value; let priorizarOrdem = document.getElementById('priorizar-ordem').checked;
             let incluiGoleiros = (modo === '14' || modo === 'todos'); 
             
@@ -503,6 +562,9 @@
             window.timesSorteados = times; window.reservasSorteados = reservas;
             window.presentesParaSalvar = presentes; window.partidaSalva = false;
             
+            // Limpa dados da rodada anterior
+            window.jogosDaRodada = []; window.filaEquipes = []; window.artilheirosDaRodada = {}; window.custosDaRodada = [];
+            
             document.getElementById('resultado').innerHTML = "";
             times.forEach((time, idx) => {
                 let cor = coresTimes[idx % coresTimes.length]; let emoji = emojisTimes[idx % emojisTimes.length];
@@ -516,83 +578,55 @@
                 document.getElementById('resultado').innerHTML += html + `</ul></div>`;
             }
             document.getElementById('btn-wpp').style.display = 'block'; document.getElementById('btn-ir-placares').style.display = 'block';
+            
+            preencherSelectArtilheiros();
         }
 
-        // SÚMULA DINÂMICA (REI DA QUADRA)
+        // SÚMULA DINÂMICA
         function renderizarSumula() {
             const container = document.getElementById('container-sumula'); const aviso = document.getElementById('aviso-sem-sorteio');
-            
             if(window.partidaSalva || !window.timesSorteados || window.timesSorteados.length < 2) {
                 container.style.display = 'none'; aviso.style.display = 'block'; return;
             }
-            
             aviso.style.display = 'none'; container.style.display = 'block';
-            
-            // Inicia a fila apenas se não houver jogos (novo sorteio)
-            if (window.jogosDaRodada.length === 0) {
+            if (window.jogosDaRodada.length === 0 && window.filaEquipes.length === 0) {
                 window.filaEquipes = window.timesSorteados.map((_, i) => coresTimes[i % coresTimes.length]);
                 atualizarSelectsEquipes(); 
             }
             atualizarListaJogosDaRodada();
+            atualizarListaArtilheiros();
         }
 
         function atualizarSelectsEquipes() {
             let options = '';
-            window.timesSorteados.forEach((t, i) => {
-                let cor = coresTimes[i % coresTimes.length];
-                options += `<option value="${cor}">${cor}</option>`;
-            });
-
+            window.timesSorteados.forEach((t, i) => { let cor = coresTimes[i % coresTimes.length]; options += `<option value="${cor}">${cor}</option>`; });
             const selA = document.getElementById('sumula_equipe_a'); const selB = document.getElementById('sumula_equipe_b');
             selA.innerHTML = options; selB.innerHTML = options;
-
-            if (window.filaEquipes.length >= 2) {
-                selA.value = window.filaEquipes[0];
-                selB.value = window.filaEquipes[1];
-            }
-            
+            if (window.filaEquipes.length >= 2) { selA.value = window.filaEquipes[0]; selB.value = window.filaEquipes[1]; }
             atualizarFilaUI();
         }
 
         function atualizarFilaUI() {
             const textoFila = document.getElementById('texto-fila');
             if(window.filaEquipes.length > 2) {
-                let espera = window.filaEquipes.slice(2).join(', ');
-                textoFila.innerText = `⏳ Próximos na fila: ${espera}`;
-                textoFila.style.display = 'block';
-            } else {
-                textoFila.style.display = 'none';
-            }
+                let espera = window.filaEquipes.slice(2).join(', '); textoFila.innerText = `⏳ Próximos: ${espera}`; textoFila.style.display = 'block';
+            } else textoFila.style.display = 'none';
         }
 
         function adicionarJogoNaSumula() {
             let ea = document.getElementById('sumula_equipe_a').value; let eb = document.getElementById('sumula_equipe_b').value;
             let ga = parseInt(document.getElementById('sumula_gols_a').value) || 0; let gb = parseInt(document.getElementById('sumula_gols_b').value) || 0;
-
-            if(ea === eb) return alert("As equipes do confronto devem ser diferentes!");
+            if(ea === eb) return alert("As equipes devem ser diferentes!");
 
             window.jogosDaRodada.push({ equipe_a: ea, gols_a: ga, equipe_b: eb, gols_b: gb });
-
-            // Lógica do Rei da Quadra: Empatou, as duas saem e rola sorteio para quem vai pro fundo da fila
             window.filaEquipes = window.filaEquipes.filter(t => t !== ea && t !== eb);
 
-            if (ga > gb) {
-                // A ganhou, fica no topo
-                window.filaEquipes.unshift(ea);
-                window.filaEquipes.push(eb);
-            } else if (gb > ga) {
-                // B ganhou, vai pro topo
-                window.filaEquipes.unshift(eb);
-                window.filaEquipes.push(ea);
-            } else {
-                // Empate! Ninguém vai pro topo. Sorteio de quem vai pro fim primeiro.
-                let caraOuCoroa = Math.random() > 0.5;
-                let primeiroProFim = caraOuCoroa ? ea : eb;
-                let segundoProFim = caraOuCoroa ? eb : ea;
-                
-                window.filaEquipes.push(primeiroProFim, segundoProFim);
-                
-                alert(`⚖️ Fim de Jogo: EMPATE!\n\nAs duas equipes saem da quadra.\nO sorteio para a fila definiu que a equipe ${primeiroProFim} tem prioridade de retorno sobre a ${segundoProFim}.`);
+            if (ga > gb) { window.filaEquipes.unshift(ea); window.filaEquipes.push(eb); } 
+            else if (gb > ga) { window.filaEquipes.unshift(eb); window.filaEquipes.push(ea); } 
+            else {
+                let caraOuCoroa = Math.random() > 0.5; let pFim = caraOuCoroa ? ea : eb; let sFim = caraOuCoroa ? eb : ea;
+                window.filaEquipes.push(pFim, sFim);
+                alert(`⚖️ EMPATE! As duas equipes saem.\nSorteio da fila: ${pFim} volta antes de ${sFim}.`);
             }
 
             atualizarSelectsEquipes();
@@ -600,82 +634,167 @@
             atualizarListaJogosDaRodada();
         }
 
-        function removerJogo(index) {
-            window.jogosDaRodada.splice(index, 1);
-            atualizarListaJogosDaRodada();
-            // Nota: Excluir um jogo não refaz a fila automaticamente para não bugar a visualização.
-        }
+        function removerJogo(index) { window.jogosDaRodada.splice(index, 1); atualizarListaJogosDaRodada(); }
 
         function atualizarListaJogosDaRodada() {
             const lista = document.getElementById('lista-jogos-registrados'); lista.innerHTML = '';
-            if(window.jogosDaRodada.length === 0) { lista.innerHTML = '<p style="text-align:center; color:var(--text-muted); font-size:13px;">Nenhum jogo registrado ainda.</p>'; return; }
-
+            if(window.jogosDaRodada.length === 0) { lista.innerHTML = '<p style="color:var(--text-muted); font-size:12px; text-align:center;">Nenhum jogo</p>'; return; }
             window.jogosDaRodada.forEach((j, i) => {
-                let emojiA = emojisTimes[coresTimes.indexOf(j.equipe_a)] || '⚽'; let emojiB = emojisTimes[coresTimes.indexOf(j.equipe_b)] || '⚽';
                 lista.innerHTML += `
                     <div class="jogo-registrado">
-                        <div style="flex:1; text-align:right;">${emojiA} ${j.equipe_a}</div>
+                        <div style="flex:1; text-align:right;">${j.equipe_a}</div>
                         <div class="placar-box" style="margin: 0 10px;">${j.gols_a} x ${j.gols_b}</div>
-                        <div style="flex:1; text-align:left;">${j.equipe_b} ${emojiB}</div>
-                        <button class="btn-excluir" style="padding:4px 8px; margin-left:5px;" onclick="removerJogo(${i})">X</button>
+                        <div style="flex:1; text-align:left;">${j.equipe_b}</div>
+                        <button class="btn-excluir" style="padding:2px 6px; margin-left:5px;" onclick="removerJogo(${i})">X</button>
                     </div>`;
             });
         }
 
-        async function salvarPartidaComPlacares() {
-            if(window.jogosDaRodada.length === 0) {
-                if(!confirm("Você não registrou nenhum placar. Deseja finalizar o baba mesmo assim e salvar apenas as presenças?")) return;
-            }
+        // ARTILHARIA
+        function preencherSelectArtilheiros() {
+            let sel = document.getElementById('select-artilheiro'); sel.innerHTML = "";
+            let presentes = [...window.presentesParaSalvar].sort((a, b) => a.nome.localeCompare(b.nome));
+            presentes.forEach(j => { sel.innerHTML += `<option value="${j.nome}">${j.nome}</option>`; });
+        }
+        function adicionarGolArtilheiro() {
+            let nome = document.getElementById('select-artilheiro').value; let qtd = parseInt(document.getElementById('qtd-gols-artilheiro').value) || 1;
+            if(!nome) return;
+            window.artilheirosDaRodada[nome] = (window.artilheirosDaRodada[nome] || 0) + qtd;
+            document.getElementById('qtd-gols-artilheiro').value = 1;
+            atualizarListaArtilheiros();
+        }
+        function removerArtilheiro(nome) { delete window.artilheirosDaRodada[nome]; atualizarListaArtilheiros(); }
+        function atualizarListaArtilheiros() {
+            const lista = document.getElementById('lista-artilheiros-rodada'); lista.innerHTML = '';
+            let arts = Object.entries(window.artilheirosDaRodada).sort((a,b) => b[1] - a[1]);
+            if(arts.length === 0) { lista.innerHTML = '<p style="color:var(--text-muted); text-align:center;">Nenhum gol lançado</p>'; return; }
+            arts.forEach(a => {
+                lista.innerHTML += `<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #eee;">
+                    <span>${a[0]}</span> 
+                    <span><strong>${a[1]}</strong> gols <button class="btn-excluir" style="padding:0 5px; margin-left:10px; border:none;" onclick="removerArtilheiro('${a[0]}')">X</button></span>
+                </div>`;
+            });
+        }
 
+        // FINANCEIRO
+        function atualizarFinanceiro() {
+            let valor = parseFloat(document.getElementById('valor-convidado').value) || 0;
+            let convidados = window.presentesParaSalvar.filter(j => j.tipo === 'Convidado'); // Conta todos convidados
+            let receita = convidados.length * valor;
+            
+            let totalCustos = window.custosDaRodada.reduce((acc, c) => acc + c.valor, 0);
+            let saldo = receita - totalCustos;
+
+            document.getElementById('fin-receita').innerText = `R$ ${receita.toFixed(2)}`;
+            document.getElementById('fin-custos').innerText = `R$ ${totalCustos.toFixed(2)}`;
+            document.getElementById('fin-saldo').innerText = `R$ ${saldo.toFixed(2)}`;
+            
+            // Ajusta cor do saldo
+            let elSaldo = document.getElementById('fin-saldo');
+            elSaldo.className = 'dash-valor ' + (saldo > 0 ? 'valor-positivo' : (saldo < 0 ? 'valor-negativo' : 'valor-neutro'));
+
+            renderizarListaCustos();
+        }
+        
+        function adicionarCusto() {
+            let desc = document.getElementById('desc-custo').value; let val = parseFloat(document.getElementById('valor-custo').value) || 0;
+            if(!desc || val <= 0) return alert("Preencha descrição e valor válido.");
+            window.custosDaRodada.push({ desc: desc, valor: val });
+            document.getElementById('desc-custo').value = ''; document.getElementById('valor-custo').value = '';
+            atualizarFinanceiro();
+        }
+        
+        function removerCusto(index) { window.custosDaRodada.splice(index, 1); atualizarFinanceiro(); }
+        
+        function renderizarListaCustos() {
+            let lista = document.getElementById('lista-custos'); lista.innerHTML = '';
+            if(window.custosDaRodada.length === 0) { lista.innerHTML = '<p style="color:var(--text-muted); font-size:13px; text-align:center;">Nenhuma despesa</p>'; return; }
+            window.custosDaRodada.forEach((c, i) => {
+                lista.innerHTML += `<div style="display:flex; justify-content:space-between; padding:10px; background:var(--light); border:1px solid var(--border); border-radius:6px; margin-bottom:5px; font-size:14px;">
+                    <span>${c.desc}</span>
+                    <span><strong class="valor-negativo">R$ ${c.valor.toFixed(2)}</strong> <button class="btn-excluir" style="padding:2px 5px; margin-left:10px;" onclick="removerCusto(${i})">X</button></span>
+                </div>`;
+            });
+        }
+
+        // SALVAR TUDO NA NUVEM
+        async function salvarPartidaComPlacares() {
             const btn = document.getElementById('btn-encerrar-baba'); btn.innerText = "Sincronizando Servidor..."; btn.disabled = true;
             try {
-                let convidados = window.presentesParaSalvar.filter(j => j.tipo === 'Convidado' && j.pagou).length;
-                const { data: pData, error: errP } = await db.from('partidas').insert([{ quantidade_jogadores: window.presentesParaSalvar.length, renda_convidados: convidados }]).select();
+                let convidados = window.presentesParaSalvar.filter(j => j.tipo === 'Convidado').length;
+                let valorConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
+                
+                const { data: pData, error: errP } = await db.from('partidas').insert([{ 
+                    quantidade_jogadores: window.presentesParaSalvar.length, 
+                    renda_convidados: convidados,
+                    valor_por_convidado: valorConv,
+                    custos_json: window.custosDaRodada,
+                    artilheiros_json: window.artilheirosDaRodada
+                }]).select();
                 if(errP) throw errP;
 
                 let presencas = [];
                 window.timesSorteados.forEach((time, idx) => { let cor = coresTimes[idx % coresTimes.length]; time.forEach(j => presencas.push({ partida_id: pData[0].id, jogador_id: j.id, pagou: j.pagou || false, equipe: cor })); });
                 window.reservasSorteados.forEach(j => presencas.push({ partida_id: pData[0].id, jogador_id: j.id, pagou: j.pagou || false, equipe: "Reserva" }));
-                const { error: errPres } = await db.from('presencas').insert(presencas);
-                if(errPres) throw errPres;
+                if(presencas.length > 0) await db.from('presencas').insert(presencas);
 
                 let jogosInsert = window.jogosDaRodada.map(j => ({ partida_id: pData[0].id, equipe_a: j.equipe_a, gols_a: j.gols_a, equipe_b: j.equipe_b, gols_b: j.gols_b }));
                 if (jogosInsert.length > 0) await db.from('jogos').insert(jogosInsert);
 
-                window.partidaSalva = true; btn.innerText = "✅ Baba Encerrado e Salvo!";
-                setTimeout(() => mudarAba('view-estatisticas'), 1500); 
+                window.partidaSalva = true; btn.innerText = "✅ Baba Salvo!";
+                setTimeout(() => mudarAba('view-estatisticas'), 1000); 
             } catch(err) { alert("Erro: " + err.message); btn.innerText = "Tentar Novamente"; btn.disabled = false; }
         }
 
-        // ESTATÍSTICAS
-        async function carregarEstatisticas() {
-            document.getElementById('stat-partidas').innerText = "..."; document.getElementById('stat-arrecadacao').innerText = "...";
-            const { data: partidas } = await db.from('partidas').select('*');
-            if(partidas) {
-                document.getElementById('stat-partidas').innerText = partidas.length;
-                let rendaPix = partidas.reduce((acc, p) => acc + (p.renda_convidados || 0), 0);
-                document.getElementById('stat-arrecadacao').innerText = rendaPix + " pagos";
-            }
-            const { data: presencas } = await db.from('presencas').select('jogador_id, jogadores(nome)');
-            if(presencas) {
-                let contagem = {};
-                presencas.forEach(p => { if(p.jogadores && p.jogadores.nome) { let n = p.jogadores.nome; contagem[n] = (contagem[n] || 0) + 1; } });
-                let ranking = Object.entries(contagem).sort((a, b) => b[1] - a[1]).slice(0, 5);
-                let htmlPresencas = "";
-                ranking.forEach((r, idx) => { let medalha = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : '⚽')); htmlPresencas += `<tr><td style="width:30px;">${medalha}</td><td><strong>${r[0]}</strong></td><td style="text-align:right;">${r[1]} jogos</td></tr>`; });
-                document.getElementById('tabela-presencas').innerHTML = htmlPresencas || "<tr><td style='text-align:center; color:var(--text-muted);'>Sem dados ainda</td></tr>";
-            }
-            const { data: jogos } = await db.from('jogos').select('*');
-            if(jogos) {
-                let vitorias = {};
-                jogos.forEach(j => {
-                    if(j.gols_a > j.gols_b) vitorias[j.equipe_a] = (vitorias[j.equipe_a] || 0) + 1;
-                    else if(j.gols_b > j.gols_a) vitorias[j.equipe_b] = (vitorias[j.equipe_b] || 0) + 1;
+        // PAINEL ESTATÍSTICO DO DIA
+        function renderizarPainelDoDia() {
+            // Usa apenas os dados da rodada atual (em memória)
+            
+            // Classificação
+            let timesStats = {};
+            window.jogosDaRodada.forEach(j => {
+                if(!timesStats[j.equipe_a]) timesStats[j.equipe_a] = { j:0, v:0, e:0, d:0, gp:0, gc:0, pts:0 };
+                if(!timesStats[j.equipe_b]) timesStats[j.equipe_b] = { j:0, v:0, e:0, d:0, gp:0, gc:0, pts:0 };
+                
+                let a = timesStats[j.equipe_a]; let b = timesStats[j.equipe_b];
+                a.j++; b.j++; a.gp += j.gols_a; a.gc += j.gols_b; b.gp += j.gols_b; b.gc += j.gols_a;
+                
+                if(j.gols_a > j.gols_b) { a.v++; a.pts+=3; b.d++; }
+                else if(j.gols_b > j.gols_a) { b.v++; b.pts+=3; a.d++; }
+                else { a.e++; b.e++; a.pts+=1; b.pts+=1; }
+            });
+
+            let rankTimes = Object.entries(timesStats).sort((a, b) => {
+                if(b[1].pts !== a[1].pts) return b[1].pts - a[1].pts; // Pontos
+                let sgA = a[1].gp - a[1].gc; let sgB = b[1].gp - b[1].gc;
+                if(sgA !== sgB) return sgB - sgA; // Saldo
+                return b[1].gp - a[1].gp; // Gols Pro
+            });
+
+            const bodyClass = document.getElementById('body-classificacao');
+            if(rankTimes.length === 0) { bodyClass.innerHTML = '<tr><td colspan="7" style="color:var(--text-muted);">Sem jogos hoje.</td></tr>'; } 
+            else {
+                bodyClass.innerHTML = '';
+                rankTimes.forEach(r => {
+                    let t = r[1]; let sg = t.gp - t.gc;
+                    bodyClass.innerHTML += `<tr>
+                        <td style="font-weight:700;">${r[0]}</td>
+                        <td style="font-weight:700; color:var(--primary);">${t.pts}</td>
+                        <td>${t.j}</td><td>${t.v}</td><td>${t.e}</td><td>${t.d}</td><td>${sg > 0 ? '+'+sg : sg}</td>
+                    </tr>`;
                 });
-                let rankingV = Object.entries(vitorias).sort((a, b) => b[1] - a[1]).slice(0, 5);
-                let htmlTimes = "";
-                rankingV.forEach(r => { let emoji = emojisTimes[coresTimes.indexOf(r[0])] || '🔥'; htmlTimes += `<tr><td style="width:30px;">${emoji}</td><td><strong>${r[0]}</strong></td><td style="text-align:right; color:var(--supabase); font-weight:700;">${r[1]} vitórias</td></tr>`; });
-                document.getElementById('tabela-times').innerHTML = htmlTimes || "<tr><td style='text-align:center; color:var(--text-muted);'>Nenhum jogo salvo ainda</td></tr>";
+            }
+
+            // Artilheiros
+            const bodyArts = document.getElementById('body-artilheiros-painel');
+            let arts = Object.entries(window.artilheirosDaRodada).sort((a,b) => b[1] - a[1]);
+            if(arts.length === 0) { bodyArts.innerHTML = '<tr><td colspan="2" style="color:var(--text-muted);">Nenhum gol lançado.</td></tr>'; }
+            else {
+                bodyArts.innerHTML = '';
+                arts.forEach((a, i) => {
+                    let ic = i===0?'🥇':(i===1?'🥈':(i===2?'🥉':'⚽'));
+                    bodyArts.innerHTML += `<tr><td>${ic} <strong>${a[0]}</strong></td><td>${a[1]}</td></tr>`;
+                });
             }
         }
 
