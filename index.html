@@ -677,7 +677,7 @@
             if(viewId === 'view-admin') carregarPainelAdmin();
         }
 
-        // AUTENTICAÇÃO E VERIFICAÇÃO DE ASSINATURA/AUTORIZAÇÃO
+        // AUTENTICAÇÃO E VERIFICAÇÃO DE ASSINATURA/AUTORIZAÇÃO COM AUTO-CRIAÇÃO SE FALTAR PERFIL
         async function verificarSessao() { 
             const { data: { session } } = await db.auth.getSession(); 
             if (session) {
@@ -720,16 +720,26 @@
         }
 
         async function checarPerfilEValidade(user) {
-            const { data: profile, error } = await db.from('profiles').select('*').eq('id', user.id).single();
+            let { data: profile, error } = await db.from('profiles').select('*').eq('id', user.id).single();
             
+            // Auto-criação de perfil caso a tabela estivesse vazia para este usuário
             if (error || !profile) {
-                await db.auth.signOut();
-                alert("Erro ao carregar perfil do usuário.");
-                mostrarLogin();
-                return;
+                const { data: newProfile, error: insertError } = await db.from('profiles').insert([{
+                    id: user.id,
+                    email: user.email,
+                    is_authorized: false,
+                    is_admin: false
+                }]).select().single();
+
+                if (insertError || !newProfile) {
+                    await db.auth.signOut();
+                    alert("Erro ao carregar ou criar perfil do usuário.");
+                    mostrarLogin();
+                    return;
+                }
+                profile = newProfile;
             }
 
-            // Verifica se está autorizado
             if (!profile.is_authorized) {
                 await db.auth.signOut();
                 alert("Sua conta ainda não foi autorizada pelo administrador.");
@@ -737,7 +747,6 @@
                 return;
             }
 
-            // Verifica validade da assinatura/renovação mensal (se não for admin master)
             if (!profile.is_admin && profile.subscription_expires_at) {
                 let hoje = new Date().toISOString().substring(0, 10);
                 if (profile.subscription_expires_at < hoje) {
@@ -765,7 +774,6 @@
             document.getElementById('app-container').classList.remove('public-mode');
             document.getElementById('btn-sair-publico').style.display = 'none';
             
-            // Exibe aba de admin se for admin master
             if (currentProfile && currentProfile.is_admin) {
                 document.getElementById('nav-admin').style.display = 'flex';
             } else {
