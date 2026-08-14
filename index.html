@@ -129,9 +129,8 @@
         .valor-neutro { color: var(--primary); }
 
         /* MODO PÚBLICO */
-        .hidden-public { display: block; }
         .public-mode .hidden-public { display: none !important; }
-        .codigo-gerado-box { background: var(--light); padding: 15px; border: 2px dashed var(--primary); border-radius: 12px; text-align: center; margin-top: 15px; font-weight: 700; font-size: 20px; letter-spacing: 2px;}
+        .codigo-gerado-box { background: var(--light); padding: 15px; border: 2px dashed var(--primary); border-radius: 12px; text-align: center; margin-top: 15px;}
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
@@ -190,7 +189,7 @@
 
             <div class="card" style="padding: 15px;">
                 <h2 style="margin-bottom: 10px;">Elenco Geral (<span id="total-elenco">0</span>)</h2>
-                <p style="font-size: 12px; color: var(--text-muted); text-align:center; margin-top:-10px;">Controle pagamentos da mensalidade ou diária.</p>
+                <p class="hidden-public" style="font-size: 12px; color: var(--text-muted); text-align:center; margin-top:-10px;">Controle pagamentos da mensalidade ou diária.</p>
                 <div class="busca-container">
                     <input type="text" id="busca-jogador" placeholder="🔍 Buscar jogador pelo nome..." onkeyup="filtrarElenco()">
                 </div>
@@ -229,8 +228,7 @@
             <div id="resultado" class="team-container"></div>
             
             <div class="hidden-public" style="display: flex; gap: 10px; margin-top: 20px;">
-                <button id="btn-wpp" style="background: var(--whatsapp); display: none;" onclick="exportarWhatsApp()">WhatsApp</button>
-                <button id="btn-ir-placares" style="background: var(--primary); display: none;" onclick="mudarAba('view-placares')">📝 Preencher Súmula</button>
+                <button id="btn-ir-placares" style="background: var(--primary); display: none; width:100%;" onclick="mudarAba('view-placares')">📝 Preencher Súmula</button>
             </div>
         </div>
 
@@ -243,7 +241,7 @@
                 </p>
                 
                 <div id="aviso-sem-sorteio" style="text-align: center; padding: 30px; color: var(--text-muted);">
-                    Nenhum sorteio ativo no momento.<br>Faça o sorteio na aba "Sorteio" primeiro.
+                    Nenhum sorteio ativo no momento.<br><span class="hidden-public">Faça o sorteio na aba "Sorteio" primeiro.</span>
                 </div>
 
                 <div id="container-sumula" style="display: none;">
@@ -395,9 +393,10 @@
 
         <!-- NAVEGAÇÃO INFERIOR -->
         <nav class="bottom-nav">
-            <div class="nav-item" onclick="mudarAba('view-elenco')" id="nav-elenco"><span class="nav-icon">👥</span><span>Elenco</span></div>
-            <div class="nav-item active" onclick="mudarAba('view-sorteio')" id="nav-sorteio"><span class="nav-icon">🎲</span><span>Sorteio</span></div>
-            <div class="nav-item" onclick="mudarAba('view-placares')" id="nav-placares"><span class="nav-icon">⚽</span><span>Súmula</span></div>
+            <!-- As abas Elenco e Sorteio ganham a classe hidden-public -->
+            <div class="nav-item hidden-public" onclick="mudarAba('view-elenco')" id="nav-elenco"><span class="nav-icon">👥</span><span>Elenco</span></div>
+            <div class="nav-item hidden-public" onclick="mudarAba('view-sorteio')" id="nav-sorteio"><span class="nav-icon">🎲</span><span>Sorteio</span></div>
+            <div class="nav-item active" onclick="mudarAba('view-placares')" id="nav-placares"><span class="nav-icon">⚽</span><span>Súmula</span></div>
             <div class="nav-item" onclick="mudarAba('view-estatisticas')" id="nav-estatisticas"><span class="nav-icon">📊</span><span>Painel</span></div>
             <div class="nav-item" onclick="mudarAba('view-financeiro')" id="nav-financeiro"><span class="nav-icon">💰</span><span>Caixa</span></div>
         </nav>
@@ -529,7 +528,9 @@
             document.getElementById('app-container').style.display = 'block'; 
             document.getElementById('app-container').classList.remove('public-mode');
             document.getElementById('btn-sair-publico').style.display = 'none';
-            carregarElencoDaNuvem(); 
+            carregarElencoDaNuvem();
+            // Se organizador, inicia no sorteio
+            mudarAba('view-sorteio');
         }
         function mostrarLogin() { 
             document.getElementById('auth-container').style.display = 'block'; 
@@ -602,9 +603,12 @@
             
             window.partidaSalva = true;
             atualizarListaJogosDaRodada();
+            
+            // Modo Público vai direto para a Súmula ou Estatísticas
             mudarAba('view-estatisticas'); 
             window.artilheirosPub = partida.artilheiros_json || {};
             renderizarPainelDoDia(); 
+            
             window.history.pushState({}, '', '?code=' + codigo);
         }
 
@@ -624,12 +628,11 @@
                 presente: estadoLocal[j.id]?.presente || false, 
                 ordemChegada: estadoLocal[j.id]?.ordemChegada || 0, 
                 pagou: estadoLocal[j.id]?.pagou || false 
-                // j.mensalidade_paga já vem do banco globalmente
             }));
             
             document.getElementById('status-db').innerText = "Online"; document.getElementById('status-db').style.backgroundColor = "var(--supabase)";
             atualizarListas();
-            atualizarFinanceiro(); // Atualiza o financeiro inicial com os dados globais dos mensalistas
+            atualizarFinanceiro(); 
         }
 
         // CADASTRO E EDIÇÃO
@@ -670,24 +673,21 @@
         function desmarcarPresenca(indexArray) { 
             jogadores[indexArray].presente = false; 
             jogadores[indexArray].ordemChegada = 0; 
-            jogadores[indexArray].pagou = false; // Se tirar de quadra, o convidado para de dever a diária
+            jogadores[indexArray].pagou = false; 
             salvarEstadoLocal(); 
             atualizarListas(); 
             atualizarFinanceiro(); 
         }
 
-        // FUNÇÃO GLOBAL DE PAGAMENTO DO MENSALISTA
         async function alternarMensalidade(idNuvem, indexArray) {
             const j = jogadores[indexArray];
             const novoStatus = !j.mensalidade_paga;
             j.mensalidade_paga = novoStatus;
             atualizarListas(); 
             atualizarFinanceiro();
-            // Salva globalmente no banco de dados na hora
             await db.from('jogadores').update({ mensalidade_paga: novoStatus }).eq('id', idNuvem);
         }
         
-        // FUNÇÃO DE PAGAMENTO DIÁRIO DO CONVIDADO
         function alternarPagamento(indexArray) { 
             jogadores[indexArray].pagou = !jogadores[indexArray].pagou; 
             salvarEstadoLocal(); 
@@ -783,7 +783,6 @@
             let presentes = jogadores.filter(j => j.presente).sort((a, b) => { if (a.tipo === 'Mensalista' && b.tipo !== 'Mensalista') return -1; if (a.tipo !== 'Mensalista' && b.tipo === 'Mensalista') return 1; return a.ordemChegada - b.ordemChegada; });
             if (presentes.length < 2) return alert("Confirme presença de pelo menos 2 atletas.");
             
-            document.getElementById('btn-wpp').style.display = 'none'; document.getElementById('btn-ir-placares').style.display = 'none';
             const resultado = document.getElementById('resultado');
             resultado.innerHTML = `<div style="text-align:center; padding:40px; font-weight:bold; color:var(--primary);">Processando Algoritmo...</div>`;
             setTimeout(() => { sortearTimes(presentes); }, 1500);
@@ -872,7 +871,7 @@
                 window.reservasSorteados.forEach(j => html += `<li><strong>${j.nome}</strong></li>`);
                 document.getElementById('resultado').innerHTML += html + `</ul></div>`;
             }
-            document.getElementById('btn-wpp').style.display = 'block'; document.getElementById('btn-ir-placares').style.display = 'block';
+            document.getElementById('btn-ir-placares').style.display = 'block';
         }
 
         function atualizarNomeTime(id, novoNome) {
@@ -1143,10 +1142,7 @@
             let valConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
             let valMens = parseFloat(document.getElementById('valor-mensalista').value) || 0;
             
-            // Mensalistas (Calcula TODOS os mensalistas do banco que estão com status pago, independente de estarem presentes no jogo)
             let mensPagantes = jogadores.filter(j => j.tipo === 'Mensalista' && j.mensalidade_paga).length;
-            
-            // Convidados (Calcula apenas os que estão PRESENTES hoje e marcaram pago)
             let convPagantes = jogadores.filter(j => j.tipo === 'Convidado' && j.presente && j.pagou).length;
             
             let receita = (convPagantes * valConv) + (mensPagantes * valMens);
@@ -1237,21 +1233,19 @@
                 window.partidaSalva = true; btn.innerText = "✅ Baba Salvo!";
                 salvarEstadoCompleto();
                 
+                // GERAÇÃO DO LINK WHATSAPP
+                let linkCompartilhamento = `https://pegaobaba.vercel.app?code=${codigoAleatorio}`;
+                let textoWpp = encodeURIComponent(`🏆 *Resenha do Baba!*\nAcompanhe a súmula, artilharia e o painel de hoje ao vivo pelo link abaixo:\n\n${linkCompartilhamento}`);
+
                 let boxCod = document.getElementById('box-codigo-gerado');
-                boxCod.innerHTML = `CÓDIGO DESTE BABA:<br><span style="color:var(--primary); font-size:28px;">${codigoAleatorio}</span><br><span style="font-size:12px; font-weight:normal;">Envie para os jogadores visualizarem o painel</span>`;
+                boxCod.innerHTML = `
+                    <div style="font-size:12px; color:var(--text-muted); font-weight:normal; margin-bottom:5px;">CÓDIGO DESTE BABA:</div>
+                    <div style="color:var(--primary); font-size:28px; line-height:1; margin-bottom:15px;">${codigoAleatorio}</div>
+                    <a href="https://api.whatsapp.com/send?text=${textoWpp}" target="_blank" style="display:inline-block; background:var(--whatsapp); color:white; padding:12px 20px; border-radius:8px; text-decoration:none; font-size:14px; font-weight:bold; width:100%; box-sizing:border-box;">📱 Compartilhar Link no WhatsApp</a>
+                `;
                 boxCod.style.display = 'block';
 
             } catch(err) { alert("Erro: " + err.message); btn.innerText = "Tentar Novamente"; btn.disabled = false; }
-        }
-
-        function exportarWhatsApp() {
-            let texto = "📋 *RELAÇÃO DE EQUIPES* 📋\n\n";
-            window.timesSorteadosObjs.forEach((t) => { 
-                texto += `*${t.nome}*\n`; 
-                t.jogadores.forEach(j => texto += `• ${j.nome}\n`); 
-                texto += `\n`; 
-            });
-            navigator.clipboard.writeText(texto).then(() => alert("Copiado!")).catch(() => alert("Falha ao copiar."));
         }
     </script>
 </body>
