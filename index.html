@@ -139,7 +139,7 @@
         .btn-acao-outline { background: transparent; border: 1px solid var(--border); color: var(--dark); }
         .btn-acao-outline:hover { background: var(--light); }
         .btn-presente { background: var(--supabase); color: white; border: 1px solid var(--supabase); }
-        .btn-pagou { background: var(--supabase); color: white; border: 1px solid var(--supabase); }
+        .btn-pagou { background-color: var(--supabase); color: white; border: 1px solid var(--supabase); }
         .btn-devendo { background-color: transparent; color: var(--danger); border: 1px solid var(--danger); }
 
         /* TIMES E EDIÇÃO DE NOMES */
@@ -499,6 +499,17 @@
 
         </div>
 
+        <!-- ABA 6: PAINEL MASTER (SÓ APARECE SE FOR ADMIN MASTER) -->
+        <div id="view-admin" class="page-view">
+            <h2 style="text-align: left; font-size:20px; margin-bottom: 20px;">Painel Master (Gestão de Assinaturas)</h2>
+            <div class="card">
+                <p style="font-size: 13px; color: var(--text-muted); margin-top: -5px; margin-bottom: 15px;">
+                    Gerencie a autorização e a data de expiração da mensalidade de cada grupo/organizador.
+                </p>
+                <div id="lista-organizadores-admin">Carregando usuários...</div>
+            </div>
+        </div>
+
         <!-- MODAL SELEÇÃO DE GOL -->
         <div id="modal-gol" class="modal-overlay" style="display:none;">
             <div class="modal-content">
@@ -540,6 +551,13 @@
                 </div>
                 <span>Caixa</span>
             </div>
+            <!-- Aba Admin (Oculta por padrão, aparece apenas para Master Admin) -->
+            <div class="nav-item hidden-public" onclick="mudarAba('view-admin')" id="nav-admin" style="display: none;">
+                <div class="nav-icon">
+                    <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/><path d="M12 6v6l4 2"/></svg>
+                </div>
+                <span>Admin</span>
+            </div>
         </nav>
 
     </div>
@@ -548,6 +566,7 @@
         let db;
         let jogadores = [];
         let jogadorEdicaoId = null; 
+        let currentProfile = null;
 
         const coresTimes = ["Vermelho", "Azul", "Amarelo", "Verde", "Branco", "Preto", "Roxo", "Laranja"];
         const emojisTimes = ["🔴", "🔵", "🟡", "🟢", "⚪", "⚫", "🟣", "🟠"];
@@ -642,7 +661,11 @@
             document.querySelectorAll('.page-view').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
             document.getElementById(viewId).classList.add('active');
-            document.getElementById(viewId.replace('view-', 'nav-')).classList.add('active');
+            
+            let navId = viewId.replace('view-', 'nav-');
+            let navEl = document.getElementById(navId);
+            if(navEl) navEl.classList.add('active');
+            
             window.scrollTo(0, 0);
 
             if(viewId === 'view-estatisticas') carregarEstatisticasGerais();
@@ -651,23 +674,89 @@
                 atualizarFinanceiro();
                 if(!window.isModoPublico) calcularBalancoMesAno();
             }
+            if(viewId === 'view-admin') carregarPainelAdmin();
         }
 
-        // AUTENTICAÇÃO E MODO PÚBLICO
-        async function verificarSessao() { const { data: { session } } = await db.auth.getSession(); if (session) mostrarApp(); else mostrarLogin(); }
+        // AUTENTICAÇÃO E VERIFICAÇÃO DE ASSINATURA/AUTORIZAÇÃO
+        async function verificarSessao() { 
+            const { data: { session } } = await db.auth.getSession(); 
+            if (session) {
+                await checarPerfilEValidade(session.user);
+            } else {
+                mostrarLogin();
+            }
+        }
+
         async function criarConta() { 
-            const email = document.getElementById('auth-email').value; const password = document.getElementById('auth-password').value; const msg = document.getElementById('auth-msg');
-            if(password.length < 6) return msg.innerText = "A senha deve ter 6+ caracteres."; msg.innerText = "Processando...";
+            const email = document.getElementById('auth-email').value; 
+            const password = document.getElementById('auth-password').value; 
+            const msg = document.getElementById('auth-msg');
+            if(password.length < 6) return msg.innerText = "A senha deve ter 6+ caracteres."; 
+            msg.innerText = "Processando...";
             const { error } = await db.auth.signUp({ email, password });
-            if (error) { msg.style.color = "var(--danger)"; msg.innerText = error.message; } else { msg.style.color = "var(--primary)"; msg.innerHTML = "✅ Conta criada! Verifique seu e-mail."; }
+            if (error) { 
+                msg.style.color = "var(--danger)"; 
+                msg.innerText = error.message; 
+            } else { 
+                msg.style.color = "var(--primary)"; 
+                msg.innerHTML = "✅ Conta criada! Aguarde a liberação do acesso."; 
+            }
         }
+
         async function fazerLogin() { 
-            const email = document.getElementById('auth-email').value; const password = document.getElementById('auth-password').value; const msg = document.getElementById('auth-msg');
+            const email = document.getElementById('auth-email').value; 
+            const password = document.getElementById('auth-password').value; 
+            const msg = document.getElementById('auth-msg');
             msg.innerText = "Conectando...";
-            const { error } = await db.auth.signInWithPassword({ email, password });
-            if (error) { msg.style.color = "var(--danger)"; msg.innerText = "Credenciais inválidas."; } else mostrarApp();
+            
+            const { data, error } = await db.auth.signInWithPassword({ email, password });
+            if (error) { 
+                msg.style.color = "var(--danger)"; 
+                msg.innerText = "Credenciais inválidas."; 
+                return;
+            }
+
+            await checarPerfilEValidade(data.user);
         }
-        async function fazerLogout() { await db.auth.signOut(); mostrarLogin(); }
+
+        async function checarPerfilEValidade(user) {
+            const { data: profile, error } = await db.from('profiles').select('*').eq('id', user.id).single();
+            
+            if (error || !profile) {
+                await db.auth.signOut();
+                alert("Erro ao carregar perfil do usuário.");
+                mostrarLogin();
+                return;
+            }
+
+            // Verifica se está autorizado
+            if (!profile.is_authorized) {
+                await db.auth.signOut();
+                alert("Sua conta ainda não foi autorizada pelo administrador.");
+                mostrarLogin();
+                return;
+            }
+
+            // Verifica validade da assinatura/renovação mensal (se não for admin master)
+            if (!profile.is_admin && profile.subscription_expires_at) {
+                let hoje = new Date().toISOString().substring(0, 10);
+                if (profile.subscription_expires_at < hoje) {
+                    await db.auth.signOut();
+                    alert(`Sua assinatura venceu em ${profile.subscription_expires_at.split('-').reverse().join('/')}. Entre em contato para renovar.`);
+                    mostrarLogin();
+                    return;
+                }
+            }
+
+            currentProfile = profile;
+            mostrarApp();
+        }
+
+        async function fazerLogout() { 
+            await db.auth.signOut(); 
+            currentProfile = null;
+            mostrarLogin(); 
+        }
         
         function mostrarApp() { 
             window.isModoPublico = false;
@@ -675,12 +764,76 @@
             document.getElementById('app-container').style.display = 'block'; 
             document.getElementById('app-container').classList.remove('public-mode');
             document.getElementById('btn-sair-publico').style.display = 'none';
+            
+            // Exibe aba de admin se for admin master
+            if (currentProfile && currentProfile.is_admin) {
+                document.getElementById('nav-admin').style.display = 'flex';
+            } else {
+                document.getElementById('nav-admin').style.display = 'none';
+            }
+
             carregarElencoDaNuvem();
             mudarAba('view-sorteio');
         }
+
         function mostrarLogin() { 
             document.getElementById('auth-container').style.display = 'block'; 
             document.getElementById('app-container').style.display = 'none'; 
+        }
+
+        // GESTÃO DO PAINEL ADMIN MASTER
+        async function carregarPainelAdmin() {
+            if (!currentProfile || !currentProfile.is_admin) return;
+            const container = document.getElementById('lista-organizadores-admin');
+            container.innerHTML = "Carregando usuários...";
+
+            const { data: users, error } = await db.from('profiles').select('*').order('email');
+            if (error) {
+                container.innerHTML = "Erro ao carregar usuários.";
+                return;
+            }
+
+            if (!users || users.length === 0) {
+                container.innerHTML = "Nenhum usuário cadastrado.";
+                return;
+            }
+
+            container.innerHTML = "";
+            users.forEach(u => {
+                let expDate = u.subscription_expires_at || '';
+                container.innerHTML += `
+                    <div style="background: var(--light); padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 10px; font-size: 13px;">
+                        <div style="font-weight: 700; margin-bottom: 5px;">${u.email}</div>
+                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <label style="font-size: 11px;">Autorizado: 
+                                <input type="checkbox" id="auth-${u.id}" ${u.is_authorized ? 'checked' : ''} onchange="atualizarAdminUser('${u.id}')">
+                            </label>
+                            <label style="font-size: 11px;">Vencimento: 
+                                <input type="date" id="date-${u.id}" value="${expDate}" style="width: auto; padding: 6px; margin: 0;" onchange="atualizarAdminUser('${u.id}')">
+                            </label>
+                            <span id="msg-${u.id}" style="font-size: 11px; color: var(--supabase); font-weight: bold;"></span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        async function atualizarAdminUser(uid) {
+            let isAuth = document.getElementById(`auth-${uid}`).checked;
+            let expDate = document.getElementById(`date-${uid}`).value || null;
+            let msgSpan = document.getElementById(`msg-${uid}`);
+
+            const { error } = await db.from('profiles').update({
+                is_authorized: isAuth,
+                subscription_expires_at: expDate
+            }).eq('id', uid);
+
+            if (error) {
+                alert("Erro ao atualizar: " + error.message);
+            } else {
+                msgSpan.innerText = "Salvo!";
+                setTimeout(() => { msgSpan.innerText = ""; }, 2000);
+            }
         }
 
         async function acessarModoPublico() {
@@ -707,7 +860,6 @@
             if(partida.valor_por_convidado) document.getElementById('valor-convidado').value = partida.valor_por_convidado;
             if(partida.valor_por_mensalista) document.getElementById('valor-mensalista').value = partida.valor_por_mensalista;
             
-            // Define data da partida pública com base no banco
             if(partida.data_sorteio) {
                 let d = new Date(partida.data_sorteio);
                 window.dataPartidaAtual = d.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
@@ -812,10 +964,9 @@
             atualizarFinanceiro(); 
         }
 
-        // MENSALIDADE FICA SALVA NO BANCO ATRELADA AO MÊS E ANO
         async function alternarMensalidade(idNuvem, indexArray) {
             const j = jogadores[indexArray];
-            const mesKey = new Date().toISOString().substring(0, 7); // Ex: "2026-08"
+            const mesKey = new Date().toISOString().substring(0, 7); 
             if (!j.pagamentos_json) j.pagamentos_json = {};
             
             const isPago = j.pagamentos_json[mesKey] === true;
@@ -840,7 +991,7 @@
         }
         
         function zerarPresencas() { 
-            if(confirm("Encerrar o Baba de hoje?\n\nIsso vai retirar todos da quadra e ZERAR as DIÁRIAS dos convidados.\n\n(A mensalidade dos mensalistas NÃO será afetada, fica salva no banco de dados para o mês todo).")) { 
+            if(confirm("Encerrar o Baba de hoje?\n\nIsso vai retirar todos da quadra e ZERAR as DIÁRIAS dos convidados.")) { 
                 jogadores.forEach(j => { j.presente = false; j.ordemChegada = 0; j.pagou = false; }); 
                 salvarEstadoLocal(); 
                 limparEstadoRodada(); 
@@ -886,7 +1037,6 @@
                 let tagConvidado = j.tipo === 'Convidado' ? '<span class="badge badge-convidado">C</span>' : '';
                 let tagPosicao = (j.posicao !== 'Goleiro' && j.posicao !== 'Linha') ? `<span class="badge badge-posicao">${j.posicao}</span>` : '';
                 
-                // --- 1. PREENCHE A ABA DE ELENCO (ADMINISTRATIVO) ---
                 if(listaElenco) {
                     let btnEdicao = `<button class="btn-small btn-acao-outline" onclick="prepararEdicao(${indexArray})">✏️</button>`;
                     let btnExcluir = `<button class="btn-small btn-acao-outline" style="color:var(--danger); border-color:var(--danger);" onclick="removerJogador('${j.id}', ${indexArray})">X</button>`;
@@ -910,7 +1060,6 @@
                     </div>`;
                 }
                 
-                // --- 2. PREENCHE A ABA DE SORTEIO (SEPARANDO AUSENTES E PRESENTES) ---
                 if(j.presente) {
                     presentes.push({ ...j, indexArray: indexArray });
                 } else {
@@ -925,7 +1074,6 @@
                 }
             });
 
-            // --- ORDENA E PREENCHE OS PRESENTES NA ABA DE SORTEIO ---
             presentes.sort((a, b) => { if (a.tipo === 'Mensalista' && b.tipo !== 'Mensalista') return -1; if (a.tipo !== 'Mensalista' && b.tipo === 'Mensalista') return 1; return a.ordemChegada - b.ordemChegada; });
 
             presentes.forEach((j, pos) => {
@@ -958,7 +1106,6 @@
             filtrarSorteioAusentes();
         }
 
-        // SORTEIO BLINDADO
         function embaralhar(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } return array; }
 
         function iniciarSorteioComSuspense() {
@@ -976,7 +1123,6 @@
             let modo = document.getElementById('modo-sorteio').value; let priorizarOrdem = document.getElementById('priorizar-ordem').checked;
             let incluiGoleiros = (modo === '14' || modo === 'todos'); 
             
-            // Define a data atual da partida no momento do sorteio
             window.dataPartidaAtual = new Date().toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
 
             let jogadoresValidos = presentes; let reservas = [];
@@ -1031,7 +1177,6 @@
 
             window.reservasSorteados = reservas; window.partidaSalva = false;
             
-            // Inicia do Zero
             window.jogosDaRodada = []; window.filaEquipes = []; window.custosDaRodada = [];
             window.golsTempA = []; window.golsTempB = [];
             document.getElementById('box-codigo-gerado').style.display = 'none';
@@ -1070,7 +1215,6 @@
             if (document.getElementById('view-placares').classList.contains('active')) atualizarSelectsEquipes();
         }
 
-        // SÚMULA DINÂMICA (PERMANECE ATIVA ATÉ O PRÓXIMO SORTEIO)
         function renderizarSumula() {
             const container = document.getElementById('container-sumula'); 
             const aviso = document.getElementById('aviso-sem-sorteio');
@@ -1121,7 +1265,6 @@
             } else textoFila.style.display = 'none';
         }
 
-        // FUNÇÕES DOS GOLS TEMP
         function limparGolsTemp(lado) {
             if(lado === 'A') window.golsTempA = []; else window.golsTempB = [];
             atualizarPlacarTempUI(); salvarEstadoCompleto();
@@ -1210,7 +1353,6 @@
             });
         }
 
-        // ESTATÍSTICAS E PAINÉIS
         function renderizarPainelDoDia() {
             let timesStats = {}; let artilheiros = {};
 
@@ -1337,13 +1479,11 @@
             document.getElementById('loading-stats').style.display = 'none';
         }
 
-        // FINANCEIRO GLOBAL
         function atualizarFinanceiro() {
             if(window.isModoPublico) return; 
 
             let valConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
             
-            // RODADA (HOJE)
             let convPagantesHoje = jogadores.filter(j => j.tipo === 'Convidado' && j.presente && j.pagou).length;
             let recHoje = (convPagantesHoje * valConv); 
             let custHoje = window.custosDaRodada.reduce((acc, c) => acc + c.valor, 0);
@@ -1440,7 +1580,6 @@
             });
         }
 
-        // SALVAR TUDO NA NUVEM, GERAR CÓDIGO E EXCLUIR CONVIDADOS AUTOMATICAMENTE
         async function salvarPartidaComPlacares() {
             if(window.partidaSalva) return alert("Esta rodada já foi salva no banco de dados!");
             
@@ -1489,7 +1628,6 @@
                 let jogosInsert = window.jogosDaRodada.map(j => ({ partida_id: pData[0].id, equipe_a: j.equipe_a_nome, gols_a: j.gols_a.length, equipe_b: j.equipe_b_nome, gols_b: j.gols_b.length }));
                 if (jogosInsert.length > 0) await db.from('jogos').insert(jogosInsert);
 
-                // EXCLUSÃO AUTOMÁTICA DE TODOS OS CONVIDADOS DA TABELA DE ELENCO APÓS SALVAR
                 await db.from('jogadores').delete().eq('tipo', 'Convidado');
 
                 window.partidaSalva = true; btn.innerText = "✅ Baba Salvo e Convidados Limpos!";
@@ -1497,7 +1635,6 @@
                 
                 carregarElencoDaNuvem();
 
-                // GERAÇÃO DO LINK WHATSAPP
                 let linkCompartilhamento = `https://pegaobaba.vercel.app?code=${codigoAleatorio}`;
                 let textoWpp = encodeURIComponent(`🏆 *Acompanhe nosso Baba ao Vivo!*\n\nVeja a súmula, artilharia e classificação da rodada pelo link:\n\n${linkCompartilhamento}\n\n_(Código de acesso direto: ${codigoAleatorio})_`);
 
