@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sorteador Pro | Gestão Esportiva</title>
+    <title>Pega o Baba | Gestão Esportiva</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -21,8 +21,8 @@
         
         body { font-family: 'Inter', sans-serif; background-color: var(--light); color: var(--dark); max-width: 600px; margin: 0 auto; padding: 0; overflow-x: hidden; -webkit-font-smoothing: antialiased; padding-bottom: calc(var(--nav-height) + 20px); }
         h1, h2, h3 { margin-bottom: 20px; }
-        h1 { text-align: center; font-weight: 700; letter-spacing: -0.02em; margin-top: 20px; }
-        h2 { text-align: center; font-size: 18px; font-weight: 600; }
+        h1 { text-align: center; font-weight: 800; letter-spacing: -0.02em; margin-top: 20px; }
+        h2 { text-align: center; font-size: 18px; font-weight: 700; }
         .subtitle { text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 30px; margin-top: -15px;}
 
         /* NAVEGAÇÃO SUPERIOR */
@@ -136,11 +136,11 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body>
+<body id="body-app">
     
     <!-- TELA INICIAL (LOGIN OU MODO JOGADOR) -->
     <div id="auth-container" style="padding: 20px;">
-        <h1>Sorteador Pro</h1>
+        <h1>Pega o Baba</h1>
         <p class="subtitle">Plataforma Profissional de Gestão</p>
         
         <div class="card">
@@ -164,11 +164,11 @@
     <div id="app-container" style="display: none;">
         
         <div class="top-bar">
-            <h1>Sorteador Pro</h1>
+            <h1>Pega o Baba</h1>
             <div class="top-actions">
                 <div class="status-nuvem" id="status-db">...</div>
                 <button class="btn-sair hidden-public" onclick="fazerLogout()">Sair</button>
-                <button class="btn-sair" id="btn-sair-publico" style="display:none;" onclick="sairModoPublico()">Voltar</button>
+                <button class="btn-sair" id="btn-sair-publico" style="display:none;" onclick="sairModoPublico()">Sair da Visão</button>
             </div>
         </div>
 
@@ -238,7 +238,7 @@
             <div class="card">
                 <h2>📝 Súmula de Jogo</h2>
                 <p class="hidden-public" style="font-size: 13px; color: var(--text-muted); margin-top: -10px; margin-bottom: 20px; text-align:center;">
-                    Registre o resultado da partida. Em caso de empate, as duas equipes saem da quadra automaticamente.
+                    Registre o resultado. Em caso de empate, as duas equipes saem da quadra automaticamente.
                 </p>
                 
                 <div id="aviso-sem-sorteio" style="text-align: center; padding: 30px; color: var(--text-muted);">
@@ -274,7 +274,7 @@
 
                     <button class="btn-salvar hidden-public" id="btn-encerrar-baba" style="display: block; padding:16px;" onclick="salvarPartidaComPlacares()">✅ Finalizar Baba e Salvar Dados</button>
                     
-                    <!-- BOX PARA MOSTRAR O CÓDIGO DO BABA QUANDO FINALIZAR -->
+                    <!-- BOX PARA MOSTRAR O CÓDIGO DO BABA -->
                     <div id="box-codigo-gerado" class="codigo-gerado-box hidden-public" style="display:none;"></div>
                 </div>
             </div>
@@ -336,11 +336,20 @@
 
         <!-- ABA 5: FINANCEIRO -->
         <div id="view-financeiro" class="page-view">
-            <h2 style="text-align: left; font-size:20px; margin-bottom: 20px;">Gestão Financeira do Dia</h2>
+            <h2 style="text-align: left; font-size:20px; margin-bottom: 20px;">Caixa da Rodada</h2>
             
             <div class="card hidden-public">
-                <label style="font-size: 13px; font-weight: 600; color: var(--text-muted);">Valor cobrado por Convidado (R$):</label>
-                <input type="number" id="valor-convidado" value="20" onchange="atualizarFinanceiro()" style="font-size: 18px; font-weight: 700;">
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <div style="flex: 1;">
+                        <label style="font-size: 11px; font-weight: 600; color: var(--text-muted);">Mensalista (R$):</label>
+                        <input type="number" id="valor-mensalista" value="60" onchange="atualizarFinanceiro()" style="font-size: 16px; font-weight: 700; margin-bottom: 0;">
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="font-size: 11px; font-weight: 600; color: var(--text-muted);">Convidado (R$):</label>
+                        <input type="number" id="valor-convidado" value="25" onchange="atualizarFinanceiro()" style="font-size: 16px; font-weight: 700; margin-bottom: 0;">
+                    </div>
+                </div>
+                <p style="font-size:11px; color:var(--text-muted); text-align:center; margin:0;">Marque "Pago" na lista do Elenco para contabilizar a receita.</p>
             </div>
 
             <div class="dash-grid">
@@ -430,7 +439,7 @@
 
         // ==== PERSISTÊNCIA LOCAL ====
         function salvarEstadoCompleto() {
-            if(window.isModoPublico) return; // Não salva estado se for visualizador
+            if(window.isModoPublico) return; 
             
             const estado = {
                 timesSorteadosObjs: window.timesSorteadosObjs,
@@ -439,6 +448,7 @@
                 filaEquipes: window.filaEquipes,
                 partidaSalva: window.partidaSalva,
                 custosDaRodada: window.custosDaRodada,
+                valorMensalistaAtual: document.getElementById('valor-mensalista').value,
                 valorConvidadoAtual: document.getElementById('valor-convidado').value
             };
             localStorage.setItem('baba_full_state', JSON.stringify(estado));
@@ -455,6 +465,7 @@
                 window.partidaSalva = state.partidaSalva !== undefined ? state.partidaSalva : true;
                 window.custosDaRodada = state.custosDaRodada || [];
                 
+                if (state.valorMensalistaAtual) document.getElementById('valor-mensalista').value = state.valorMensalistaAtual;
                 if (state.valorConvidadoAtual) document.getElementById('valor-convidado').value = state.valorConvidadoAtual;
 
                 if(window.timesSorteadosObjs.length > 0) renderizarTimesNaTela();
@@ -531,7 +542,6 @@
             document.getElementById('btn-sair-publico').style.display = 'block';
             window.isModoPublico = true;
             
-            // Busca partida pelo código
             document.getElementById('status-db').innerText = "Buscando Baba...";
             const { data: partida, error } = await db.from('partidas').select('*').eq('codigo_acesso', codigo).single();
             
@@ -543,10 +553,37 @@
             
             document.getElementById('status-db').innerText = `Visualizando: ${codigo}`;
             
-            // Preenche dados financeiros e estatísticos salvos
             window.custosDaRodada = partida.custos_json || [];
-            document.getElementById('valor-convidado').value = partida.valor_por_convidado || 0;
-            atualizarFinanceiro();
+            
+            // Popula os valores mesmo que ocultos para o cálculo bater
+            if(partida.valor_por_convidado) document.getElementById('valor-convidado').value = partida.valor_por_convidado;
+            if(partida.valor_por_mensalista) document.getElementById('valor-mensalista').value = partida.valor_por_mensalista;
+            
+            // Buscar os pagantes da partida para o calculo da receita pública
+            const { data: presencas } = await db.from('presencas').select('pagou, jogadores(tipo)').eq('partida_id', partida.id);
+            if(presencas) {
+                let receitaPub = 0;
+                let vConv = partida.valor_por_convidado || 0;
+                let vMens = partida.valor_por_mensalista || 0;
+                
+                presencas.forEach(p => {
+                    if(p.pagou) {
+                        if(p.jogadores && p.jogadores.tipo === 'Convidado') receitaPub += vConv;
+                        else receitaPub += vMens;
+                    }
+                });
+                
+                let totCustosPub = window.custosDaRodada.reduce((acc, c) => acc + c.valor, 0);
+                let saldoPub = receitaPub - totCustosPub;
+                
+                document.getElementById('fin-receita').innerText = `R$ ${receitaPub.toFixed(2)}`;
+                document.getElementById('fin-custos').innerText = `R$ ${totCustosPub.toFixed(2)}`;
+                document.getElementById('fin-saldo').innerText = `R$ ${saldoPub.toFixed(2)}`;
+                
+                let elSaldo = document.getElementById('fin-saldo');
+                elSaldo.className = 'dash-valor ' + (saldoPub > 0 ? 'valor-positivo' : (saldoPub < 0 ? 'valor-negativo' : 'valor-neutro'));
+            }
+            renderizarListaCustos();
             
             // Buscar Jogos
             const { data: jogos } = await db.from('jogos').select('*').eq('partida_id', partida.id);
@@ -559,9 +596,12 @@
             
             window.partidaSalva = true;
             atualizarListaJogosDaRodada();
-            mudarAba('view-estatisticas'); // Joga direto no painel
+            mudarAba('view-estatisticas'); 
+            
+            // Injeta a artilharia da partida
+            window.artilheirosPub = partida.artilheiros_json || {};
             renderizarPainelDoDia(); 
-            // Atualiza url sem recarregar a pagina para facilitar compartilhamento
+            
             window.history.pushState({}, '', '?code=' + codigo);
         }
 
@@ -613,13 +653,17 @@
 
         function salvarEstadoLocal() { let estado = {}; jogadores.forEach(j => { if (j.presente || j.pagou) estado[j.id] = { presente: j.presente, ordemChegada: j.ordemChegada, pagou: j.pagou }; }); localStorage.setItem('baba_presencas_temp', JSON.stringify(estado)); }
         
-        function marcarPresenca(indexArray) { jogadores[indexArray].presente = true; jogadores[indexArray].ordemChegada = Date.now(); salvarEstadoLocal(); atualizarListas(); }
-        function desmarcarPresenca(indexArray) { jogadores[indexArray].presente = false; jogadores[indexArray].ordemChegada = 0; jogadores[indexArray].pagou = false; salvarEstadoLocal(); atualizarListas(); }
+        function marcarPresenca(indexArray) { jogadores[indexArray].presente = true; jogadores[indexArray].ordemChegada = Date.now(); salvarEstadoLocal(); atualizarListas(); atualizarFinanceiro(); }
+        function desmarcarPresenca(indexArray) { jogadores[indexArray].presente = false; jogadores[indexArray].ordemChegada = 0; jogadores[indexArray].pagou = false; salvarEstadoLocal(); atualizarListas(); atualizarFinanceiro(); }
         
-        // AGORA FUNCIONA PARA TODOS (MENSALISTAS E CONVIDADOS)
-        function alternarPagamento(indexArray) { jogadores[indexArray].pagou = !jogadores[indexArray].pagou; salvarEstadoLocal(); atualizarListas(); atualizarFinanceiro(); }
+        function alternarPagamento(indexArray) { 
+            jogadores[indexArray].pagou = !jogadores[indexArray].pagou; 
+            salvarEstadoLocal(); 
+            atualizarListas(); 
+            atualizarFinanceiro(); 
+        }
         
-        function zerarPresencas() { if(confirm("Retirar todos os jogadores de quadra?")) { jogadores.forEach(j => { j.presente = false; j.ordemChegada = 0; j.pagou = false; }); salvarEstadoLocal(); atualizarListas(); limparEstadoRodada(); document.getElementById('resultado').innerHTML = ""; document.getElementById('btn-wpp').style.display = 'none'; document.getElementById('btn-ir-placares').style.display = 'none'; } }
+        function zerarPresencas() { if(confirm("Retirar todos os jogadores de quadra?")) { jogadores.forEach(j => { j.presente = false; j.ordemChegada = 0; j.pagou = false; }); salvarEstadoLocal(); atualizarListas(); limparEstadoRodada(); atualizarFinanceiro(); document.getElementById('resultado').innerHTML = ""; document.getElementById('btn-wpp').style.display = 'none'; document.getElementById('btn-ir-placares').style.display = 'none'; } }
 
         function filtrarElenco() {
             let termo = document.getElementById('busca-jogador').value.toLowerCase();
@@ -740,7 +784,7 @@
                 window.timesSorteadosObjs.push({ id: idx, corBase: cor, nome: `Equipe ${cor}`, jogadores: timeArr });
             });
 
-            window.reservasSorteados = reservas; window.presentesParaSalvar = presentes; window.partidaSalva = false;
+            window.reservasSorteados = reservas; window.partidaSalva = false;
             
             // Inicia do Zero
             window.jogosDaRodada = []; window.filaEquipes = []; window.custosDaRodada = [];
@@ -748,6 +792,7 @@
             document.getElementById('box-codigo-gerado').style.display = 'none';
             
             renderizarTimesNaTela();
+            atualizarFinanceiro(); // Atualiza painel financeiro baseado nos pagamentos em tempo real
             salvarEstadoCompleto();
         }
 
@@ -929,6 +974,13 @@
                 j.gols_a.forEach(nome => { if(nome !== 'Gol Contra') artilheiros[nome] = (artilheiros[nome] || 0) + 1; });
                 j.gols_b.forEach(nome => { if(nome !== 'Gol Contra') artilheiros[nome] = (artilheiros[nome] || 0) + 1; });
             });
+            
+            // Adiciona a artilharia injetada do banco caso seja modo visualizador
+            if (window.isModoPublico && window.artilheirosPub) {
+                for (let nome in window.artilheirosPub) {
+                    artilheiros[nome] = (artilheiros[nome] || 0) + window.artilheirosPub[nome];
+                }
+            }
 
             let rankTimes = Object.entries(timesStats).sort((a, b) => {
                 if(b[1].pts !== a[1].pts) return b[1].pts - a[1].pts; 
@@ -1030,10 +1082,18 @@
 
         // FINANCEIRO
         function atualizarFinanceiro() {
-            let valor = parseFloat(document.getElementById('valor-convidado').value) || 0;
-            // Pega todo mundo que pagou (seja convidado ou mensalista atrasado)
-            let pagantes = window.presentesParaSalvar.filter(j => j.pagou); 
-            let receita = pagantes.length * valor;
+            if(window.isModoPublico) return; // O modo publico ja puxa do banco direto
+
+            let valConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
+            let valMens = parseFloat(document.getElementById('valor-mensalista').value) || 0;
+            
+            // Filtra da lista geral quem está presente e pagou
+            let presentesPagantes = jogadores.filter(j => j.presente && j.pagou);
+            
+            let convPagantes = presentesPagantes.filter(j => j.tipo === 'Convidado').length; 
+            let mensPagantes = presentesPagantes.filter(j => j.tipo === 'Mensalista').length; 
+            
+            let receita = (convPagantes * valConv) + (mensPagantes * valMens);
             
             let totalCustos = window.custosDaRodada.reduce((acc, c) => acc + c.valor, 0);
             let saldo = receita - totalCustos;
@@ -1082,16 +1142,23 @@
                     jogo.gols_b.forEach(nome => { if(nome !== 'Gol Contra') artilheiros[nome] = (artilheiros[nome] || 0) + 1; });
                 });
 
-                let pagantes = window.presentesParaSalvar.filter(j => j.pagou).length;
-                let valorConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
+                let presentesPagantes = jogadores.filter(j => j.presente && j.pagou);
+                let convidadosPagantes = presentesPagantes.filter(j => j.tipo === 'Convidado').length;
                 
-                // Gerar Código Único para Visualização Pública
+                let valorConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
+                let valorMens = parseFloat(document.getElementById('valor-mensalista').value) || 0;
+                
                 let codigoAleatorio = 'BABA-' + Math.random().toString(36).substring(2, 8).toUpperCase();
                 
+                let qJogadoresEmQuadra = 0;
+                window.timesSorteadosObjs.forEach(t => qJogadoresEmQuadra += t.jogadores.length);
+                qJogadoresEmQuadra += (window.reservasSorteados ? window.reservasSorteados.length : 0);
+
                 const { data: pData, error: errP } = await db.from('partidas').insert([{ 
-                    quantidade_jogadores: window.presentesParaSalvar.length, 
-                    renda_convidados: pagantes,
+                    quantidade_jogadores: qJogadoresEmQuadra, 
+                    renda_convidados: convidadosPagantes,
                     valor_por_convidado: valorConv,
+                    valor_por_mensalista: valorMens,
                     custos_json: window.custosDaRodada,
                     artilheiros_json: artilheiros,
                     codigo_acesso: codigoAleatorio
@@ -1102,7 +1169,11 @@
                 window.timesSorteadosObjs.forEach((t) => { 
                     t.jogadores.forEach(j => presencas.push({ partida_id: pData[0].id, jogador_id: j.id, pagou: j.pagou || false, equipe: t.nome })); 
                 });
-                window.reservasSorteados.forEach(j => presencas.push({ partida_id: pData[0].id, jogador_id: j.id, pagou: j.pagou || false, equipe: "Reserva" }));
+                
+                if (window.reservasSorteados) {
+                    window.reservasSorteados.forEach(j => presencas.push({ partida_id: pData[0].id, jogador_id: j.id, pagou: j.pagou || false, equipe: "Reserva" }));
+                }
+                
                 if(presencas.length > 0) await db.from('presencas').insert(presencas);
 
                 let jogosInsert = window.jogosDaRodada.map(j => ({ partida_id: pData[0].id, equipe_a: j.equipe_a_nome, gols_a: j.gols_a.length, equipe_b: j.equipe_b_nome, gols_b: j.gols_b.length }));
@@ -1111,7 +1182,6 @@
                 window.partidaSalva = true; btn.innerText = "✅ Baba Salvo!";
                 salvarEstadoCompleto();
                 
-                // Exibe o Código do Baba
                 let boxCod = document.getElementById('box-codigo-gerado');
                 boxCod.innerHTML = `CÓDIGO DESTE BABA:<br><span style="color:var(--primary); font-size:28px;">${codigoAleatorio}</span><br><span style="font-size:12px; font-weight:normal;">Envie para os jogadores visualizarem o painel</span>`;
                 boxCod.style.display = 'block';
