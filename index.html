@@ -58,7 +58,7 @@
         .btn-limpar { background-color: var(--light); color: var(--text-muted); border: 1px solid var(--border); margin-bottom: 15px; }
         .btn-small { width: auto; padding: 6px 8px; font-size: 11px; border-radius: 6px; }
 
-        /* ELENCO ALINHADO (GRID) */
+        /* LISTAS E JOGADORES (GRID) */
         .busca-container { position: relative; margin-bottom: 15px; }
         .linha-jogador { display: grid; grid-template-columns: 2fr 1fr 1fr auto; align-items: center; padding: 12px 10px; border-bottom: 1px solid var(--border); background: white; border-radius: 8px; margin-bottom: 8px; font-size: 13px; }
         .linha-jogador:hover { background: var(--light); }
@@ -67,12 +67,19 @@
         .col-status { text-align: center; }
         .col-acoes { display: flex; gap: 5px; justify-content: flex-end; }
         
+        /* Modificadores Grid para a tela de Sorteio */
+        .grid-aguardando { grid-template-columns: 3fr 1fr auto; }
+        .grid-prontos { grid-template-columns: 2fr 1fr auto; }
+
         .badge { background-color: var(--dark); color: white; padding: 3px 6px; border-radius: 12px; font-size: 10px; font-weight: 600;}
         .badge-convidado { background-color: var(--purple); }
         .badge-em-campo { background-color: var(--supabase); }
+        .badge-mensal-ok { background-color: var(--light); color: var(--supabase); border: 1px solid var(--supabase); }
+        .badge-mensal-pend { background-color: var(--light); color: var(--danger); border: 1px solid var(--danger); }
+
         .btn-acao-outline { background: transparent; border: 1px solid var(--border); color: var(--dark); }
         .btn-acao-outline:hover { background: var(--light); }
-        .btn-presente { background: var(--primary); color: white; }
+        .btn-presente { background: var(--supabase); color: white; border: 1px solid var(--supabase); }
         .btn-pagou { background-color: var(--supabase); color: white; border: 1px solid var(--supabase); }
         .btn-devendo { background-color: transparent; color: var(--danger); border: 1px solid var(--danger); }
 
@@ -131,7 +138,7 @@
         /* MODO PÚBLICO */
         .hidden-public { display: block; }
         .public-mode .hidden-public { display: none !important; }
-        .codigo-gerado-box { background: var(--light); padding: 15px; border: 2px dashed var(--primary); border-radius: 12px; text-align: center; margin-top: 15px;}
+        .codigo-gerado-box { background: var(--light); padding: 15px; border: 2px dashed var(--primary); border-radius: 12px; text-align: center; margin-top: 15px; font-weight: 700; font-size: 20px; letter-spacing: 2px;}
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
@@ -172,7 +179,7 @@
             </div>
         </div>
 
-        <!-- ABA 1: ELENCO -->
+        <!-- ABA 1: ELENCO (Administrativo) -->
         <div id="view-elenco" class="page-view">
             <div class="card hidden-public" id="card-formulario">
                 <h2 id="titulo-form">Adicionar ao Elenco</h2>
@@ -188,18 +195,29 @@
                 </div>
             </div>
 
-            <div class="card" style="padding: 15px;">
-                <h2 style="margin-bottom: 10px;">Elenco Geral (<span id="total-elenco">0</span>)</h2>
-                <p class="hidden-public" style="font-size: 12px; color: var(--text-muted); text-align:center; margin-top:-10px;">Controle de pagamentos: Mensalidade (fixa no mês) e Diária.</p>
+            <div class="card hidden-public" style="padding: 15px;">
+                <h2 style="margin-bottom: 10px;">Gestão de Jogadores (<span id="total-elenco">0</span>)</h2>
+                <p style="font-size: 12px; color: var(--text-muted); text-align:center; margin-top:-10px;">Gerencie o pagamento da mensalidade (válido para o mês atual).</p>
                 <div class="busca-container">
-                    <input type="text" id="busca-jogador" placeholder="🔍 Buscar jogador pelo nome..." onkeyup="filtrarElenco()">
+                    <input type="text" id="busca-jogador-elenco" placeholder="🔍 Buscar jogador..." onkeyup="filtrarElencoAdmin()">
                 </div>
-                <div id="lista-todos"></div>
+                <div id="lista-elenco-admin"></div>
             </div>
         </div>
 
-        <!-- ABA 2: SORTEIO -->
+        <!-- ABA 2: SORTEIO (Ação do Jogo) -->
         <div id="view-sorteio" class="page-view active">
+            
+            <!-- LISTA: AGUARDANDO CHEGADA -->
+            <div class="card hidden-public" style="border: 2px dashed var(--border); background: var(--white);">
+                <h2 style="color: var(--text-muted);">Aguardando Chegada</h2>
+                <div class="busca-container">
+                    <input type="text" id="busca-jogador-sorteio" placeholder="🔍 Buscar jogador..." onkeyup="filtrarSorteioAusentes()">
+                </div>
+                <div id="lista-aguardando"></div>
+            </div>
+
+            <!-- LISTA: PRONTOS PRO JOGO -->
             <div class="card hidden-public" style="border: 2px solid var(--primary); background: #f8fafc;">
                 <h2>Prontos pro Jogo (<span id="total-presentes">0</span>)</h2>
                 <button class="btn-limpar" onclick="zerarPresencas()" id="btn-zerar" style="display: none; width:100%; margin-bottom:15px;">🔄 Retirar Todos da Quadra</button>
@@ -226,6 +244,7 @@
                 <button onclick="iniciarSorteioComSuspense()" style="background: var(--dark); margin-top: 15px; font-size:16px; padding:16px;">🎲 Gerar Equipes</button>
             </div>
 
+            <!-- RESULTADO DO SORTEIO -->
             <div id="resultado" class="team-container"></div>
             
             <div class="hidden-public" style="display: flex; gap: 10px; margin-top: 20px;">
@@ -233,7 +252,7 @@
             </div>
         </div>
 
-        <!-- ABA 3: SÚMULA DINÂMICA -->
+        <!-- ABA 3: SÚMULA DINÂMICA (PLACAR DE ARENA) -->
         <div id="view-placares" class="page-view">
             <div class="card">
                 <h2>📝 Súmula de Jogo</h2>
@@ -246,9 +265,10 @@
                 </div>
 
                 <div id="container-sumula" style="display: none;">
+                    
                     <div id="texto-fila"></div>
 
-                    <!-- PLACAR DE ARENA (SÓ ORGANIZADOR VÊ) -->
+                    <!-- PLACAR DE ARENA (SÓ ORGANIZADOR VÊ OS BOTÕES) -->
                     <div class="placar-arena hidden-public">
                         <div class="placar-header">
                             <div class="placar-time">
@@ -273,6 +293,7 @@
 
                     <button class="btn-salvar hidden-public" id="btn-encerrar-baba" style="display: block; padding:16px;" onclick="salvarPartidaComPlacares()">✅ Finalizar Baba e Salvar Dados</button>
                     
+                    <!-- BOX PARA MOSTRAR O CÓDIGO DO BABA -->
                     <div id="box-codigo-gerado" class="codigo-gerado-box hidden-public" style="display:none;"></div>
                 </div>
             </div>
@@ -280,8 +301,12 @@
 
         <!-- ABA 4: ESTATÍSTICAS COMPLETAS -->
         <div id="view-estatisticas" class="page-view">
-            <h2 style="text-align: left; font-size:20px; margin-bottom: 20px;">Painel de Estatísticas</h2>
+            <h2 style="text-align: left; font-size:20px; margin-bottom: 20px;">Estatísticas</h2>
             
+            <div id="loading-stats" style="text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 20px; display: none;">
+                Buscando histórico na nuvem...
+            </div>
+
             <!-- ESTATÍSTICAS DO DIA -->
             <div class="card-secao-stats">
                 <div class="header-secao-stats"><span>🏆 Classificação de Hoje</span></div>
@@ -301,12 +326,8 @@
                 </table>
             </div>
 
-            <div id="loading-stats" class="hidden-public" style="text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 20px; display: none;">
-                Buscando histórico na nuvem...
-            </div>
-
-            <!-- ARTILHARIA DO MÊS (SÓ ADMIN VÊ) -->
-            <div class="card-secao-stats hidden-public">
+            <!-- ARTILHARIA DO MÊS -->
+            <div class="card-secao-stats">
                 <div class="header-secao-stats" style="background: #e0e7ff; color: var(--primary);">
                     <span>🔥 Artilharia do Mês</span>
                     <span id="label-mes-atual" style="font-size: 11px; background: white; padding: 2px 6px; border-radius: 4px;">Atual</span>
@@ -317,8 +338,8 @@
                 </table>
             </div>
 
-            <!-- RANKING ANUAL (SÓ ADMIN VÊ) -->
-            <div class="card-secao-stats hidden-public">
+            <!-- RANKING ANUAL -->
+            <div class="card-secao-stats">
                 <div class="header-secao-stats" style="background: #fef3c7; color: var(--warning);">
                     <span>🌟 Ranking Anual (Gols e Presenças)</span>
                     <span id="label-ano-atual" style="font-size: 11px; background: white; padding: 2px 6px; border-radius: 4px;">Atual</span>
@@ -593,6 +614,8 @@
             
             document.getElementById('status-db').innerText = `Modo Visualizador`;
             window.custosDaRodada = partida.custos_json || [];
+            if(partida.valor_por_convidado) document.getElementById('valor-convidado').value = partida.valor_por_convidado;
+            if(partida.valor_por_mensalista) document.getElementById('valor-mensalista').value = partida.valor_por_mensalista;
             
             const { data: presencas } = await db.from('presencas').select('pagou, jogadores(tipo)').eq('partida_id', partida.id);
             if(presencas) {
@@ -646,6 +669,7 @@
             
             document.getElementById('status-db').innerText = "Online"; document.getElementById('status-db').style.backgroundColor = "var(--supabase)";
             atualizarListas();
+            atualizarFinanceiro(); // Atualiza painel caso mensalistas tenham mudado na nuvem
         }
 
         // CADASTRO E EDIÇÃO
@@ -677,16 +701,25 @@
             btn.disabled = false;
         }
 
-        async function removerJogador(idNuvem, indexArray) { if(confirm("Excluir jogador permanentemente?")) { const { error } = await db.from('jogadores').delete().eq('id', idNuvem); if (!error) { jogadores.splice(indexArray, 1); salvarEstadoLocal(); atualizarListas(); } } }
+        async function removerJogador(idNuvem, indexArray) { if(confirm("Excluir jogador permanentemente?")) { const { error } = await db.from('jogadores').delete().eq('id', idNuvem); if (!error) { jogadores.splice(indexArray, 1); salvarEstadoLocal(); atualizarListas(); atualizarFinanceiro(); } } }
 
         function salvarEstadoLocal() { let estado = {}; jogadores.forEach(j => { if (j.presente || j.pagou) estado[j.id] = { presente: j.presente, ordemChegada: j.ordemChegada, pagou: j.pagou }; }); localStorage.setItem('baba_presencas_temp', JSON.stringify(estado)); }
+        
         function marcarPresenca(indexArray) { jogadores[indexArray].presente = true; jogadores[indexArray].ordemChegada = Date.now(); salvarEstadoLocal(); atualizarListas(); }
-        function desmarcarPresenca(indexArray) { jogadores[indexArray].presente = false; jogadores[indexArray].ordemChegada = 0; jogadores[indexArray].pagou = false; salvarEstadoLocal(); atualizarListas(); }
+        
+        function desmarcarPresenca(indexArray) { 
+            jogadores[indexArray].presente = false; 
+            jogadores[indexArray].ordemChegada = 0; 
+            jogadores[indexArray].pagou = false; // Se tirar de quadra, o convidado para de dever a diária
+            salvarEstadoLocal(); 
+            atualizarListas(); 
+            atualizarFinanceiro(); 
+        }
 
-        // MENSALIDADE FICA SALVA NO BANCO ATRELADA AO MÊS
+        // FUNÇÃO GLOBAL DE PAGAMENTO DO MENSALISTA
         async function alternarMensalidade(idNuvem, indexArray) {
             const j = jogadores[indexArray];
-            const mesKey = new Date().toISOString().substring(0, 7); // Ex: "2026-08"
+            const mesKey = new Date().toISOString().substring(0, 7); // "2026-08"
             if (!j.pagamentos_json) j.pagamentos_json = {};
             
             const isPago = j.pagamentos_json[mesKey] === true;
@@ -698,10 +731,10 @@
             
             atualizarListas(); 
             atualizarFinanceiro();
-            // Salva globalmente no banco na hora
             await db.from('jogadores').update({ pagamentos_json: j.pagamentos_json }).eq('id', idNuvem);
         }
         
+        // FUNÇÃO DE PAGAMENTO DIÁRIO DO CONVIDADO
         function alternarPagamentoDiaria(indexArray) { 
             jogadores[indexArray].pagou = !jogadores[indexArray].pagou; 
             salvarEstadoLocal(); 
@@ -722,76 +755,111 @@
             } 
         }
 
-        function filtrarElenco() {
-            let termo = document.getElementById('busca-jogador').value.toLowerCase();
-            document.querySelectorAll('.linha-jogador').forEach(linha => {
+        function filtrarElencoAdmin() {
+            let termo = document.getElementById('busca-jogador-elenco').value.toLowerCase();
+            document.querySelectorAll('#lista-elenco-admin .linha-jogador').forEach(linha => {
+                let nome = linha.getAttribute('data-nome').toLowerCase();
+                linha.style.display = nome.includes(termo) ? 'grid' : 'none';
+            });
+        }
+        
+        function filtrarSorteioAusentes() {
+            let termo = document.getElementById('busca-jogador-sorteio').value.toLowerCase();
+            document.querySelectorAll('#lista-aguardando .linha-jogador').forEach(linha => {
                 let nome = linha.getAttribute('data-nome').toLowerCase();
                 linha.style.display = nome.includes(termo) ? 'grid' : 'none';
             });
         }
 
         function atualizarListas() {
-            const listaTodos = document.getElementById('lista-todos'); const listaPresentes = document.getElementById('lista-presentes');
-            listaTodos.innerHTML = ""; listaPresentes.innerHTML = ""; let presentes = [];
+            const listaElenco = document.getElementById('lista-elenco-admin'); 
+            const listaAguardando = document.getElementById('lista-aguardando'); 
+            const listaPresentes = document.getElementById('lista-presentes');
             
+            if(listaElenco) listaElenco.innerHTML = ""; 
+            if(listaAguardando) listaAguardando.innerHTML = ""; 
+            if(listaPresentes) listaPresentes.innerHTML = ""; 
+            
+            let presentes = [];
             const mesKey = new Date().toISOString().substring(0, 7);
             
             let todosOrdenados = [...jogadores].sort((a, b) => a.nome.localeCompare(b.nome));
+            
             todosOrdenados.forEach((j) => {
                 let indexArray = jogadores.findIndex(jog => jog.id === j.id);
                 let tagConvidado = j.tipo === 'Convidado' ? '<span class="badge badge-convidado">C</span>' : '';
-                let badgeStatus = j.presente ? '<span class="badge badge-em-campo">✅ Em Campo</span>' : '';
+                let tagPosicao = (j.posicao !== 'Goleiro' && j.posicao !== 'Linha') ? `<span class="badge badge-posicao">${j.posicao}</span>` : '';
                 
-                let btnAcao = j.presente ? `<button class="btn-small btn-acao-outline hidden-public" onclick="desmarcarPresenca(${indexArray})">Retirar</button>` : `<button class="btn-small btn-presente hidden-public" onclick="marcarPresenca(${indexArray})">Presente</button>`;
+                // --- 1. PREENCHE A ABA DE ELENCO (ADMINISTRATIVO) ---
+                if(listaElenco) {
+                    let btnEdicao = `<button class="btn-small btn-acao-outline" onclick="prepararEdicao(${indexArray})">✏️</button>`;
+                    let btnExcluir = `<button class="btn-small btn-acao-outline" style="color:var(--danger); border-color:var(--danger);" onclick="removerJogador('${j.id}', ${indexArray})">X</button>`;
+                    
+                    let btnMensal = '';
+                    if(j.tipo === 'Mensalista') {
+                        let isMensalPago = j.pagamentos_json && j.pagamentos_json[mesKey] === true;
+                        btnMensal = isMensalPago ? `<button class="btn-small btn-pagou" onclick="alternarMensalidade('${j.id}', ${indexArray})">Pago</button>` : `<button class="btn-small btn-devendo" onclick="alternarMensalidade('${j.id}', ${indexArray})">Pendente</button>`;
+                    } else {
+                        btnMensal = `<span style="font-size:10px; color:var(--text-muted);">Diária local</span>`;
+                    }
+                    
+                    listaElenco.innerHTML += `
+                    <div class="linha-jogador" data-nome="${j.nome}">
+                        <div class="col-nome">${tagConvidado} ${j.nome}</div>
+                        <div class="col-pos">${tagPosicao}</div>
+                        <div class="col-status">${btnMensal}</div>
+                        <div class="col-acoes">
+                            ${btnEdicao} ${btnExcluir}
+                        </div>
+                    </div>`;
+                }
                 
-                let btnPix = '';
-                if(j.tipo === 'Mensalista') {
-                    let isMensalPago = j.pagamentos_json && j.pagamentos_json[mesKey] === true;
-                    btnPix = isMensalPago ? `<button class="btn-small btn-pagou hidden-public" onclick="alternarMensalidade('${j.id}', ${indexArray})">Mensal OK</button>` : `<button class="btn-small btn-devendo hidden-public" onclick="alternarMensalidade('${j.id}', ${indexArray})">Mensal PEND</button>`;
+                // --- 2. PREENCHE A ABA DE SORTEIO (SEPARANDO AUSENTES E PRESENTES) ---
+                if(j.presente) {
+                    presentes.push({ ...j, indexArray: indexArray });
                 } else {
-                    if(j.presente) {
-                        btnPix = j.pagou ? `<button class="btn-small btn-pagou hidden-public" onclick="alternarPagamentoDiaria(${indexArray})">Diária OK</button>` : `<button class="btn-small btn-devendo hidden-public" onclick="alternarPagamentoDiaria(${indexArray})">Diária PEND</button>`;
+                    if(listaAguardando) {
+                        listaAguardando.innerHTML += `
+                        <div class="linha-jogador grid-aguardando" data-nome="${j.nome}">
+                            <div class="col-nome">${tagConvidado} ${j.nome}</div>
+                            <div class="col-pos">${tagPosicao}</div>
+                            <div class="col-acoes"><button class="btn-small btn-presente" onclick="marcarPresenca(${indexArray})">Chegou</button></div>
+                        </div>`;
                     }
                 }
-
-                listaTodos.innerHTML += `
-                <div class="linha-jogador" data-nome="${j.nome}">
-                    <div class="col-nome">${tagConvidado} ${j.nome}</div>
-                    <div class="col-pos">${j.posicao}</div>
-                    <div class="col-status">${badgeStatus}</div>
-                    <div class="col-acoes hidden-public">
-                        ${btnPix} ${btnAcao}
-                        <button class="btn-small btn-acao-outline" onclick="prepararEdicao(${indexArray})">✏️</button>
-                    </div>
-                </div>`;
             });
 
-            jogadores.forEach((j, index) => { if (j.presente) presentes.push({ ...j, indexArray: index }); });
+            // --- ORDENA E PREENCHE OS PRESENTES NA ABA DE SORTEIO ---
             presentes.sort((a, b) => { if (a.tipo === 'Mensalista' && b.tipo !== 'Mensalista') return -1; if (a.tipo !== 'Mensalista' && b.tipo === 'Mensalista') return 1; return a.ordemChegada - b.ordemChegada; });
 
             presentes.forEach((j, pos) => {
                 let tagConvidado = j.tipo === 'Convidado' ? '<span class="badge badge-convidado">C</span>' : '';
                 let tagPosicao = (j.posicao !== 'Goleiro' && j.posicao !== 'Linha') ? `<span class="badge badge-posicao">${j.posicao}</span>` : '';
                 
-                let btnPix = '';
+                let controleFinanceiro = '';
                 if(j.tipo === 'Mensalista') {
                     let isMensalPago = j.pagamentos_json && j.pagamentos_json[mesKey] === true;
-                    btnPix = isMensalPago ? `<button class="btn-small btn-pagou hidden-public" onclick="alternarMensalidade('${j.id}', ${j.indexArray})">Mensal OK</button>` : `<button class="btn-small btn-devendo hidden-public" onclick="alternarMensalidade('${j.id}', ${j.indexArray})">Mensal PEND</button>`;
+                    controleFinanceiro = isMensalPago ? `<span class="badge badge-mensal-ok">Mensal: Pago</span>` : `<span class="badge badge-mensal-pend">Mensal: Pendente</span>`;
                 } else {
-                    btnPix = j.pagou ? `<button class="btn-small btn-pagou hidden-public" onclick="alternarPagamentoDiaria(${j.indexArray})">Diária OK</button>` : `<button class="btn-small btn-devendo hidden-public" onclick="alternarPagamentoDiaria(${j.indexArray})">Diária PEND</button>`;
+                    controleFinanceiro = j.pagou ? `<button class="btn-small btn-pagou" onclick="alternarPagamentoDiaria(${j.indexArray})">Pago</button>` : `<button class="btn-small btn-devendo" onclick="alternarPagamentoDiaria(${j.indexArray})">Pendente</button>`;
                 }
 
-                listaPresentes.innerHTML += `
-                <div class="linha-jogador" style="grid-template-columns: 2fr 1fr auto;">
-                    <div class="col-nome"><span class="badge">${pos + 1}º</span> ${tagConvidado} ${j.nome}</div>
-                    <div class="col-pos">${tagPosicao}</div>
-                    <div class="col-acoes hidden-public">${btnPix} <button class="btn-small btn-acao-outline" onclick="desmarcarPresenca(${j.indexArray})">Retirar</button></div>
-                </div>`;
+                if(listaPresentes) {
+                    listaPresentes.innerHTML += `
+                    <div class="linha-jogador grid-prontos">
+                        <div class="col-nome"><span class="badge" style="background:var(--dark); color:white;">${pos + 1}º</span> ${tagConvidado} ${j.nome}</div>
+                        <div class="col-status" style="text-align:right;">${controleFinanceiro}</div>
+                        <div class="col-acoes"><button class="btn-small btn-acao-outline" style="color:var(--danger); border-color:var(--danger);" onclick="desmarcarPresenca(${j.indexArray})">Retirar</button></div>
+                    </div>`;
+                }
             });
 
-            document.getElementById('total-presentes').innerText = presentes.length; document.getElementById('total-elenco').innerText = jogadores.length;
-            document.getElementById('btn-zerar').style.display = presentes.length > 0 ? "block" : "none";
-            filtrarElenco(); 
+            if(document.getElementById('total-presentes')) document.getElementById('total-presentes').innerText = presentes.length; 
+            if(document.getElementById('total-elenco')) document.getElementById('total-elenco').innerText = jogadores.length;
+            if(document.getElementById('btn-zerar')) document.getElementById('btn-zerar').style.display = presentes.length > 0 ? "block" : "none";
+            
+            filtrarElencoAdmin(); 
+            filtrarSorteioAusentes();
         }
 
         // SORTEIO
@@ -799,8 +867,9 @@
 
         function iniciarSorteioComSuspense() {
             let presentes = jogadores.filter(j => j.presente).sort((a, b) => { if (a.tipo === 'Mensalista' && b.tipo !== 'Mensalista') return -1; if (a.tipo !== 'Mensalista' && b.tipo === 'Mensalista') return 1; return a.ordemChegada - b.ordemChegada; });
-            if (presentes.length < 2) return alert("Confirme presença de pelo menos 2 atletas na aba Elenco.");
+            if (presentes.length < 2) return alert("Adicione pelo menos 2 atletas na lista de Prontos.");
             
+            document.getElementById('btn-wpp').style.display = 'none'; document.getElementById('btn-ir-placares').style.display = 'none';
             const resultado = document.getElementById('resultado');
             resultado.innerHTML = `<div style="text-align:center; padding:40px; font-weight:bold; color:var(--primary);">Processando Algoritmo...</div>`;
             setTimeout(() => { sortearTimes(presentes); }, 1500);
@@ -860,7 +929,6 @@
 
             window.reservasSorteados = reservas; window.partidaSalva = false;
             
-            // Inicia do Zero
             window.jogosDaRodada = []; window.filaEquipes = []; window.custosDaRodada = [];
             window.golsTempA = []; window.golsTempB = [];
             document.getElementById('box-codigo-gerado').style.display = 'none';
@@ -889,7 +957,7 @@
                 window.reservasSorteados.forEach(j => html += `<li><strong>${j.nome}</strong></li>`);
                 document.getElementById('resultado').innerHTML += html + `</ul></div>`;
             }
-            document.getElementById('btn-ir-placares').style.display = 'block';
+            document.getElementById('btn-wpp').style.display = 'block'; document.getElementById('btn-ir-placares').style.display = 'block';
         }
 
         function atualizarNomeTime(id, novoNome) {
@@ -1164,7 +1232,7 @@
             
             // RODADA (HOJE)
             let convPagantesHoje = jogadores.filter(j => j.tipo === 'Convidado' && j.presente && j.pagou).length;
-            let recHoje = (convPagantesHoje * valConv); // Hoje não soma mensalidade pra não poluir a diária
+            let recHoje = (convPagantesHoje * valConv); 
             let custHoje = window.custosDaRodada.reduce((acc, c) => acc + c.valor, 0);
             
             document.getElementById('fin-receita-hoje').innerText = `R$ ${recHoje.toFixed(2)}`;
@@ -1173,7 +1241,6 @@
             renderizarListaCustos();
             salvarEstadoCompleto();
             
-            // HISTÓRICO MÊS E ANO (Só busca na nuvem se a aba estiver aberta pra economizar internet)
             if(document.getElementById('view-financeiro').classList.contains('active')) {
                 document.getElementById('fin-loading').style.display = 'block';
                 
@@ -1183,7 +1250,7 @@
                 
                 const { data: partidas } = await db.from('partidas').select('*').gte('data_sorteio', `${anoKey}-01-01`);
                 
-                let recConvMes = 0; let cusMes = custHoje; // soma o que ainda não foi salvo hoje
+                let recConvMes = 0; let cusMes = custHoje; 
                 let recConvAno = 0; let cusAno = custHoje;
                 
                 if(partidas) {
@@ -1197,9 +1264,8 @@
                     });
                 }
                 
-                // Soma mensalidades globais marcadas como pagas e salva no Mês e Ano
                 let mensPagantes = jogadores.filter(j => j.tipo === 'Mensalista' && j.mensalidade_paga).length;
-                let receitaMensalidades = mensPagantes * valMens; // Assume que quem pagou, pagou pro mês/ano vigente
+                let receitaMensalidades = mensPagantes * valMens; 
                 
                 let recMesTotal = recConvMes + recHoje + receitaMensalidades;
                 let recAnoTotal = recConvAno + recHoje + receitaMensalidades;
@@ -1289,7 +1355,6 @@
                 window.partidaSalva = true; btn.innerText = "✅ Baba Salvo!";
                 salvarEstadoCompleto();
                 
-                // GERAÇÃO DO LINK WHATSAPP
                 let linkCompartilhamento = `https://pegaobaba.vercel.app?code=${codigoAleatorio}`;
                 let textoWpp = encodeURIComponent(`🏆 *Acompanhe nosso Baba ao Vivo!*\n\nVeja a súmula, artilharia e classificação da rodada pelo link:\n\n${linkCompartilhamento}\n\n_(Código de acesso direto: ${codigoAleatorio})_`);
 
@@ -1302,6 +1367,16 @@
                 boxCod.style.display = 'block';
 
             } catch(err) { alert("Erro: " + err.message); btn.innerText = "Tentar Novamente"; btn.disabled = false; }
+        }
+
+        function exportarWhatsApp() {
+            let texto = "📋 *RELAÇÃO DE EQUIPES* 📋\n\n";
+            window.timesSorteadosObjs.forEach((t) => { 
+                texto += `*${t.nome}*\n`; 
+                t.jogadores.forEach(j => texto += `• ${j.nome}\n`); 
+                texto += `\n`; 
+            });
+            navigator.clipboard.writeText(texto).then(() => alert("Copiado!")).catch(() => alert("Falha ao copiar."));
         }
     </script>
 </body>
