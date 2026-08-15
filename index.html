@@ -34,79 +34,27 @@
 
         /* NAVEGAÇÃO INFERIOR 100% CENTRALIZADA */
         .bottom-nav { 
-            position: fixed; 
-            bottom: 0; 
-            left: 0; 
-            right: 0; 
-            background: white; 
-            display: flex; 
-            justify-content: space-around; 
-            align-items: center; 
+            position: fixed; bottom: 0; left: 0; right: 0; background: white; 
+            display: flex; justify-content: space-around; align-items: center; 
             height: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px)); 
             padding-bottom: env(safe-area-inset-bottom, 0px); 
-            border-top: 1px solid var(--border); 
-            z-index: 1000; 
-            max-width: 600px; 
-            margin: 0 auto; 
-            box-shadow: 0 -4px 6px -1px rgba(0,0,0,0.05); 
-            box-sizing: border-box;
+            border-top: 1px solid var(--border); z-index: 1000; max-width: 600px; margin: 0 auto; 
+            box-shadow: 0 -4px 6px -1px rgba(0,0,0,0.05); box-sizing: border-box;
         }
         
         .nav-item { 
-            flex: 1; 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: center; 
-            align-items: center; 
-            color: var(--text-muted); 
-            text-decoration: none; 
-            cursor: pointer; 
-            height: 100%; 
-            transition: all 0.2s; 
-            padding: 4px 0 0 0;
-            margin: 0;
+            flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; 
+            color: var(--text-muted); text-decoration: none; cursor: pointer; height: 100%; transition: all 0.2s; padding: 4px 0 0 0; margin: 0;
         }
 
-        .nav-item.hidden-public {
-            display: flex !important;
-        }
-        
-        body.is-master-admin .organizer-only {
-            display: none !important;
-        }
-        
-        body:not(.is-master-admin) .master-only {
-            display: none !important;
-        }
-        
+        .nav-item.hidden-public { display: flex !important; }
+        body.is-master-admin .organizer-only { display: none !important; }
+        body:not(.is-master-admin) .master-only { display: none !important; }
         .nav-item.active { color: var(--primary); }
         
-        .nav-icon { 
-            width: 24px; 
-            height: 24px; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            margin-bottom: 3px;
-        }
-
-        .nav-icon svg {
-            width: 22px;
-            height: 22px;
-            stroke: currentColor;
-            fill: none;
-            stroke-width: 2;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-        }
-        
-        .nav-item span {
-            font-size: 10px;
-            font-weight: 600;
-            line-height: 1;
-            display: block;
-            text-align: center;
-        }
+        .nav-icon { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; margin-bottom: 3px; }
+        .nav-icon svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .nav-item span { font-size: 10px; font-weight: 600; line-height: 1; display: block; text-align: center; }
         
         .page-view { display: none; padding: 20px; animation: fadeIn 0.3s ease-out; }
         .page-view.active { display: block; }
@@ -124,7 +72,13 @@
         
         .btn-sortear { background-color: var(--dark); margin-top: 20px; font-size: 16px; padding: 16px; }
         .btn-whatsapp { background-color: var(--whatsapp); flex: 1; margin: 0; display: none; }
-        .btn-salvar { background-color: var(--supabase); color: white; margin-top: 15px; font-size: 16px;}
+        
+        /* Botão Compacto de Finalizar */
+        .btn-salvar { background-color: var(--supabase); color: white; margin: 15px auto 0 auto; font-size: 14px; padding: 12px 24px; width: auto; display: block; border-radius: 8px; }
+        
+        /* Botão de Excluir Miniatura */
+        .btn-excluir-mini { background-color: var(--danger); color: white; border: none; padding: 4px 8px; font-size: 11px; border-radius: 6px; width: auto; cursor: pointer; }
+
         .btn-limpar { background-color: var(--light); color: var(--text-muted); border: 1px solid var(--border); margin-bottom: 15px; }
         .btn-small { width: auto; padding: 6px 8px; font-size: 11px; border-radius: 6px; }
 
@@ -142,7 +96,6 @@
 
         .badge { background-color: var(--dark); color: white; padding: 3px 6px; border-radius: 12px; font-size: 10px; font-weight: 600;}
         .badge-convidado { background-color: var(--purple); }
-        .badge-em-campo { background-color: var(--supabase); }
 
         .btn-acao-outline { background: transparent; border: 1px solid var(--border); color: var(--dark); }
         .btn-acao-outline:hover { background: var(--light); }
@@ -150,7 +103,7 @@
         .btn-pagou { background-color: var(--supabase); color: white; border: 1px solid var(--supabase); }
         .btn-devendo { background-color: transparent; color: var(--danger); border: 1px solid var(--danger); }
 
-        /* TIMES E EDIÇÃO DE NOMES */
+        /* TIMES E ESCALAÇÃO */
         .team-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-top:20px; }
         .team { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-top: 5px solid var(--primary); border: 1px solid var(--border); }
         .input-nome-time { font-size: 16px; font-weight: 700; color: var(--dark); border: none; border-bottom: 2px solid transparent; padding: 5px; margin-bottom: 10px; width: 100%; border-radius: 0; box-shadow: none !important;}
@@ -211,7 +164,7 @@
 </head>
 <body id="body-app">
     
-    <!-- TELA INICIAL (LOGIN OU MODO JOGADOR) -->
+    <!-- TELA INICIAL -->
     <div id="auth-container" style="padding: 20px;">
         <h1>Pega o Baba</h1>
         <p class="subtitle">Plataforma Profissional de Gestão</p>
@@ -245,7 +198,7 @@
             </div>
         </div>
 
-        <!-- ABA 1: ELENCO (Administrativo) -->
+        <!-- ABA 1: ELENCO -->
         <div id="view-elenco" class="page-view organizer-only">
             <div class="card hidden-public" id="card-formulario">
                 <h2 id="titulo-form">Adicionar ao Elenco</h2>
@@ -270,10 +223,8 @@
             </div>
         </div>
 
-        <!-- ABA 2: SORTEIO (Ação do Jogo) -->
+        <!-- ABA 2: SORTEIO -->
         <div id="view-sorteio" class="page-view organizer-only active">
-            
-            <!-- LISTA: AGUARDANDO CHEGADA -->
             <div class="card hidden-public" style="border: 2px dashed var(--border); background: var(--white);">
                 <h2 style="color: var(--text-muted);">Aguardando Chegada</h2>
                 <div class="busca-container">
@@ -282,7 +233,6 @@
                 <div id="lista-aguardando"></div>
             </div>
 
-            <!-- LISTA: PRONTOS PRO JOGO -->
             <div class="card hidden-public" style="border: 2px solid var(--primary); background: #f8fafc;">
                 <h2>Prontos pro Jogo (<span id="total-presentes">0</span>)</h2>
                 <button class="btn-limpar" onclick="zerarPresencas()" id="btn-zerar" style="display: none; width:100%; margin-bottom:15px;">🔄 Retirar Todos da Quadra</button>
@@ -312,7 +262,6 @@
             <!-- RESULTADO DO SORTEIO -->
             <div id="resultado" class="team-container"></div>
             
-            <!-- BOX PARA MOSTRAR O CÓDIGO DO BABA LOGO APÓS O SORTEIO -->
             <div id="box-codigo-gerado-sorteio" class="codigo-gerado-box hidden-public" style="display:none; margin-top: 20px;"></div>
 
             <div class="hidden-public" style="display: flex; gap: 10px; margin-top: 20px;">
@@ -320,8 +269,8 @@
             </div>
         </div>
 
-        <!-- ABA 3: SÚMULA DINÂMICA (PLACAR DE ARENA) -->
-        <div id="view-placares" class="page-view organizer-only">
+        <!-- ABA 3: SÚMULA DINÂMICA -->
+        <div id="view-placares" class="page-view">
             <div class="card">
                 <h2>📝 Súmula de Jogo</h2>
                 <div id="data-rodada-label" style="font-size: 13px; color: var(--text-muted); text-align: center; margin-top: -10px; margin-bottom: 15px; font-weight: 600;"></div>
@@ -337,7 +286,7 @@
                     
                     <div id="texto-fila"></div>
 
-                    <!-- PLACAR DE ARENA (SÓ ORGANIZADOR VÊ OS BOTÕES) -->
+                    <!-- PLACAR DE ARENA -->
                     <div class="placar-arena hidden-public" id="painel-placar-arena">
                         <div class="placar-header">
                             <div class="placar-time">
@@ -358,18 +307,21 @@
                     </div>
 
                     <h3 style="font-size: 15px; margin-bottom: 10px;">Jogos Registrados (<span id="qtd-jogos-reg">0</span>):</h3>
-                    <div id="lista-jogos-registrados" style="margin-bottom: 20px;"></div>
+                    <div id="lista-jogos-registrados" style="margin-bottom: 25px;"></div>
 
-                    <button class="btn-salvar hidden-public" id="btn-encerrar-baba" style="display: block; padding:16px;" onclick="salvarPartidaComPlacares()">✅ Finalizar Baba e Salvar Dados</button>
+                    <!-- ESCALAÇÃO DOS TIMES PARA QUEM ESTÁ VISUALIZANDO -->
+                    <h3 style="font-size: 15px; margin-bottom: 10px; border-top: 1px solid var(--border); padding-top: 20px;">🛡️ Escalação das Equipes</h3>
+                    <div id="lista-escalacao-publica" class="team-container" style="margin-top: 0; margin-bottom: 25px;"></div>
+
+                    <button class="btn-salvar hidden-public" id="btn-encerrar-baba" onclick="salvarPartidaComPlacares()">✅ Finalizar Baba e Salvar Dados</button>
                 </div>
             </div>
         </div>
 
-        <!-- ABA 4: ESTATÍSTICAS COMPLETAS -->
-        <div id="view-estatisticas" class="page-view organizer-only">
+        <!-- ABA 4: ESTATÍSTICAS -->
+        <div id="view-estatisticas" class="page-view">
             <h2 style="text-align: left; font-size:20px; margin-bottom: 20px;">Painel de Estatísticas</h2>
             
-            <!-- ESTATÍSTICAS DO DIA -->
             <div class="card-secao-stats">
                 <div class="header-secao-stats"><span>🏆 Classificação de Hoje</span></div>
                 <div style="overflow-x: auto;">
@@ -392,7 +344,6 @@
                 Buscando histórico na nuvem...
             </div>
 
-            <!-- ARTILHARIA DO MÊS (SÓ ADMIN VÊ) -->
             <div class="card-secao-stats hidden-public">
                 <div class="header-secao-stats" style="background: #e0e7ff; color: var(--primary);">
                     <span>🔥 Artilharia do Mês</span>
@@ -404,7 +355,6 @@
                 </table>
             </div>
 
-            <!-- RANKING ANUAL (SÓ ADMIN VÊ) -->
             <div class="card-secao-stats hidden-public">
                 <div class="header-secao-stats" style="background: #fef3c7; color: var(--warning);">
                     <span>🌟 Ranking Anual (Gols e Presenças)</span>
@@ -419,14 +369,12 @@
             </div>
         </div>
 
-        <!-- ABA 5: FINANCEIRO (TRIPLO) -->
-        <div id="view-financeiro" class="page-view organizer-only">
+        <!-- ABA 5: CAIXA -->
+        <div id="view-financeiro" class="page-view">
             <h2 style="text-align: left; font-size:20px; margin-bottom: 20px;">Gestão de Caixa</h2>
             
             <div class="card hidden-public">
-                <p style="font-size:12px; color:var(--text-muted); margin-top:-5px; margin-bottom:15px; line-height: 1.4;">
-                    Defina o valor base para a contabilidade.
-                </p>
+                <p style="font-size:12px; color:var(--text-muted); margin-top:-5px; margin-bottom:15px; line-height: 1.4;">Defina o valor base para a contabilidade.</p>
                 <div style="display: flex; gap: 10px; margin-bottom: 5px;">
                     <div style="flex: 1;">
                         <label style="font-size: 11px; font-weight: 600; color: var(--text-muted);">Mensalidade (R$):</label>
@@ -439,21 +387,12 @@
                 </div>
             </div>
 
-            <!-- RELATÓRIO: HOJE -->
             <div class="card-secao-stats">
-                <div class="header-secao-stats" style="background: var(--dark); color: white;">
-                    <span>⚽ Caixa da Rodada (Hoje)</span>
-                </div>
+                <div class="header-secao-stats" style="background: var(--dark); color: white;"><span>⚽ Caixa da Rodada (Hoje)</span></div>
                 <div style="padding: 15px;">
                     <div class="dash-grid">
-                        <div class="dash-card">
-                            <div class="dash-titulo">Diárias Hoje</div>
-                            <div class="dash-valor valor-positivo" id="fin-receita-hoje">R$ 0</div>
-                        </div>
-                        <div class="dash-card">
-                            <div class="dash-titulo">Custos Hoje</div>
-                            <div class="dash-valor valor-negativo" id="fin-custos-hoje">R$ 0</div>
-                        </div>
+                        <div class="dash-card"><div class="dash-titulo">Diárias Hoje</div><div class="dash-valor valor-positivo" id="fin-receita-hoje">R$ 0</div></div>
+                        <div class="dash-card"><div class="dash-titulo">Custos Hoje</div><div class="dash-valor valor-negativo" id="fin-custos-hoje">R$ 0</div></div>
                     </div>
                     <div class="card hidden-public" style="margin-bottom:0;">
                         <h3 style="font-size: 13px; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:10px;">Lançar Despesa da Rodada</h3>
@@ -467,15 +406,10 @@
                 </div>
             </div>
 
-            <!-- RELATÓRIO: MÊS E ANO (SÓ ADMIN VÊ) -->
-            <div id="fin-loading" class="hidden-public" style="text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 20px; display: none;">
-                Calculando balanço na nuvem...
-            </div>
+            <div id="fin-loading" class="hidden-public" style="text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 20px; display: none;">Calculando balanço na nuvem...</div>
 
             <div class="card-secao-stats hidden-public">
-                <div class="header-secao-stats" style="background: #e0e7ff; color: var(--primary);">
-                    <span>📅 Relatório deste Mês</span>
-                </div>
+                <div class="header-secao-stats" style="background: #e0e7ff; color: var(--primary);"><span>📅 Relatório deste Mês</span></div>
                 <div style="padding: 15px;">
                     <p style="font-size:11px; color:var(--text-muted); margin-top:0; text-align:center;">Inclui TODAS as Mensalidades pagas no mês + Diárias.</p>
                     <div class="dash-grid" style="margin-bottom:0;">
@@ -483,40 +417,33 @@
                         <div class="dash-card"><div class="dash-titulo">Custos Mês</div><div class="dash-valor valor-negativo" id="fin-cus-mes">R$ 0</div></div>
                     </div>
                     <div style="text-align:center; padding-top:15px; border-top:1px dashed var(--border); margin-top:15px;">
-                        <div class="dash-titulo">Saldo Mensal</div>
-                        <div class="dash-valor valor-neutro" id="fin-sal-mes">R$ 0</div>
+                        <div class="dash-titulo">Saldo Mensal</div><div class="dash-valor valor-neutro" id="fin-sal-mes">R$ 0</div>
                     </div>
                 </div>
             </div>
 
             <div class="card-secao-stats hidden-public">
-                <div class="header-secao-stats" style="background: #fef3c7; color: var(--warning);">
-                    <span>🌎 Relatório deste Ano</span>
-                </div>
+                <div class="header-secao-stats" style="background: #fef3c7; color: var(--warning);"><span>🌎 Relatório deste Ano</span></div>
                 <div style="padding: 15px;">
                     <div class="dash-grid" style="margin-bottom:0;">
                         <div class="dash-card"><div class="dash-titulo">Receita Anual</div><div class="dash-valor valor-positivo" id="fin-rec-ano">R$ 0</div></div>
                         <div class="dash-card"><div class="dash-titulo">Custos Ano</div><div class="dash-valor valor-negativo" id="fin-cus-ano">R$ 0</div></div>
                     </div>
                     <div style="text-align:center; padding-top:15px; border-top:1px dashed var(--border); margin-top:15px;">
-                        <div class="dash-titulo">Saldo Anual</div>
-                        <div class="dash-valor valor-neutro" id="fin-sal-ano">R$ 0</div>
+                        <div class="dash-titulo">Saldo Anual</div><div class="dash-valor valor-neutro" id="fin-sal-ano">R$ 0</div>
                     </div>
                 </div>
             </div>
-
         </div>
 
-        <!-- ABA: CONTA (Exclusiva do Administrador/Organizador) -->
+        <!-- ABA: CONTA -->
         <div id="view-conta" class="page-view organizer-only">
             <h2 style="text-align: left; font-size:20px; margin-bottom: 20px;">Minha Conta</h2>
-            
             <div class="card">
                 <h3 style="font-size: 15px; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:10px;">👤 Dados de Acesso</h3>
                 <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 5px;">E-mail cadastrado:</p>
                 <strong id="organizer-email-label" style="font-size: 16px; color: var(--dark); display: block; margin-bottom: 15px;">...</strong>
             </div>
-
             <div class="card">
                 <h3 style="font-size: 15px; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:10px;">🔒 Segurança</h3>
                 <div style="margin-bottom: 12px;">
@@ -525,7 +452,6 @@
                     <button onclick="alterarSenhaOrganizador()" style="background: var(--primary); padding: 12px; font-size: 14px;">Atualizar Senha</button>
                 </div>
             </div>
-
             <div class="card" style="border-color: var(--danger);">
                 <h3 style="font-size: 15px; margin-top:0; color: var(--danger); border-bottom:1px solid var(--border); padding-bottom:10px;">Sessão</h3>
                 <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;">Deseja sair da sua conta neste dispositivo?</p>
@@ -533,13 +459,11 @@
             </div>
         </div>
 
-        <!-- ABA: MASTER ADMIN (Exclusiva do Master) -->
+        <!-- ABA: MASTER ADMIN -->
         <div id="view-admin" class="page-view master-only">
             <h2 style="text-align: left; font-size:20px; margin-bottom: 20px;">Painel Master (Gestão de Assinaturas)</h2>
             <div class="card">
-                <p style="font-size: 13px; color: var(--text-muted); margin-top: -5px; margin-bottom: 15px;">
-                    Gerencie a autorização e a data de expiração da mensalidade de cada grupo/organizador.
-                </p>
+                <p style="font-size: 13px; color: var(--text-muted); margin-top: -5px; margin-bottom: 15px;">Gerencie a autorização e a data de expiração da mensalidade de cada grupo/organizador.</p>
                 <div id="lista-organizadores-admin">Carregando usuários...</div>
             </div>
         </div>
@@ -553,54 +477,37 @@
             </div>
         </div>
 
-        <!-- NAVEGAÇÃO INFERIOR 100% CENTRALIZADA -->
+        <!-- NAVEGAÇÃO INFERIOR -->
         <nav class="bottom-nav">
             <div class="nav-item hidden-public organizer-only" onclick="mudarAba('view-elenco')" id="nav-elenco">
-                <div class="nav-icon">
-                    <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-                </div>
+                <div class="nav-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></div>
                 <span>Elenco</span>
             </div>
             <div class="nav-item hidden-public organizer-only" onclick="mudarAba('view-sorteio')" id="nav-sorteio">
-                <div class="nav-icon">
-                    <svg viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><path d="M16 8h.01"/><path d="M8 8h.01"/><path d="M8 16h.01"/><path d="M16 16h.01"/><path d="M12 12h.01"/></svg>
-                </div>
+                <div class="nav-icon"><svg viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><path d="M16 8h.01"/><path d="M8 8h.01"/><path d="M8 16h.01"/><path d="M16 16h.01"/><path d="M12 12h.01"/></svg></div>
                 <span>Sorteio</span>
             </div>
             <div class="nav-item active organizer-only" onclick="mudarAba('view-placares')" id="nav-placares">
-                <div class="nav-icon">
-                    <svg viewBox="0 0 24 24"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></svg>
-                </div>
+                <div class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></svg></div>
                 <span>Súmula</span>
             </div>
             <div class="nav-item organizer-only" onclick="mudarAba('view-estatisticas')" id="nav-estatisticas">
-                <div class="nav-icon">
-                    <svg viewBox="0 0 24 24"><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/><line x1="2" x2="22" y1="20" y2="20"/></svg>
-                </div>
+                <div class="nav-icon"><svg viewBox="0 0 24 24"><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/><line x1="2" x2="22" y1="20" y2="20"/></svg></div>
                 <span>Painel</span>
             </div>
             <div class="nav-item organizer-only" onclick="mudarAba('view-financeiro')" id="nav-financeiro">
-                <div class="nav-icon">
-                    <svg viewBox="0 0 24 24"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2v-8h-2z"/></svg>
-                </div>
+                <div class="nav-icon"><svg viewBox="0 0 24 24"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2v-8h-2z"/></svg></div>
                 <span>Caixa</span>
             </div>
             <div class="nav-item hidden-public organizer-only" onclick="mudarAba('view-conta')" id="nav-conta">
-                <div class="nav-icon">
-                    <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                </div>
+                <div class="nav-icon"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
                 <span>Conta</span>
             </div>
-
-            <!-- Aba Master (Exclusiva do Master) -->
             <div class="nav-item hidden-public master-only active" onclick="mudarAba('view-admin')" id="nav-admin">
-                <div class="nav-icon">
-                    <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/><path d="M12 6v6l4 2"/></svg>
-                </div>
+                <div class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/><path d="M12 6v6l4 2"/></svg></div>
                 <span>Master</span>
             </div>
         </nav>
-
     </div>
 
     <script>
@@ -614,6 +521,7 @@
         const emojisTimes = ["🔴", "🔵", "🟡", "🟢", "⚪", "⚫", "🟣", "🟠"];
 
         window.timesSorteadosObjs = []; 
+        window.reservasSorteados = [];
         window.partidaSalva = true; 
         window.jogosDaRodada = []; 
         window.filaEquipes = []; 
@@ -644,7 +552,6 @@
 
         function salvarEstadoCompleto() {
             if(window.isModoPublico) return; 
-            
             const estado = {
                 timesSorteadosObjs: window.timesSorteadosObjs,
                 reservasSorteados: window.reservasSorteados,
@@ -775,10 +682,7 @@
             
             if (error || !profile) {
                 const { data: newProfile, error: insertError } = await db.from('profiles').insert([{
-                    id: user.id,
-                    email: user.email,
-                    is_authorized: false,
-                    is_admin: false
+                    id: user.id, email: user.email, is_authorized: false, is_admin: false
                 }]).select().single();
 
                 if (insertError || !newProfile) {
@@ -813,8 +717,7 @@
 
         async function fazerLogout() { 
             await db.auth.signOut(); 
-            currentProfile = null;
-            currentUser = null;
+            currentProfile = null; currentUser = null;
             mostrarLogin(); 
         }
         
@@ -850,12 +753,8 @@
             if(!novaSenha || novaSenha.length < 6) return alert("A senha deve ter pelo menos 6 caracteres.");
 
             const { error } = await db.auth.updateUser({ password: novaSenha });
-            if(error) {
-                alert("Erro ao alterar senha: " + error.message);
-            } else {
-                alert("✅ Senha alterada com sucesso!");
-                document.getElementById('nova-senha-organizador').value = '';
-            }
+            if(error) alert("Erro ao alterar senha: " + error.message);
+            else { alert("✅ Senha alterada com sucesso!"); document.getElementById('nova-senha-organizador').value = ''; }
         }
 
         async function carregarPainelAdmin() {
@@ -864,15 +763,8 @@
             container.innerHTML = "Carregando usuários...";
 
             const { data: users, error } = await db.from('profiles').select('*').order('email');
-            if (error) {
-                container.innerHTML = "Erro ao carregar usuários.";
-                return;
-            }
-
-            if (!users || users.length === 0) {
-                container.innerHTML = "Nenhum usuário cadastrado.";
-                return;
-            }
+            if (error) { container.innerHTML = "Erro ao carregar usuários."; return; }
+            if (!users || users.length === 0) { container.innerHTML = "Nenhum usuário cadastrado."; return; }
 
             container.innerHTML = "";
             users.forEach(u => {
@@ -881,12 +773,8 @@
                     <div style="background: var(--light); padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 10px; font-size: 13px;">
                         <div style="font-weight: 700; margin-bottom: 5px;">${u.email} ${u.is_admin ? '(Master Admin)' : ''}</div>
                         <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                            <label style="font-size: 11px;">Autorizado: 
-                                <input type="checkbox" id="auth-${u.id}" ${u.is_authorized ? 'checked' : ''} onchange="atualizarAdminUser('${u.id}')">
-                            </label>
-                            <label style="font-size: 11px;">Vencimento: 
-                                <input type="date" id="date-${u.id}" value="${expDate}" style="width: auto; padding: 6px; margin: 0;" onchange="atualizarAdminUser('${u.id}')">
-                            </label>
+                            <label style="font-size: 11px;">Autorizado: <input type="checkbox" id="auth-${u.id}" ${u.is_authorized ? 'checked' : ''} onchange="atualizarAdminUser('${u.id}')"></label>
+                            <label style="font-size: 11px;">Vencimento: <input type="date" id="date-${u.id}" value="${expDate}" style="width: auto; padding: 6px; margin: 0;" onchange="atualizarAdminUser('${u.id}')"></label>
                             <span id="msg-${u.id}" style="font-size: 11px; color: var(--supabase); font-weight: bold;"></span>
                         </div>
                     </div>
@@ -899,17 +787,9 @@
             let expDate = document.getElementById(`date-${uid}`).value || null;
             let msgSpan = document.getElementById(`msg-${uid}`);
 
-            const { error } = await db.from('profiles').update({
-                is_authorized: isAuth,
-                subscription_expires_at: expDate
-            }).eq('id', uid);
-
-            if (error) {
-                alert("Erro ao atualizar: " + error.message);
-            } else {
-                msgSpan.innerText = "Salvo!";
-                setTimeout(() => { msgSpan.innerText = ""; }, 2000);
-            }
+            const { error } = await db.from('profiles').update({ is_authorized: isAuth, subscription_expires_at: expDate }).eq('id', uid);
+            if (error) alert("Erro ao atualizar: " + error.message);
+            else { msgSpan.innerText = "Salvo!"; setTimeout(() => { msgSpan.innerText = ""; }, 2000); }
         }
 
         async function acessarModoPublico() {
@@ -942,15 +822,19 @@
                 window.dataPartidaAtual = d.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
             }
             
+            // Carregar times / escalação salvos na partida
+            if (partida.times_json && partida.times_json.length > 0) {
+                window.timesSorteadosObjs = partida.times_json;
+            }
+            renderizarTimesNaTela();
+
             const { data: presencas } = await db.from('presencas').select('pagou, jogadores(tipo)').eq('partida_id', partida.id);
             if(presencas) {
                 let receitaPub = 0;
                 let vConv = partida.valor_por_convidado || 0;
                 let qtdConvidadosPagos = presencas.filter(p => p.pagou && p.jogadores && p.jogadores.tipo === 'Convidado').length;
                 receitaPub += (qtdConvidadosPagos * vConv);
-                
                 let totCustosPub = window.custosDaRodada.reduce((acc, c) => acc + c.valor, 0);
-                
                 document.getElementById('fin-receita-hoje').innerText = `R$ ${receitaPub.toFixed(2)}`;
                 document.getElementById('fin-custos-hoje').innerText = `R$ ${totCustosPub.toFixed(2)}`;
             }
@@ -959,13 +843,7 @@
             if (partida.jogos_json && partida.jogos_json.length > 0) {
                 window.jogosDaRodada = partida.jogos_json;
             } else {
-                const { data: jogos } = await db.from('jogos').select('*').eq('partida_id', partida.id);
-                if(jogos) {
-                    window.jogosDaRodada = jogos.map(j => ({
-                        equipe_a_nome: j.equipe_a, gols_a: new Array(j.gols_a).fill('Gol'),
-                        equipe_b_nome: j.equipe_b, gols_b: new Array(j.gols_b).fill('Gol')
-                    }));
-                } else window.jogosDaRodada = [];
+                window.jogosDaRodada = [];
             }
             
             window.partidaSalva = true;
@@ -1039,49 +917,29 @@
         function marcarPresenca(indexArray) { jogadores[indexArray].presente = true; jogadores[indexArray].ordemChegada = Date.now(); salvarEstadoLocal(); atualizarListas(); }
         
         function desmarcarPresenca(indexArray) { 
-            jogadores[indexArray].presente = false; 
-            jogadores[indexArray].ordemChegada = 0; 
-            jogadores[indexArray].pagou = false; 
-            salvarEstadoLocal(); 
-            atualizarListas(); 
-            atualizarFinanceiro(); 
+            jogadores[indexArray].presente = false; jogadores[indexArray].ordemChegada = 0; jogadores[indexArray].pagou = false; 
+            salvarEstadoLocal(); atualizarListas(); atualizarFinanceiro(); 
         }
 
         async function alternarMensalidade(idNuvem, indexArray) {
             const j = jogadores[indexArray];
             const mesKey = new Date().toISOString().substring(0, 7); 
             if (!j.pagamentos_json) j.pagamentos_json = {};
-            
-            const isPago = j.pagamentos_json[mesKey] === true;
-            if(isPago) {
-                delete j.pagamentos_json[mesKey];
-            } else {
-                j.pagamentos_json[mesKey] = true;
-            }
-            
-            atualizarListas(); 
-            atualizarFinanceiro();
+            if(j.pagamentos_json[mesKey] === true) delete j.pagamentos_json[mesKey]; else j.pagamentos_json[mesKey] = true;
+            atualizarListas(); atualizarFinanceiro();
             if (document.getElementById('view-financeiro').classList.contains('active')) calcularBalancoMesAno();
-            
             await db.from('jogadores').update({ pagamentos_json: j.pagamentos_json }).eq('id', idNuvem);
         }
         
         function alternarPagamentoDiaria(indexArray) { 
-            jogadores[indexArray].pagou = !jogadores[indexArray].pagou; 
-            salvarEstadoLocal(); 
-            atualizarListas(); 
-            atualizarFinanceiro(); 
+            jogadores[indexArray].pagou = !jogadores[indexArray].pagou; salvarEstadoLocal(); atualizarListas(); atualizarFinanceiro(); 
         }
         
         function zerarPresencas() { 
             if(confirm("Encerrar o Baba de hoje?\n\nIsso vai retirar todos da quadra e ZERAR as DIÁRIAS dos convidados.")) { 
                 jogadores.forEach(j => { j.presente = false; j.ordemChegada = 0; j.pagou = false; }); 
-                salvarEstadoLocal(); 
-                limparEstadoRodada(); 
-                atualizarListas(); 
-                atualizarFinanceiro(); 
-                document.getElementById('resultado').innerHTML = ""; 
-                document.getElementById('btn-ir-placares').style.display = 'none'; 
+                salvarEstadoLocal(); limparEstadoRodada(); atualizarListas(); atualizarFinanceiro(); 
+                document.getElementById('resultado').innerHTML = ""; document.getElementById('btn-ir-placares').style.display = 'none'; 
                 document.getElementById('box-codigo-gerado-sorteio').style.display = 'none';
             } 
         }
@@ -1113,7 +971,6 @@
             
             let presentes = [];
             const mesKey = new Date().toISOString().substring(0, 7);
-            
             let todosOrdenados = [...jogadores].sort((a, b) => a.nome.localeCompare(b.nome));
             
             todosOrdenados.forEach((j) => {
@@ -1124,29 +981,19 @@
                 if(listaElenco) {
                     let btnEdicao = `<button class="btn-small btn-acao-outline" onclick="prepararEdicao(${indexArray})">✏️</button>`;
                     let btnExcluir = `<button class="btn-small btn-acao-outline" style="color:var(--danger); border-color:var(--danger);" onclick="removerJogador('${j.id}', ${indexArray})">X</button>`;
-                    
-                    let btnMensal = '';
-                    if(j.tipo === 'Mensalista') {
-                        let isMensalPago = j.pagamentos_json && j.pagamentos_json[mesKey] === true;
-                        btnMensal = isMensalPago ? `<button class="btn-small btn-pagou" onclick="alternarMensalidade('${j.id}', ${indexArray})">Pago</button>` : `<button class="btn-small btn-devendo" onclick="alternarMensalidade('${j.id}', ${indexArray})">Pendente</button>`;
-                    } else {
-                        btnMensal = `<span style="font-size:10px; color:var(--text-muted);">Diária local</span>`;
-                    }
+                    let btnMensal = j.tipo === 'Mensalista' ? (j.pagamentos_json && j.pagamentos_json[mesKey] === true ? `<button class="btn-small btn-pagou" onclick="alternarMensalidade('${j.id}', ${indexArray})">Pago</button>` : `<button class="btn-small btn-devendo" onclick="alternarMensalidade('${j.id}', ${indexArray})">Pendente</button>`) : `<span style="font-size:10px; color:var(--text-muted);">Diária local</span>`;
                     
                     listaElenco.innerHTML += `
                     <div class="linha-jogador" data-nome="${j.nome}">
                         <div class="col-nome">${tagConvidado} ${j.nome}</div>
                         <div class="col-pos">${tagPosicao}</div>
                         <div class="col-status">${btnMensal}</div>
-                        <div class="col-acoes">
-                            ${btnEdicao} ${btnExcluir}
-                        </div>
+                        <div class="col-acoes">${btnEdicao} ${btnExcluir}</div>
                     </div>`;
                 }
                 
-                if(j.presente) {
-                    presentes.push({ ...j, indexArray: indexArray });
-                } else {
+                if(j.presente) presentes.push({ ...j, indexArray: indexArray });
+                else {
                     if(listaAguardando) {
                         listaAguardando.innerHTML += `
                         <div class="linha-jogador grid-aguardando" data-nome="${j.nome}">
@@ -1162,15 +1009,7 @@
 
             presentes.forEach((j, pos) => {
                 let tagConvidado = j.tipo === 'Convidado' ? '<span class="badge badge-convidado">C</span>' : '';
-                let tagPosicao = (j.posicao !== 'Goleiro' && j.posicao !== 'Linha') ? `<span class="badge badge-posicao">${j.posicao}</span>` : '';
-                
-                let controleFinanceiro = '';
-                if(j.tipo === 'Mensalista') {
-                    let isMensalPago = j.pagamentos_json && j.pagamentos_json[mesKey] === true;
-                    controleFinanceiro = isMensalPago ? `<button class="btn-small btn-pagou hidden-public" onclick="alternarMensalidade('${j.id}', ${j.indexArray})">Pago</button>` : `<button class="btn-small btn-devendo hidden-public" onclick="alternarMensalidade('${j.id}', ${j.indexArray})">Pendente</button>`;
-                } else {
-                    controleFinanceiro = j.pagou ? `<button class="btn-small btn-pagou hidden-public" onclick="alternarPagamentoDiaria(${j.indexArray})">Pago</button>` : `<button class="btn-small btn-devendo hidden-public" onclick="alternarPagamentoDiaria(${j.indexArray})">Pendente</button>`;
-                }
+                let controleFinanceiro = j.tipo === 'Mensalista' ? (j.pagamentos_json && j.pagamentos_json[mesKey] === true ? `<button class="btn-small btn-pagou hidden-public" onclick="alternarMensalidade('${j.id}', ${j.indexArray})">Pago</button>` : `<button class="btn-small btn-devendo hidden-public" onclick="alternarMensalidade('${j.id}', ${j.indexArray})">Pendente</button>`) : (j.pagou ? `<button class="btn-small btn-pagou hidden-public" onclick="alternarPagamentoDiaria(${j.indexArray})">Pago</button>` : `<button class="btn-small btn-devendo hidden-public" onclick="alternarPagamentoDiaria(${j.indexArray})">Pendente</button>`);
 
                 if(listaPresentes) {
                     listaPresentes.innerHTML += `
@@ -1186,8 +1025,7 @@
             if(document.getElementById('total-elenco')) document.getElementById('total-elenco').innerText = jogadores.length;
             if(document.getElementById('btn-zerar')) document.getElementById('btn-zerar').style.display = presentes.length > 0 ? "block" : "none";
             
-            filtrarElencoAdmin(); 
-            filtrarSorteioAusentes();
+            filtrarElencoAdmin(); filtrarSorteioAusentes();
         }
 
         function embaralhar(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } return array; }
@@ -1289,6 +1127,7 @@
                     custos_json: [],
                     artilheiros_json: {},
                     jogos_json: [],
+                    times_json: window.timesSorteadosObjs,
                     codigo_acesso: codigoAleatorio
                 }]).select();
 
@@ -1379,9 +1218,33 @@
             
             if (window.timesSorteadosObjs && window.timesSorteadosObjs.length > 0) {
                 atualizarSelectsEquipes();
+                renderizarEscalacaoPublicaSumula();
             }
             atualizarPlacarTempUI();
             atualizarListaJogosDaRodada();
+        }
+
+        function renderizarEscalacaoPublicaSumula() {
+            const containerEscalacao = document.getElementById('lista-escalacao-publica');
+            if(!containerEscalacao) return;
+            containerEscalacao.innerHTML = "";
+
+            window.timesSorteadosObjs.forEach((t) => {
+                let emoji = emojisTimes[coresTimes.indexOf(t.corBase)] || '⚽';
+                let html = `<div class="team" style="border-top-color: var(--primary);">
+                    <div style="display:flex; align-items:center; gap:5px; margin-bottom:10px; font-weight:700; font-size:15px;">
+                        <span>${emoji}</span> ${t.nome}
+                    </div>
+                    <ul>`;
+                t.jogadores.forEach(j => { html += `<li><strong>${j.nome}</strong> ${j.posicao!=='Linha'?`<span class="badge badge-posicao">${j.posicao}</span>`:''}</li>`; });
+                containerEscalacao.innerHTML += html + `</ul></div>`;
+            });
+
+            if (window.reservasSorteados && window.reservasSorteados.length > 0) {
+                let html = `<div class="team team-reservas"><h3 style="padding:5px; font-size:15px;">Reservas</h3><ul>`;
+                window.reservasSorteados.forEach(j => html += `<li><strong>${j.nome}</strong></li>`);
+                containerEscalacao.innerHTML += html + `</ul></div>`;
+            }
         }
 
         function atualizarSelectsEquipes() {
@@ -1469,7 +1332,6 @@
 
             window.jogosDaRodada.push({ equipe_a_id: idA, equipe_a_nome: nomeA, gols_a: gaList, equipe_b_id: idB, equipe_b_nome: nomeB, gols_b: gbList });
             
-            // Calcular artilheiros atuais para sincronização em tempo real
             let artilheiros = {};
             window.jogosDaRodada.forEach(jogo => {
                 jogo.gols_a.forEach(nome => { if(nome !== 'Gol Contra') artilheiros[nome] = (artilheiros[nome] || 0) + 1; });
@@ -1510,7 +1372,7 @@
             if(window.jogosDaRodada.length === 0) { lista.innerHTML = '<p style="color:var(--text-muted); font-size:13px; text-align:center;">Nenhum jogo confirmado</p>'; return; }
             
             window.jogosDaRodada.forEach((j, i) => {
-                let btnExcluirHtml = window.partidaSalva ? '' : `<button class="btn-excluir hidden-public" style="padding:2px 6px; margin-left:5px;" onclick="removerJogo(${i})">X</button>`;
+                let btnExcluirHtml = window.partidaSalva ? '' : `<button class="btn-excluir-mini" onclick="removerJogo(${i})">X</button>`;
                 let autoresA = formatarGolsResumo(j.gols_a);
                 let autoresB = formatarGolsResumo(j.gols_b);
                 
@@ -1608,7 +1470,6 @@
             if(window.isModoPublico) return;
 
             document.getElementById('loading-stats').style.display = 'block';
-            
             let hoje = new Date(); let mesAtual = hoje.getMonth(); let anoAtual = hoje.getFullYear();
             const startOfYear = new Date(anoAtual, 0, 1).toISOString();
 
@@ -1671,41 +1532,31 @@
 
         function atualizarFinanceiro() {
             if(window.isModoPublico) return; 
-
             let valConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
-            
             let convPagantesHoje = jogadores.filter(j => j.tipo === 'Convidado' && j.presente && j.pagou).length;
             let recHoje = (convPagantesHoje * valConv); 
             let custHoje = window.custosDaRodada.reduce((acc, c) => acc + c.valor, 0);
             
             document.getElementById('fin-receita-hoje').innerText = `R$ ${recHoje.toFixed(2)}`;
             document.getElementById('fin-custos-hoje').innerText = `R$ ${custHoje.toFixed(2)}`;
-            
             renderizarListaCustos();
             salvarEstadoCompleto();
         }
 
         async function calcularBalancoMesAno() {
             document.getElementById('fin-loading').style.display = 'block';
-            
             let valMens = parseFloat(document.getElementById('valor-mensalista').value) || 0;
             let valConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
 
-            let hoje = new Date(); 
-            let mesKey = hoje.toISOString().substring(0, 7); 
-            let anoKey = hoje.getFullYear().toString();
-            
+            let hoje = new Date(); let mesKey = hoje.toISOString().substring(0, 7); let anoKey = hoje.getFullYear().toString();
             const { data: partidas } = await db.from('partidas').select('*').gte('data_sorteio', `${anoKey}-01-01`);
             
-            let recConvMes = 0; let cusMes = 0; 
-            let recConvAno = 0; let cusAno = 0;
-            
+            let recConvMes = 0; let cusMes = 0; let recConvAno = 0; let cusAno = 0;
             if(partidas) {
                 partidas.forEach(p => {
                     let dataP = p.data_sorteio.substring(0, 7); 
                     let recC = (p.renda_convidados || 0) * (p.valor_por_convidado || 0);
                     let cus = (p.custos_json || []).reduce((acc, c) => acc + c.valor, 0);
-                    
                     recConvAno += recC; cusAno += cus;
                     if(dataP === mesKey) { recConvMes += recC; cusMes += cus; }
                 });
@@ -1736,11 +1587,9 @@
             document.getElementById('fin-rec-mes').innerText = `R$ ${recMesTotal.toFixed(2)}`;
             document.getElementById('fin-cus-mes').innerText = `R$ ${cusMes.toFixed(2)}`;
             document.getElementById('fin-sal-mes').innerText = `R$ ${(recMesTotal - cusMes).toFixed(2)}`;
-            
             document.getElementById('fin-rec-ano').innerText = `R$ ${recAnoTotal.toFixed(2)}`;
             document.getElementById('fin-cus-ano').innerText = `R$ ${cusAno.toFixed(2)}`;
             document.getElementById('fin-sal-ano').innerText = `R$ ${(recAnoTotal - cusAno).toFixed(2)}`;
-            
             document.getElementById('fin-loading').style.display = 'none';
         }
         
@@ -1754,8 +1603,7 @@
         }
         
         function removerCusto(index) { 
-            window.custosDaRodada.splice(index, 1); 
-            atualizarFinanceiro(); 
+            window.custosDaRodada.splice(index, 1); atualizarFinanceiro(); 
             if(!window.isModoPublico && document.getElementById('view-financeiro').classList.contains('active')) calcularBalancoMesAno();
         }
         
@@ -1765,7 +1613,7 @@
             window.custosDaRodada.forEach((c, i) => {
                 lista.innerHTML += `<div style="display:flex; justify-content:space-between; padding:10px; background:var(--light); border:1px solid var(--border); border-radius:6px; margin-bottom:5px; font-size:14px;">
                     <span>${c.desc}</span>
-                    <span><strong class="valor-negativo">R$ ${c.valor.toFixed(2)}</strong> <button class="btn-excluir hidden-public" style="padding:2px 5px; margin-left:10px;" onclick="removerCusto(${i})">X</button></span>
+                    <span><strong class="valor-negativo">R$ ${c.valor.toFixed(2)}</strong> <button class="btn-excluir-mini" style="margin-left:10px;" onclick="removerCusto(${i})">X</button></span>
                 </div>`;
             });
         }
@@ -1783,7 +1631,6 @@
 
                 let presentesPagantes = jogadores.filter(j => j.presente && j.pagou && j.tipo === 'Convidado');
                 let convidadosPagantes = presentesPagantes.length;
-                
                 let valorConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
                 let valorMens = parseFloat(document.getElementById('valor-mensalista').value) || 0;
 
@@ -1793,7 +1640,8 @@
                     valor_por_mensalista: valorMens,
                     custos_json: window.custosDaRodada,
                     artilheiros_json: artilheiros,
-                    jogos_json: window.jogosDaRodada
+                    jogos_json: window.jogosDaRodada,
+                    times_json: window.timesSorteadosObjs
                 }).eq('id', window.partidaAtualId);
 
                 if(errP) throw errP;
