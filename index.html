@@ -79,17 +79,18 @@
         .btn-limpar { background-color: var(--light); color: var(--text-muted); border: 1px solid var(--border); margin-bottom: 15px; }
         .btn-small { width: auto; padding: 6px 8px; font-size: 11px; border-radius: 6px; }
 
-        /* LISTAS E JOGADORES (GRID) */
+        /* LISTAS E JOGADORES (GRID REESTRUTURADO) */
         .busca-container { position: relative; margin-bottom: 15px; }
-        .linha-jogador { display: grid; grid-template-columns: 2fr 1fr 1fr auto; align-items: center; padding: 12px 10px; border-bottom: 1px solid var(--border); background: white; border-radius: 8px; margin-bottom: 8px; font-size: 13px; }
+        
+        .linha-jogador { display: grid; grid-template-columns: 1fr auto auto auto; align-items: center; padding: 12px 10px; border-bottom: 1px solid var(--border); background: white; border-radius: 8px; margin-bottom: 8px; font-size: 13px; gap: 8px;}
         .linha-jogador:hover { background: var(--light); }
         .col-nome { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 5px;}
-        .col-pos { color: var(--text-muted); font-size: 12px;}
-        .col-status { text-align: center; }
+        .col-status { text-align: right; }
+        .col-pos { color: var(--text-muted); font-size: 12px; text-align: right;}
         .col-acoes { display: flex; gap: 5px; justify-content: flex-end; }
         
-        .grid-aguardando { grid-template-columns: 3fr 1fr auto; }
-        .grid-prontos { grid-template-columns: 2fr 1fr auto; }
+        .grid-aguardando { grid-template-columns: 1fr auto auto auto; }
+        .grid-prontos { grid-template-columns: 1fr auto auto; }
 
         .badge { background-color: var(--dark); color: white; padding: 3px 6px; border-radius: 12px; font-size: 10px; font-weight: 600;}
         .badge-convidado { background-color: var(--purple); }
@@ -1081,8 +1082,8 @@
                     listaElenco.innerHTML += `
                     <div class="linha-jogador" data-nome="${j.nome}">
                         <div class="col-nome">${tagConvidado} ${j.nome}</div>
-                        <div class="col-pos">${tagPosicao}</div>
                         <div class="col-status">${btnMensal}</div>
+                        <div class="col-pos">${tagPosicao}</div>
                         <div class="col-acoes">${btnEdicao} ${btnExcluir}</div>
                     </div>`;
                 }
@@ -1094,13 +1095,13 @@
                         if (j.tipo === 'Convidado') {
                             btnAcoesAguardando += j.pagou ? `<button class="btn-small btn-pagou" onclick="alternarPagamentoDiaria(${indexArray})">Pago</button>` : `<button class="btn-small btn-devendo" onclick="alternarPagamentoDiaria(${indexArray})">Pendente</button>`;
                         }
-                        btnAcoesAguardando += `<button class="btn-small btn-presente" onclick="marcarPresenca(${indexArray})">Chegou</button>`;
 
                         listaAguardando.innerHTML += `
                         <div class="linha-jogador grid-aguardando" data-nome="${j.nome}">
                             <div class="col-nome">${tagConvidado} ${j.nome}</div>
+                            <div class="col-status">${btnAcoesAguardando}</div>
                             <div class="col-pos">${tagPosicao}</div>
-                            <div class="col-acoes">${btnAcoesAguardando}</div>
+                            <div class="col-acoes"><button class="btn-small btn-presente" onclick="marcarPresenca(${indexArray})">Chegou</button></div>
                         </div>`;
                     }
                 }
@@ -1122,7 +1123,7 @@
                     listaPresentes.innerHTML += `
                     <div class="linha-jogador grid-prontos">
                         <div class="col-nome"><span class="badge" style="background:var(--dark); color:white;">${pos + 1}º</span> ${tagConvidado} ${j.nome}</div>
-                        <div class="col-status" style="text-align:right;">${controleFinanceiro}</div>
+                        <div class="col-status">${controleFinanceiro}</div>
                         <div class="col-acoes"><button class="btn-small btn-acao-outline hidden-public" style="color:var(--danger); border-color:var(--danger);" onclick="desmarcarPresenca(${j.indexArray})">Retirar</button></div>
                     </div>`;
                 }
