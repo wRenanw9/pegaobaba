@@ -27,8 +27,8 @@
 
         /* NAVEGAÇÃO SUPERIOR */
         .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: white; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
-        .top-bar h1 { margin: 0; font-size: 18px; color: var(--primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60%; }
-        .top-actions { display: flex; align-items: center; gap: 10px; }
+        .top-bar h1 { margin: 0; font-size: 18px; color: var(--primary); line-height: 1.2; flex: 1; padding-right: 10px; word-break: break-word; }
+        .top-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
         .status-nuvem { font-size: 10px; font-weight: 600; color: white; background-color: var(--supabase); padding: 4px 8px; border-radius: 6px; }
         .btn-sair { background: transparent; color: var(--danger); border: 1px solid var(--danger); padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
 
@@ -1434,6 +1434,28 @@
 
             html += `</table>`;
             document.getElementById('conteudo-relatorio-mensal').innerHTML = html;
+        }
+
+        function compartilharRelatorioMensalWhatsApp() {
+            let nomeMes = document.getElementById('label-mes-relatorio').innerText;
+            let valMens = parseFloat(document.getElementById('valor-mensalista').value) || 70;
+            let mesKey = new Date().toISOString().substring(0, 7);
+
+            let texto = `📊 *Prestação de Contas Mensal (${nomeMes})* ⚽\n\n`;
+            
+            texto += `👥 *Mensalistas Pagantes:*\n`;
+            jogadores.filter(j => j.tipo === 'Mensalista').forEach(j => {
+                let pago = j.pagamentos_json && j.pagamentos_json[mesKey] === true;
+                texto += `• ${j.nome}: ${pago ? 'Pago ✅' : 'Pendente ❌'}\n`;
+            });
+
+            texto += `\n💰 *Resumo Geral:*\n`;
+            texto += `• Receita Total: ${document.getElementById('fin-rec-mes').innerText}\n`;
+            texto += `• Despesas Totais: ${document.getElementById('fin-cus-mes').innerText}\n`;
+            texto += `• *Saldo do Mês: ${document.getElementById('fin-sal-mes').innerText}*\n\n`;
+            texto += `_Relatório gerado via Pega o Baba_`;
+
+            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`, '_blank');
         }
 
         function exibirBoxCodigoSorteio(codigo) {
