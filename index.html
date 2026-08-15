@@ -71,12 +71,9 @@
         button:disabled { background-color: #cbd5e1; cursor: not-allowed; }
         
         .btn-sortear { background-color: var(--dark); margin-top: 20px; font-size: 16px; padding: 16px; }
-        .btn-whatsapp { background-color: var(--whatsapp); flex: 1; margin: 0; display: none; }
+        .btn-whatsapp { background-color: var(--whatsapp); color: white; padding: 12px 20px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: bold; width: 100%; box-sizing: border-box; display: inline-block; text-align: center; border: none; cursor: pointer; }
         
-        /* Botão Compacto de Finalizar */
         .btn-salvar { background-color: var(--supabase); color: white; margin: 15px auto 0 auto; font-size: 14px; padding: 12px 24px; width: auto; display: block; border-radius: 8px; }
-        
-        /* Botão de Excluir Miniatura */
         .btn-excluir-mini { background-color: var(--danger); color: white; border: none; padding: 4px 8px; font-size: 11px; border-radius: 6px; width: auto; cursor: pointer; }
 
         .btn-limpar { background-color: var(--light); color: var(--text-muted); border: 1px solid var(--border); margin-bottom: 15px; }
@@ -262,6 +259,7 @@
             <!-- RESULTADO DO SORTEIO -->
             <div id="resultado" class="team-container"></div>
             
+            <!-- BOTÃO DE COMPARTILHAR ESCALAÇÃO E CÓDIGO -->
             <div id="box-codigo-gerado-sorteio" class="codigo-gerado-box hidden-public" style="display:none; margin-top: 20px;"></div>
 
             <div class="hidden-public" style="display: flex; gap: 10px; margin-top: 20px;">
@@ -309,7 +307,7 @@
                     <h3 style="font-size: 15px; margin-bottom: 10px;">Jogos Registrados (<span id="qtd-jogos-reg">0</span>):</h3>
                     <div id="lista-jogos-registrados" style="margin-bottom: 25px;"></div>
 
-                    <!-- ESCALAÇÃO DOS TIMES PARA QUEM ESTÁ VISUALIZANDO -->
+                    <!-- ESCALAÇÃO DOS TIMES -->
                     <h3 style="font-size: 15px; margin-bottom: 10px; border-top: 1px solid var(--border); padding-top: 20px;">🛡️ Escalação das Equipes</h3>
                     <div id="lista-escalacao-publica" class="team-container" style="margin-top: 0; margin-bottom: 25px;"></div>
 
@@ -822,7 +820,6 @@
                 window.dataPartidaAtual = d.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
             }
             
-            // Carregar times / escalação salvos na partida
             if (partida.times_json && partida.times_json.length > 0) {
                 window.timesSorteadosObjs = partida.times_json;
             }
@@ -1150,15 +1147,42 @@
             }
         }
 
+        function gerarTextoWhatsAppEscalacao() {
+            let texto = "🏆 *Escalação dos Times - Pega o Baba* ⚽\n\n";
+            window.timesSorteadosObjs.forEach(t => {
+                texto += `*${t.nome}*:\n`;
+                t.jogadores.forEach(j => {
+                    texto += `• ${j.nome} ${j.posicao !== 'Linha' ? '('+j.posicao+')' : ''}\n`;
+                });
+                texto += "\n";
+            });
+            if (window.reservasSorteados && window.reservasSorteados.length > 0) {
+                texto += `*Reservas*:\n`;
+                window.reservasSorteados.forEach(j => {
+                    texto += `• ${j.nome}\n`;
+                });
+                texto += "\n";
+            }
+            if(window.codigoAcessoAtual) {
+                let link = `https://pegaobaba.vercel.app?code=${window.codigoAcessoAtual}`;
+                texto += `🔗 Acompanhe o placar ao vivo: ${link}`;
+            }
+            return encodeURIComponent(texto);
+        }
+
         function exibirBoxCodigoSorteio(codigo) {
             let linkCompartilhamento = `https://pegaobaba.vercel.app?code=${codigo}`;
             let textoWpp = encodeURIComponent(`🏆 *Acompanhe nosso Baba ao Vivo!*\n\nVeja a súmula, artilharia e classificação da rodada pelo link:\n\n${linkCompartilhamento}\n\n_(Código de acesso direto: ${codigo})_`);
+            let textoWppEscalacao = gerarTextoWhatsAppEscalacao();
 
             let boxCod = document.getElementById('box-codigo-gerado-sorteio');
             boxCod.innerHTML = `
                 <div style="font-size:12px; color:var(--text-muted); font-weight:normal; margin-bottom:5px;">CÓDIGO DESTE BABA PARA OS JOGADORES:</div>
                 <div style="color:var(--primary); font-size:28px; line-height:1; margin-bottom:15px;">${codigo}</div>
-                <a href="https://api.whatsapp.com/send?text=${textoWpp}" target="_blank" style="display:inline-block; background:var(--whatsapp); color:white; padding:12px 20px; border-radius:8px; text-decoration:none; font-size:14px; font-weight:bold; width:100%; box-sizing:border-box;">📱 Compartilhar no WhatsApp</a>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <a href="https://api.whatsapp.com/send?text=${textoWppEscalacao}" target="_blank" class="btn-whatsapp">👥 Compartilhar Escalação no WhatsApp</a>
+                    <a href="https://api.whatsapp.com/send?text=${textoWpp}" target="_blank" style="display:inline-block; background:var(--dark); color:white; padding:12px 20px; border-radius:8px; text-decoration:none; font-size:14px; font-weight:bold; width:100%; box-sizing:border-box;">📱 Compartilhar Link Geral</a>
+                </div>
             `;
             boxCod.style.display = 'block';
         }
@@ -1380,8 +1404,8 @@
                 if (autoresA || autoresB) {
                     detalhesGolsHtml = `
                         <div style="font-size: 11px; color: var(--text-muted); display: flex; justify-content: space-between; margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border);">
-                            <span style="flex: 1; text-align: right; padding-right: 10px;">⚽ ${autoresA}</span>
-                            <span style="flex: 1; text-align: left; padding-left: 10px;">⚽ ${autoresB}</span>
+                            <span style="flex: 1; text-align: right; padding-right: 10px;">${autoresA ? '⚽ ' + autoresA : ''}</span>
+                            <span style="flex: 1; text-align: left; padding-left: 10px;">${autoresB ? '⚽ ' + autoresB : ''}</span>
                         </div>
                     `;
                 }
