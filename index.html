@@ -71,7 +71,6 @@
             display: flex !important;
         }
         
-        /* REGRAS DE VISIBILIDADE POR PERFIL */
         body.is-master-admin .organizer-only {
             display: none !important;
         }
@@ -313,6 +312,9 @@
             <!-- RESULTADO DO SORTEIO -->
             <div id="resultado" class="team-container"></div>
             
+            <!-- BOX PARA MOSTRAR O CÓDIGO DO BABA LOGO APÓS O SORTEIO -->
+            <div id="box-codigo-gerado-sorteio" class="codigo-gerado-box hidden-public" style="display:none; margin-top: 20px;"></div>
+
             <div class="hidden-public" style="display: flex; gap: 10px; margin-top: 20px;">
                 <button id="btn-ir-placares" style="background: var(--primary); display: none; width:100%;" onclick="mudarAba('view-placares')">📝 Preencher Súmula</button>
             </div>
@@ -359,9 +361,6 @@
                     <div id="lista-jogos-registrados" style="margin-bottom: 20px;"></div>
 
                     <button class="btn-salvar hidden-public" id="btn-encerrar-baba" style="display: block; padding:16px;" onclick="salvarPartidaComPlacares()">✅ Finalizar Baba e Salvar Dados</button>
-                    
-                    <!-- BOX PARA MOSTRAR O CÓDIGO DO BABA -->
-                    <div id="box-codigo-gerado" class="codigo-gerado-box hidden-public" style="display:none;"></div>
                 </div>
             </div>
         </div>
@@ -556,7 +555,6 @@
 
         <!-- NAVEGAÇÃO INFERIOR 100% CENTRALIZADA -->
         <nav class="bottom-nav">
-            <!-- Abas do Organizador (Ocultas para o Master) -->
             <div class="nav-item hidden-public organizer-only" onclick="mudarAba('view-elenco')" id="nav-elenco">
                 <div class="nav-icon">
                     <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
@@ -622,6 +620,8 @@
         window.custosDaRodada = [];
         window.isModoPublico = false;
         window.dataPartidaAtual = null;
+        window.partidaAtualId = null;
+        window.codigoAcessoAtual = null;
         
         window.golsTempA = []; 
         window.golsTempB = [];
@@ -653,6 +653,8 @@
                 partidaSalva: window.partidaSalva,
                 custosDaRodada: window.custosDaRodada,
                 dataPartidaAtual: window.dataPartidaAtual,
+                partidaAtualId: window.partidaAtualId,
+                codigoAcessoAtual: window.codigoAcessoAtual,
                 valorMensalistaAtual: document.getElementById('valor-mensalista').value,
                 valorConvidadoAtual: document.getElementById('valor-convidado').value
             };
@@ -670,18 +672,23 @@
                 window.partidaSalva = state.partidaSalva !== undefined ? state.partidaSalva : true;
                 window.custosDaRodada = state.custosDaRodada || [];
                 window.dataPartidaAtual = state.dataPartidaAtual || null;
+                window.partidaAtualId = state.partidaAtualId || null;
+                window.codigoAcessoAtual = state.codigoAcessoAtual || null;
                 
                 if (state.valorMensalistaAtual) document.getElementById('valor-mensalista').value = state.valorMensalistaAtual;
                 if (state.valorConvidadoAtual) document.getElementById('valor-convidado').value = state.valorConvidadoAtual;
 
-                if(window.timesSorteadosObjs.length > 0) renderizarTimesNaTela();
+                if(window.timesSorteadosObjs.length > 0) {
+                    renderizarTimesNaTela();
+                    if(window.codigoAcessoAtual) exibirBoxCodigoSorteio(window.codigoAcessoAtual);
+                }
             }
         }
 
         function limparEstadoRodada() {
             window.timesSorteadosObjs = []; window.reservasSorteados = []; window.jogosDaRodada = [];
             window.filaEquipes = []; window.custosDaRodada = []; window.golsTempA = []; window.golsTempB = [];
-            window.dataPartidaAtual = null;
+            window.dataPartidaAtual = null; window.partidaAtualId = null; window.codigoAcessoAtual = null;
             window.partidaSalva = true;
             localStorage.removeItem('baba_full_state');
         }
@@ -703,7 +710,6 @@
             document.getElementById(viewId).classList.add('active');
             
             let navId = viewId.replace('view-', 'nav-');
-            // Mapeia view-admin para nav-admin
             if(viewId === 'view-admin') navId = 'nav-admin';
             if(viewId === 'view-conta') navId = 'nav-conta';
 
@@ -820,12 +826,10 @@
             document.getElementById('btn-sair-publico').style.display = 'none';
             
             if (currentProfile && currentProfile.is_admin) {
-                // MASTER ADMIN: Ativa estado master e vai direto para a aba Admin
                 document.body.classList.add('is-master-admin');
                 document.getElementById('top-bar-title').innerText = "Painel Master";
                 mudarAba('view-admin');
             } else {
-                // ADMINISTRADOR (ORGANIZADOR): Ativa estado organizer e carrega o elenco
                 document.body.classList.remove('is-master-admin');
                 document.getElementById('top-bar-title').innerText = "Pega o Baba";
                 document.getElementById('organizer-email-label').innerText = currentUser.email;
@@ -927,6 +931,7 @@
                 return;
             }
             
+            window.partidaAtualId = partida.id;
             document.getElementById('status-db').innerText = `Visualizando: ${codigo}`;
             window.custosDaRodada = partida.custos_json || [];
             if(partida.valor_por_convidado) document.getElementById('valor-convidado').value = partida.valor_por_convidado;
@@ -1073,6 +1078,7 @@
                 atualizarFinanceiro(); 
                 document.getElementById('resultado').innerHTML = ""; 
                 document.getElementById('btn-ir-placares').style.display = 'none'; 
+                document.getElementById('box-codigo-gerado-sorteio').style.display = 'none';
             } 
         }
 
@@ -1187,12 +1193,13 @@
             if (presentes.length < 2) return alert("Adicione pelo menos 2 atletas na lista de Prontos.");
             
             document.getElementById('btn-ir-placares').style.display = 'none';
+            document.getElementById('box-codigo-gerado-sorteio').style.display = 'none';
             const resultado = document.getElementById('resultado');
             resultado.innerHTML = `<div style="text-align:center; padding:40px; font-weight:bold; color:var(--primary);">Processando Algoritmo...</div>`;
             setTimeout(() => { sortearTimes(presentes); }, 1500);
         }
 
-        function sortearTimes(presentesBrutos) {
+        async function sortearTimes(presentesBrutos) {
             let presentes = presentesBrutos; 
             let modo = document.getElementById('modo-sorteio').value; let priorizarOrdem = document.getElementById('priorizar-ordem').checked;
             let incluiGoleiros = (modo === '14' || modo === 'todos'); 
@@ -1250,14 +1257,68 @@
             });
 
             window.reservasSorteados = reservas; window.partidaSalva = false;
-            
             window.jogosDaRodada = []; window.filaEquipes = []; window.custosDaRodada = [];
             window.golsTempA = []; window.golsTempB = [];
-            document.getElementById('box-codigo-gerado').style.display = 'none';
             
             renderizarTimesNaTela();
             atualizarFinanceiro(); 
+
+            // GERAR CODIGO IMEDIATAMENTE NO SUPABASE
+            await criarPartidaInicialNoBanco();
             salvarEstadoCompleto();
+        }
+
+        async function criarPartidaInicialNoBanco() {
+            try {
+                let codigoAleatorio = Math.random().toString(36).substring(2, 8).toUpperCase();
+                let valorConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
+                let valorMens = parseFloat(document.getElementById('valor-mensalista').value) || 0;
+                
+                let qJogadoresEmQuadra = 0;
+                window.timesSorteadosObjs.forEach(t => qJogadoresEmQuadra += t.jogadores.length);
+                if (window.reservasSorteados) qJogadoresEmQuadra += window.reservasSorteados.length;
+
+                const { data: pData, error: errP } = await db.from('partidas').insert([{ 
+                    quantidade_jogadores: qJogadoresEmQuadra, 
+                    renda_convidados: 0,
+                    valor_por_convidado: valorConv,
+                    valor_por_mensalista: valorMens,
+                    custos_json: [],
+                    artilheiros_json: {},
+                    codigo_acesso: codigoAleatorio
+                }]).select();
+
+                if (errP) throw errP;
+                window.partidaAtualId = pData[0].id;
+                window.codigoAcessoAtual = codigoAleatorio;
+
+                // Inserir presencas iniciais
+                let presencas = [];
+                window.timesSorteadosObjs.forEach((t) => { 
+                    t.jogadores.forEach(j => presencas.push({ partida_id: window.partidaAtualId, jogador_id: j.id, pagou: j.pagou || false, equipe: t.nome })); 
+                });
+                if (window.reservasSorteados) {
+                    window.reservasSorteados.forEach(j => presencas.push({ partida_id: window.partidaAtualId, jogador_id: j.id, pagou: j.pagou || false, equipe: "Reserva" }));
+                }
+                if(presencas.length > 0) await db.from('presencas').insert(presencas);
+
+                exibirBoxCodigoSorteio(codigoAleatorio);
+            } catch(err) {
+                console.error("Erro ao gerar partida automática:", err.message);
+            }
+        }
+
+        function exibirBoxCodigoSorteio(codigo) {
+            let linkCompartilhamento = `https://pegaobaba.vercel.app?code=${codigo}`;
+            let textoWpp = encodeURIComponent(`🏆 *Acompanhe nosso Baba ao Vivo!*\n\nVeja a súmula, artilharia e classificação da rodada pelo link:\n\n${linkCompartilhamento}\n\n_(Código de acesso direto: ${codigo})_`);
+
+            let boxCod = document.getElementById('box-codigo-gerado-sorteio');
+            boxCod.innerHTML = `
+                <div style="font-size:12px; color:var(--text-muted); font-weight:normal; margin-bottom:5px;">CÓDIGO DESTE BABA PARA OS JOGADORES:</div>
+                <div style="color:var(--primary); font-size:28px; line-height:1; margin-bottom:15px;">${codigo}</div>
+                <a href="https://api.whatsapp.com/send?text=${textoWpp}" target="_blank" style="display:inline-block; background:var(--whatsapp); color:white; padding:12px 20px; border-radius:8px; text-decoration:none; font-size:14px; font-weight:bold; width:100%; box-sizing:border-box;">📱 Compartilhar no WhatsApp</a>
+            `;
+            boxCod.style.display = 'block';
         }
 
         function renderizarTimesNaTela() {
@@ -1383,7 +1444,7 @@
             document.getElementById('lista-gols-b').innerHTML = htmlB || '<span style="opacity:0.5;">Nenhum gol</span>';
         }
 
-        function adicionarJogoNaSumula() {
+        async function adicionarJogoNaSumula() {
             let idA = parseInt(document.getElementById('sumula_equipe_a').value); 
             let idB = parseInt(document.getElementById('sumula_equipe_b').value);
             if(idA === idB) return alert("As equipes devem ser diferentes!");
@@ -1395,6 +1456,18 @@
             let nomeB = window.timesSorteadosObjs.find(t=>t.id === idB).nome;
 
             window.jogosDaRodada.push({ equipe_a_id: idA, equipe_a_nome: nomeA, gols_a: gaList, equipe_b_id: idB, equipe_b_nome: nomeB, gols_b: gbList });
+            
+            // Sincronizar o jogo em tempo real na nuvem se houver partida criada
+            if(window.partidaAtualId) {
+                await db.from('jogos').insert([{
+                    partida_id: window.partidaAtualId,
+                    equipe_a: nomeA,
+                    gols_a: ga,
+                    equipe_b: nomeB,
+                    gols_b: gb
+                }]);
+            }
+
             window.filaEquipes = window.filaEquipes.filter(id => id !== idA && id !== idB);
 
             if (ga > gb) { window.filaEquipes.unshift(idA); window.filaEquipes.push(idB); } 
@@ -1655,7 +1728,7 @@
         }
 
         async function salvarPartidaComPlacares() {
-            if(window.partidaSalva) return alert("Esta rodada já foi salva no banco de dados!");
+            if(!window.partidaAtualId) return alert("Nenhuma partida ativa para encerrar.");
             
             const btn = document.getElementById('btn-encerrar-baba'); btn.innerText = "Sincronizando Servidor..."; btn.disabled = true;
             try {
@@ -1670,55 +1743,32 @@
                 
                 let valorConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
                 let valorMens = parseFloat(document.getElementById('valor-mensalista').value) || 0;
-                
-                let codigoAleatorio = Math.random().toString(36).substring(2, 8).toUpperCase();
-                
-                let qJogadoresEmQuadra = 0;
-                window.timesSorteadosObjs.forEach(t => qJogadoresEmQuadra += t.jogadores.length);
-                qJogadoresEmQuadra += (window.reservasSorteados ? window.reservasSorteados.length : 0);
 
-                const { data: pData, error: errP } = await db.from('partidas').insert([{ 
-                    quantidade_jogadores: qJogadoresEmQuadra, 
+                // Atualizar a partida existente com os dados finais
+                const { error: errP } = await db.from('partidas').update({ 
                     renda_convidados: convidadosPagantes,
                     valor_por_convidado: valorConv,
                     valor_por_mensalista: valorMens,
                     custos_json: window.custosDaRodada,
-                    artilheiros_json: artilheiros,
-                    codigo_acesso: codigoAleatorio
-                }]).select();
+                    artilheiros_json: artilheiros
+                }).eq('id', window.partidaAtualId);
+
                 if(errP) throw errP;
 
-                let presencas = [];
-                window.timesSorteadosObjs.forEach((t) => { 
-                    t.jogadores.forEach(j => presencas.push({ partida_id: pData[0].id, jogador_id: j.id, pagou: j.pagou || false, equipe: t.nome })); 
-                });
-                
-                if (window.reservasSorteados) {
-                    window.reservasSorteados.forEach(j => presencas.push({ partida_id: pData[0].id, jogador_id: j.id, pagou: j.pagou || false, equipe: "Reserva" }));
+                // Atualizar presencas pagas
+                for(let j of jogadores) {
+                    if(j.presente) {
+                        await db.from('presencas').update({ pagou: j.pagou || false }).eq('partida_id', window.partidaAtualId).eq('jogador_id', j.id);
+                    }
                 }
-                
-                if(presencas.length > 0) await db.from('presencas').insert(presencas);
-
-                let jogosInsert = window.jogosDaRodada.map(j => ({ partida_id: pData[0].id, equipe_a: j.equipe_a_nome, gols_a: j.gols_a.length, equipe_b: j.equipe_b_nome, gols_b: j.gols_b.length }));
-                if (jogosInsert.length > 0) await db.from('jogos').insert(jogosInsert);
 
                 await db.from('jogadores').delete().eq('tipo', 'Convidado').eq('user_id', currentUser.id);
 
-                window.partidaSalva = true; btn.innerText = "✅ Baba Salvo e Convidados Limpos!";
+                window.partidaSalva = true; btn.innerText = "✅ Baba Encerrado e Salvo com Sucesso!";
                 salvarEstadoCompleto();
-                
                 carregarElencoDaNuvem();
 
-                let linkCompartilhamento = `https://pegaobaba.vercel.app?code=${codigoAleatorio}`;
-                let textoWpp = encodeURIComponent(`🏆 *Acompanhe nosso Baba ao Vivo!*\n\nVeja a súmula, artilharia e classificação da rodada pelo link:\n\n${linkCompartilhamento}\n\n_(Código de acesso direto: ${codigoAleatorio})_`);
-
-                let boxCod = document.getElementById('box-codigo-gerado');
-                boxCod.innerHTML = `
-                    <div style="font-size:12px; color:var(--text-muted); font-weight:normal; margin-bottom:5px;">CÓDIGO DESTE BABA:</div>
-                    <div style="color:var(--primary); font-size:28px; line-height:1; margin-bottom:15px;">${codigoAleatorio}</div>
-                    <a href="https://api.whatsapp.com/send?text=${textoWpp}" target="_blank" style="display:inline-block; background:var(--whatsapp); color:white; padding:12px 20px; border-radius:8px; text-decoration:none; font-size:14px; font-weight:bold; width:100%; box-sizing:border-box;">📱 Compartilhar no WhatsApp</a>
-                `;
-                boxCod.style.display = 'block';
+                alert("Baba finalizado e dados salvos com sucesso!");
 
             } catch(err) { alert("Erro: " + err.message); btn.innerText = "Tentar Novamente"; btn.disabled = false; }
         }
