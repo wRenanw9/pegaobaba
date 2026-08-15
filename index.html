@@ -27,7 +27,7 @@
 
         /* NAVEGAÇÃO SUPERIOR */
         .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: white; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
-        .top-bar h1 { margin: 0; font-size: 18px; color: var(--primary); }
+        .top-bar h1 { margin: 0; font-size: 18px; color: var(--primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60%; }
         .top-actions { display: flex; align-items: center; gap: 10px; }
         .status-nuvem { font-size: 10px; font-weight: 600; color: white; background-color: var(--supabase); padding: 4px 8px; border-radius: 6px; }
         .btn-sair { background: transparent; color: var(--danger); border: 1px solid var(--danger); padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
@@ -165,6 +165,11 @@
         .public-mode .hidden-public { display: none !important; }
         .codigo-gerado-box { background: var(--light); padding: 15px; border: 2px dashed var(--primary); border-radius: 12px; text-align: center; margin-top: 15px; font-weight: 700; font-size: 20px; letter-spacing: 2px;}
 
+        /* ASSINATURA DO DESENVOLVEDOR */
+        .dev-signature { text-align: center; padding: 20px; font-size: 12px; color: var(--text-muted); }
+        .dev-signature a { color: var(--primary); text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; margin-top: 4px;}
+        .dev-signature a:hover { text-decoration: underline; }
+
         @media print {
             body { background: white; color: black; padding: 0; margin: 0; max-width: 100%; font-size: 11px; }
             .top-bar, .bottom-nav, .no-print, button, input, select, .card-secao-stats:not(#card-relatorio-mensal) { display: none !important; }
@@ -206,6 +211,14 @@
             <p style="font-size: 13px; color: var(--text-muted); text-align: center; margin-top:-10px;">Acompanhe a resenha ao vivo</p>
             <input type="text" id="codigo-baba-input" placeholder="Digite o Código do Baba" style="text-align: center; font-weight: bold; text-transform: uppercase;">
             <button onclick="acessarModoPublico()" style="background: var(--dark);">Ver Súmula e Painel</button>
+        </div>
+
+        <!-- Assinatura do Desenvolvedor -->
+        <div class="dev-signature">
+            Desenvolvido por <strong>Renan Barbosa</strong><br>
+            <a href="https://api.whatsapp.com/send?phone=5571996212118&text=Olá%20Renan!%20Gostaria%20de%20saber%20mais%20sobre%20o%20aplicativo%20de%20gestão%20esportiva." target="_blank">
+                📱 (71) 99621-2118
+            </a>
         </div>
     </div>
 
@@ -462,6 +475,16 @@
         <!-- ABA: CONTA -->
         <div id="view-conta" class="page-view organizer-only">
             <h2 style="text-align: left; font-size:20px; margin-bottom: 20px;">Minha Conta</h2>
+            
+            <div class="card">
+                <h3 style="font-size: 15px; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:10px;">🏷️ Nome do Baba</h3>
+                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">Personalize o nome do seu grupo no topo do aplicativo.</p>
+                <div style="display:flex; gap:10px;">
+                    <input type="text" id="nome-baba-input" placeholder="Ex: Baba dos Amigos" style="margin-bottom:0;">
+                    <button onclick="salvarNomeBaba()" style="width:auto; padding:0 20px;">Salvar</button>
+                </div>
+            </div>
+
             <div class="card">
                 <h3 style="font-size: 15px; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:10px;">👤 Dados de Acesso</h3>
                 <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 5px;">E-mail cadastrado:</p>
@@ -479,6 +502,14 @@
                 <h3 style="font-size: 15px; margin-top:0; color: var(--danger); border-bottom:1px solid var(--border); padding-bottom:10px;">Sessão</h3>
                 <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;">Deseja sair da sua conta neste dispositivo?</p>
                 <button onclick="fazerLogout()" style="background: var(--danger); padding: 12px; font-size: 14px;">Sair da Conta</button>
+            </div>
+
+            <!-- Assinatura do Desenvolvedor -->
+            <div class="dev-signature">
+                Desenvolvido por <strong>Renan Barbosa</strong><br>
+                <a href="https://api.whatsapp.com/send?phone=5571996212118&text=Olá%20Renan!%20Gostaria%20de%20saber%20mais%20sobre%20o%20aplicativo%20de%20gestão%20esportiva." target="_blank">
+                    📱 (71) 99621-2118
+                </a>
             </div>
         </div>
 
@@ -754,7 +785,7 @@
             
             if (error || !profile) {
                 const { data: newProfile, error: insertError } = await db.from('profiles').insert([{
-                    id: user.id, email: user.email, is_authorized: false, is_admin: false
+                    id: user.id, email: user.email, is_authorized: false, is_admin: false, nome_baba: ""
                 }]).select().single();
 
                 if (insertError || !newProfile) {
@@ -807,7 +838,12 @@
                 mudarAba('view-admin');
             } else {
                 document.body.classList.remove('is-master-admin');
-                document.getElementById('top-bar-title').innerText = "Pega o Baba";
+                
+                // Aplica o nome do Baba personalizado
+                let tituloApp = currentProfile.nome_baba ? currentProfile.nome_baba : "Pega o Baba";
+                document.getElementById('top-bar-title').innerText = tituloApp;
+                if(currentProfile.nome_baba) document.getElementById('nome-baba-input').value = currentProfile.nome_baba;
+
                 document.getElementById('organizer-email-label').innerText = currentUser.email;
 
                 carregarElencoDaNuvem();
@@ -819,6 +855,20 @@
             document.body.classList.remove('is-master-admin');
             document.getElementById('auth-container').style.display = 'block'; 
             document.getElementById('app-container').style.display = 'none'; 
+        }
+
+        async function salvarNomeBaba() {
+            if (!currentUser) return;
+            let novoNome = document.getElementById('nome-baba-input').value.trim();
+            
+            const { error } = await db.from('profiles').update({ nome_baba: novoNome }).eq('id', currentUser.id);
+            if (error) {
+                alert("Erro ao salvar nome: " + error.message);
+            } else {
+                alert("✅ Nome do Baba atualizado com sucesso!");
+                document.getElementById('top-bar-title').innerText = novoNome || "Pega o Baba";
+                if(currentProfile) currentProfile.nome_baba = novoNome;
+            }
         }
 
         async function alterarSenhaOrganizador() {
@@ -876,7 +926,7 @@
             window.isModoPublico = true;
             
             document.getElementById('status-db').innerText = "Buscando Baba...";
-            const { data: partida, error } = await db.from('partidas').select('*').eq('codigo_acesso', codigo).single();
+            const { data: partida, error } = await db.from('partidas').select('*, profiles(nome_baba)').eq('codigo_acesso', codigo).single();
             
             if(error || !partida) {
                 alert("Baba não encontrado ou código inválido.");
@@ -884,6 +934,12 @@
                 return;
             }
             
+            if (partida.profiles && partida.profiles.nome_baba) {
+                document.getElementById('top-bar-title').innerText = partida.profiles.nome_baba;
+            } else {
+                document.getElementById('top-bar-title').innerText = "Pega o Baba";
+            }
+
             window.partidaAtualId = partida.id;
             iniciarOuvinteRealtime(window.partidaAtualId);
             document.getElementById('status-db').innerText = `Visualizando: ${codigo}`;
