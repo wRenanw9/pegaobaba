@@ -931,7 +931,7 @@
             window.isModoPublico = true;
             
             document.getElementById('status-db').innerText = "Buscando Baba...";
-            const { data: partida, error } = await db.from('partidas').select('*, profiles(nome_baba)').eq('codigo_acesso', codigo).single();
+            const { data: partida, error } = await db.from('partidas').select('*').eq('codigo_acesso', codigo).single();
             
             if(error || !partida) {
                 alert("Baba não encontrado ou código inválido.");
@@ -939,8 +939,8 @@
                 return;
             }
             
-            if (partida.profiles && partida.profiles.nome_baba) {
-                document.getElementById('top-bar-title').innerText = partida.profiles.nome_baba;
+            if (partida.nome_baba) {
+                document.getElementById('top-bar-title').innerText = partida.nome_baba;
             } else {
                 document.getElementById('top-bar-title').innerText = "Pega o Baba";
             }
@@ -1298,7 +1298,8 @@
                     jogos_json: [],
                     times_json: window.timesSorteadosObjs,
                     fila_json: window.filaEquipes,
-                    codigo_acesso: codigoAleatorio
+                    codigo_acesso: codigoAleatorio,
+                    nome_baba: currentProfile ? currentProfile.nome_baba : ""
                 }]).select();
 
                 if (errP) throw errP;
