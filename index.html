@@ -71,6 +71,11 @@
             display: flex !important;
         }
         
+        /* Oculta abas operacionais quando o body estiver no modo Master Admin */
+        body.master-admin-mode .admin-hide {
+            display: none !important;
+        }
+        
         .nav-item.active { color: var(--primary); }
         
         .nav-icon { 
@@ -521,31 +526,32 @@
 
         <!-- NAVEGAÇÃO INFERIOR 100% CENTRALIZADA -->
         <nav class="bottom-nav">
-            <div class="nav-item hidden-public" onclick="mudarAba('view-elenco')" id="nav-elenco">
+            <!-- Abas operacionais com a classe admin-hide para sumir no modo Master Admin -->
+            <div class="nav-item hidden-public admin-hide" onclick="mudarAba('view-elenco')" id="nav-elenco">
                 <div class="nav-icon">
                     <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                 </div>
                 <span>Elenco</span>
             </div>
-            <div class="nav-item hidden-public" onclick="mudarAba('view-sorteio')" id="nav-sorteio">
+            <div class="nav-item hidden-public admin-hide" onclick="mudarAba('view-sorteio')" id="nav-sorteio">
                 <div class="nav-icon">
                     <svg viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><path d="M16 8h.01"/><path d="M8 8h.01"/><path d="M8 16h.01"/><path d="M16 16h.01"/><path d="M12 12h.01"/></svg>
                 </div>
                 <span>Sorteio</span>
             </div>
-            <div class="nav-item active" onclick="mudarAba('view-placares')" id="nav-placares">
+            <div class="nav-item active admin-hide" onclick="mudarAba('view-placares')" id="nav-placares">
                 <div class="nav-icon">
                     <svg viewBox="0 0 24 24"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></svg>
                 </div>
                 <span>Súmula</span>
             </div>
-            <div class="nav-item" onclick="mudarAba('view-estatisticas')" id="nav-estatisticas">
+            <div class="nav-item admin-hide" onclick="mudarAba('view-estatisticas')" id="nav-estatisticas">
                 <div class="nav-icon">
                     <svg viewBox="0 0 24 24"><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/><line x1="2" x2="22" y1="20" y2="20"/></svg>
                 </div>
                 <span>Painel</span>
             </div>
-            <div class="nav-item" onclick="mudarAba('view-financeiro')" id="nav-financeiro">
+            <div class="nav-item admin-hide" onclick="mudarAba('view-financeiro')" id="nav-financeiro">
                 <div class="nav-icon">
                     <svg viewBox="0 0 24 24"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2v-8h-2z"/></svg>
                 </div>
@@ -773,26 +779,17 @@
             document.getElementById('btn-sair-publico').style.display = 'none';
             
             if (currentProfile && currentProfile.is_admin) {
-                // MASTER ADMIN: Vê apenas o painel de administração e gerencia assinaturas
+                // MASTER ADMIN: Oculta abas operacionais ativando a classe no body
+                document.body.classList.add('master-admin-mode');
                 document.getElementById('nav-admin').style.display = 'flex';
                 document.getElementById('top-bar-title').innerText = "Painel Master";
-                
-                // Oculta as abas de operacionais de futebol para o Master Admin
-                ['nav-elenco', 'nav-sorteio', 'nav-placares', 'nav-estatisticas', 'nav-financeiro'].forEach(id => {
-                    let el = document.getElementById(id);
-                    if(el) el.style.display = 'none';
-                });
 
                 mudarAba('view-admin');
             } else {
-                // ORGANIZADOR COMUM: Vê todas as abas normais de gestão esportiva, exceto Admin
+                // ORGANIZADOR COMUM: Mostra abas operacionais
+                document.body.classList.remove('master-admin-mode');
                 document.getElementById('nav-admin').style.display = 'none';
                 document.getElementById('top-bar-title').innerText = "Pega o Baba";
-                
-                ['nav-elenco', 'nav-sorteio', 'nav-placares', 'nav-estatisticas', 'nav-financeiro'].forEach(id => {
-                    let el = document.getElementById(id);
-                    if(el) el.style.display = 'flex';
-                });
 
                 carregarElencoDaNuvem();
                 mudarAba('view-sorteio');
@@ -800,6 +797,7 @@
         }
 
         function mostrarLogin() { 
+            document.body.classList.remove('master-admin-mode');
             document.getElementById('auth-container').style.display = 'block'; 
             document.getElementById('app-container').style.display = 'none'; 
         }
