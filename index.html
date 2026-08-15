@@ -523,6 +523,7 @@
         let jogadorEdicaoId = null; 
         let currentProfile = null;
         let currentUser = null;
+        let supabaseChannel = null;
 
         const coresTimes = ["Vermelho", "Azul", "Amarelo", "Verde", "Branco", "Preto", "Roxo", "Laranja"];
         const emojisTimes = ["🔴", "🔵", "🟡", "🟢", "⚪", "⚫", "🟣", "🟠"];
@@ -556,6 +557,44 @@
                 verificarSessao();
             }
         };
+
+        function iniciarOuvinteRealtime(partidaId) {
+            if (!partidaId) return;
+            if (supabaseChannel) {
+                db.removeChannel(supabaseChannel);
+            }
+            
+            supabaseChannel = db.channel('public:partidas:' + partidaId)
+                .on('postgres_changes', {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'partidas',
+                    filter: `id=eq.${partidaId}`
+                }, payload => {
+                    const novaPartida = payload.new;
+                    if (novaPartida) {
+                        if (novaPartida.jogos_json) window.jogosDaRodada = novaPartida.jogos_json;
+                        if (novaPartida.times_json) {
+                            window.timesSorteadosObjs = novaPartida.times_json;
+                            renderizarTimesNaTela();
+                        }
+                        if (novaPartida.artilheiros_json) window.artilheirosPub = novaPartida.artilheiros_json;
+                        if (novaPartida.fila_json) window.filaEquipes = novaPartida.fila_json;
+                        if (novaPartida.custos_json) {
+                            window.custosDaRodada = novaPartida.custos_json;
+                            atualizarFinanceiro();
+                        }
+
+                        if (document.getElementById('view-placares').classList.contains('active')) {
+                            renderizarSumula();
+                        }
+                        if (document.getElementById('view-estatisticas').classList.contains('active')) {
+                            renderizarPainelDoDia();
+                        }
+                    }
+                })
+                .subscribe();
+        }
 
         function salvarEstadoCompleto() {
             if(window.isModoPublico) return; 
@@ -594,7 +633,10 @@
 
                 if(window.timesSorteadosObjs.length > 0) {
                     renderizarTimesNaTela();
-                    if(window.codigoAcessoAtual) exibirBoxCodigoSorteio(window.codigoAcessoAtual);
+                    if(window.codigoAcessoAtual) {
+                        exibirBoxCodigoSorteio(window.codigoAcessoAtual);
+                        iniciarOuvinteRealtime(window.partidaAtualId);
+                    }
                 }
             }
         }
@@ -725,6 +767,7 @@
         async function fazerLogout() { 
             await db.auth.signOut(); 
             currentProfile = null; currentUser = null;
+            if (supabaseChannel) db.removeChannel(supabaseChannel);
             mostrarLogin(); 
         }
         
@@ -819,6 +862,7 @@
             }
             
             window.partidaAtualId = partida.id;
+            iniciarOuvinteRealtime(window.partidaAtualId);
             document.getElementById('status-db').innerText = `Visualizando: ${codigo}`;
             window.custosDaRodada = partida.custos_json || [];
             if(partida.valor_por_convidado) document.getElementById('valor-convidado').value = partida.valor_por_convidado;
@@ -851,6 +895,10 @@
             } else {
                 window.jogosDaRodada = [];
             }
+
+            if (partida.fila_json && partida.fila_json.length > 0) {
+                window.filaEquipes = partida.fila_json;
+            }
             
             window.partidaSalva = true;
             atualizarListaJogosDaRodada();
@@ -862,6 +910,7 @@
         }
 
         function sairModoPublico() {
+            if (supabaseChannel) db.removeChannel(supabaseChannel);
             window.history.pushState({}, '', window.location.pathname);
             window.location.reload();
         }
@@ -1105,7 +1154,7 @@
             });
 
             window.reservasSorteados = reservas; window.partidaSalva = false;
-            window.jogosDaRodada = []; window.filaEquipes = []; window.custosDaRodada = [];
+            window.jogosDaRodada = []; window.filaEquipes = window.timesSorteadosObjs.map(t => t.id); window.custosDaRodada = [];
             window.golsTempA = []; window.golsTempB = [];
             
             renderizarTimesNaTela();
@@ -1134,12 +1183,14 @@
                     artilheiros_json: {},
                     jogos_json: [],
                     times_json: window.timesSorteadosObjs,
+                    fila_json: window.filaEquipes,
                     codigo_acesso: codigoAleatorio
                 }]).select();
 
                 if (errP) throw errP;
                 window.partidaAtualId = pData[0].id;
                 window.codigoAcessoAtual = codigoAleatorio;
+                iniciarOuvinteRealtime(window.partidaAtualId);
 
                 let presencas = [];
                 window.timesSorteadosObjs.forEach((t) => { 
@@ -1371,13 +1422,6 @@
                 jogo.gols_b.forEach(nome => { if(nome !== 'Gol Contra') artilheiros[nome] = (artilheiros[nome] || 0) + 1; });
             });
 
-            if(window.partidaAtualId) {
-                await db.from('partidas').update({
-                    jogos_json: window.jogosDaRodada,
-                    artilheiros_json: artilheiros
-                }).eq('id', window.partidaAtualId);
-            }
-
             window.filaEquipes = window.filaEquipes.filter(id => id !== idA && id !== idB);
 
             if (ga > gb) { window.filaEquipes.unshift(idA); window.filaEquipes.push(idB); } 
@@ -1387,6 +1431,14 @@
                 window.filaEquipes.push(pFim, sFim);
                 let nomePfim = window.timesSorteadosObjs.find(t=>t.id === pFim).nome; let nomeSfim = window.timesSorteadosObjs.find(t=>t.id === sFim).nome;
                 alert(`⚖️ EMPATE! As duas equipes saem da quadra.\nSorteio da fila: ${nomePfim} volta antes de ${nomeSfim}.`);
+            }
+
+            if(window.partidaAtualId) {
+                await db.from('partidas').update({
+                    jogos_json: window.jogosDaRodada,
+                    artilheiros_json: artilheiros,
+                    fila_json: window.filaEquipes
+                }).eq('id', window.partidaAtualId);
             }
 
             limparGolsTemp('A'); limparGolsTemp('B'); atualizarSelectsEquipes(); atualizarListaJogosDaRodada(); salvarEstadoCompleto();
@@ -1568,7 +1620,6 @@
             let valConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
             let convPagantesHoje = jogadores.filter(j => j.tipo === 'Convidado' && j.presente && j.pagou).length;
             let recHoje = (convPagantesHoje * valConv); 
-            // Soma apenas os custos que NÃO são mensais para o caixa do dia
             let custHojeDiario = window.custosDaRodada.filter(c => c.tipo !== 'mensal').reduce((acc, c) => acc + c.valor, 0);
             
             document.getElementById('fin-receita-hoje').innerText = `R$ ${recHoje.toFixed(2)}`;
@@ -1590,14 +1641,12 @@
                 partidas.forEach(p => {
                     let dataP = p.data_sorteio.substring(0, 7); 
                     let recC = (p.renda_convidados || 0) * (p.valor_por_convidado || 0);
-                    // No relatório mensal/anual entram TODOS os custos (diários e mensais)
                     let cus = (p.custos_json || []).reduce((acc, c) => acc + c.valor, 0);
                     recConvAno += recC; cusAno += cus;
                     if(dataP === mesKey) { recConvMes += recC; cusMes += cus; }
                 });
             }
             
-            // Adiciona os custos da rodada atual em aberto
             let custHojeTotal = window.custosDaRodada.reduce((acc, c) => acc + c.valor, 0);
             cusMes += custHojeTotal; cusAno += custHojeTotal;
 
@@ -1681,7 +1730,8 @@
                     custos_json: window.custosDaRodada,
                     artilheiros_json: artilheiros,
                     jogos_json: window.jogosDaRodada,
-                    times_json: window.timesSorteadosObjs
+                    times_json: window.timesSorteadosObjs,
+                    fila_json: window.filaEquipes
                 }).eq('id', window.partidaAtualId);
 
                 if(errP) throw errP;
