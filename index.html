@@ -265,7 +265,6 @@
             <!-- RESULTADO DO SORTEIO -->
             <div id="resultado" class="team-container"></div>
             
-            <!-- BOX PARA O CÓDIGO -->
             <div id="box-codigo-gerado-sorteio" class="codigo-gerado-box hidden-public" style="display:none; margin-top: 20px;"></div>
 
             <div class="hidden-public" style="display: flex; gap: 10px; margin-top: 20px;">
@@ -396,15 +395,19 @@
                 <div style="padding: 15px;">
                     <div class="dash-grid">
                         <div class="dash-card"><div class="dash-titulo">Diárias Hoje</div><div class="dash-valor valor-positivo" id="fin-receita-hoje">R$ 0</div></div>
-                        <div class="dash-card"><div class="dash-titulo">Custos Hoje</div><div class="dash-valor valor-negativo" id="fin-custos-hoje">R$ 0</div></div>
+                        <div class="dash-card"><div class="dash-titulo">Custos Diários (Hoje)</div><div class="dash-valor valor-negativo" id="fin-custos-hoje">R$ 0</div></div>
                     </div>
                     <div class="card hidden-public" style="margin-bottom:0;">
-                        <h3 style="font-size: 13px; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:10px;">Lançar Despesa da Rodada</h3>
-                        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                            <input type="text" id="desc-custo" placeholder="Ex: Aluguel, Bola" style="flex:2; margin:0; padding:10px; font-size:12px;">
+                        <h3 style="font-size: 13px; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:10px;">Lançar Despesa</h3>
+                        <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                            <input type="text" id="desc-custo" placeholder="Ex: Juiz, Água" style="flex:2; margin:0; padding:10px; font-size:12px;">
                             <input type="number" id="valor-custo" placeholder="R$" style="flex:1; margin:0; padding:10px; font-size:12px;">
+                            <select id="tipo-custo" style="flex:1.2; margin:0; padding:10px; font-size:12px;">
+                                <option value="diario">Diário</option>
+                                <option value="mensal">Mensal (Fixo)</option>
+                            </select>
                         </div>
-                        <button onclick="adicionarCusto()" style="background: var(--dark); padding: 10px; font-size:13px;">Lançar Custo</button>
+                        <button onclick="adicionarCusto()" style="background: var(--dark); padding: 10px; font-size:13px;">Lançar Despesa</button>
                     </div>
                     <div id="lista-custos" style="margin-top:15px;"></div>
                 </div>
@@ -415,7 +418,7 @@
             <div class="card-secao-stats hidden-public">
                 <div class="header-secao-stats" style="background: #e0e7ff; color: var(--primary);"><span>📅 Relatório deste Mês</span></div>
                 <div style="padding: 15px;">
-                    <p style="font-size:11px; color:var(--text-muted); margin-top:0; text-align:center;">Inclui TODAS as Mensalidades pagas no mês + Diárias.</p>
+                    <p style="font-size:11px; color:var(--text-muted); margin-top:0; text-align:center;">Inclui Mensalidades, Diárias e TODOS os custos (Diários e Mensais) do mês.</p>
                     <div class="dash-grid" style="margin-bottom:0;">
                         <div class="dash-card"><div class="dash-titulo">Receita Mensal</div><div class="dash-valor valor-positivo" id="fin-rec-mes">R$ 0</div></div>
                         <div class="dash-card"><div class="dash-titulo">Custos Mês</div><div class="dash-valor valor-negativo" id="fin-cus-mes">R$ 0</div></div>
@@ -837,9 +840,9 @@
                 let vConv = partida.valor_por_convidado || 0;
                 let qtdConvidadosPagos = presencas.filter(p => p.pagou && p.jogadores && p.jogadores.tipo === 'Convidado').length;
                 receitaPub += (qtdConvidadosPagos * vConv);
-                let totCustosPub = window.custosDaRodada.reduce((acc, c) => acc + c.valor, 0);
+                let totCustosPubDiarios = window.custosDaRodada.filter(c => c.tipo !== 'mensal').reduce((acc, c) => acc + c.valor, 0);
                 document.getElementById('fin-receita-hoje').innerText = `R$ ${receitaPub.toFixed(2)}`;
-                document.getElementById('fin-custos-hoje').innerText = `R$ ${totCustosPub.toFixed(2)}`;
+                document.getElementById('fin-custos-hoje').innerText = `R$ ${totCustosPubDiarios.toFixed(2)}`;
             }
             renderizarListaCustos();
             
@@ -1565,10 +1568,11 @@
             let valConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
             let convPagantesHoje = jogadores.filter(j => j.tipo === 'Convidado' && j.presente && j.pagou).length;
             let recHoje = (convPagantesHoje * valConv); 
-            let custHoje = window.custosDaRodada.reduce((acc, c) => acc + c.valor, 0);
+            // Soma apenas os custos que NÃO são mensais para o caixa do dia
+            let custHojeDiario = window.custosDaRodada.filter(c => c.tipo !== 'mensal').reduce((acc, c) => acc + c.valor, 0);
             
             document.getElementById('fin-receita-hoje').innerText = `R$ ${recHoje.toFixed(2)}`;
-            document.getElementById('fin-custos-hoje').innerText = `R$ ${custHoje.toFixed(2)}`;
+            document.getElementById('fin-custos-hoje').innerText = `R$ ${custHojeDiario.toFixed(2)}`;
             renderizarListaCustos();
             salvarEstadoCompleto();
         }
@@ -1586,14 +1590,16 @@
                 partidas.forEach(p => {
                     let dataP = p.data_sorteio.substring(0, 7); 
                     let recC = (p.renda_convidados || 0) * (p.valor_por_convidado || 0);
+                    // No relatório mensal/anual entram TODOS os custos (diários e mensais)
                     let cus = (p.custos_json || []).reduce((acc, c) => acc + c.valor, 0);
                     recConvAno += recC; cusAno += cus;
                     if(dataP === mesKey) { recConvMes += recC; cusMes += cus; }
                 });
             }
             
-            let custHoje = window.custosDaRodada.reduce((acc, c) => acc + c.valor, 0);
-            cusMes += custHoje; cusAno += custHoje;
+            // Adiciona os custos da rodada atual em aberto
+            let custHojeTotal = window.custosDaRodada.reduce((acc, c) => acc + c.valor, 0);
+            cusMes += custHojeTotal; cusAno += custHojeTotal;
 
             let convPagantesHoje = jogadores.filter(j => j.tipo === 'Convidado' && j.presente && j.pagou).length;
             let recHoje = (convPagantesHoje * valConv);
@@ -1624,10 +1630,13 @@
         }
         
         function adicionarCusto() {
-            let desc = document.getElementById('desc-custo').value; let val = parseFloat(document.getElementById('valor-custo').value) || 0;
+            let desc = document.getElementById('desc-custo').value; 
+            let val = parseFloat(document.getElementById('valor-custo').value) || 0;
+            let tipo = document.getElementById('tipo-custo').value;
             if(!desc || val <= 0) return alert("Preencha descrição e valor válido.");
-            window.custosDaRodada.push({ desc: desc, valor: val });
-            document.getElementById('desc-custo').value = ''; document.getElementById('valor-custo').value = '';
+            window.custosDaRodada.push({ desc: desc, valor: val, tipo: tipo });
+            document.getElementById('desc-custo').value = ''; 
+            document.getElementById('valor-custo').value = '';
             atualizarFinanceiro();
             if(!window.isModoPublico && document.getElementById('view-financeiro').classList.contains('active')) calcularBalancoMesAno();
         }
@@ -1641,8 +1650,9 @@
             let lista = document.getElementById('lista-custos'); lista.innerHTML = '';
             if(window.custosDaRodada.length === 0) { lista.innerHTML = '<p style="color:var(--text-muted); font-size:13px; text-align:center; padding:15px;">Nenhuma despesa lançada nesta rodada.</p>'; return; }
             window.custosDaRodada.forEach((c, i) => {
-                lista.innerHTML += `<div style="display:flex; justify-content:space-between; padding:10px; background:var(--light); border:1px solid var(--border); border-radius:6px; margin-bottom:5px; font-size:14px;">
-                    <span>${c.desc}</span>
+                let tipoBadge = c.tipo === 'mensal' ? '<span style="font-size:10px; background:#fef3c7; color:#d97706; padding:2px 4px; border-radius:4px; margin-left:5px;">Mensal</span>' : '<span style="font-size:10px; background:#e0e7ff; color:#4f46e5; padding:2px 4px; border-radius:4px; margin-left:5px;">Diário</span>';
+                lista.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; padding:10px; background:var(--light); border:1px solid var(--border); border-radius:6px; margin-bottom:5px; font-size:14px;">
+                    <span>${c.desc} ${tipoBadge}</span>
                     <span><strong class="valor-negativo">R$ ${c.valor.toFixed(2)}</strong> <button class="btn-excluir-mini" style="margin-left:10px;" onclick="removerCusto(${i})">X</button></span>
                 </div>`;
             });
