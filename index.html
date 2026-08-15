@@ -150,17 +150,21 @@
         .valor-negativo { color: var(--danger); }
         .valor-neutro { color: var(--primary); }
 
+        /* TABELA DE RELATÓRIO MENSAL */
+        .relatorio-tabela { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 5px; }
+        .relatorio-tabela th { background: var(--light); text-align: left; padding: 8px; border-bottom: 2px solid var(--border); color: var(--dark); font-weight: 700; }
+        .relatorio-tabela td { padding: 8px; border-bottom: 1px solid var(--border); }
+
         /* MODO PÚBLICO E IMPRESSÃO / PDF */
         .hidden-public { display: block; }
         .public-mode .hidden-public { display: none !important; }
         .codigo-gerado-box { background: var(--light); padding: 15px; border: 2px dashed var(--primary); border-radius: 12px; text-align: center; margin-top: 15px; font-weight: 700; font-size: 20px; letter-spacing: 2px;}
 
         @media print {
-            body { background: white; color: black; padding: 0; max-width: 100%; }
-            .top-bar, .bottom-nav, .no-print, button, input, select { display: none !important; }
-            .card-secao-stats { border: 1px solid #000; box-shadow: none; margin-bottom: 15px; }
-            .header-secao-stats { background: #eee !important; color: black !important; }
-            #view-financeiro { display: block !important; padding: 0; }
+            body { background: white; color: black; padding: 10px; max-width: 100%; }
+            .top-bar, .bottom-nav, .no-print, button, input, select, .card-secao-stats:not(#card-relatorio-mensal) { display: none !important; }
+            #card-relatorio-mensal { display: block !important; border: none !important; box-shadow: none !important; margin: 0 !important; padding: 0 !important; }
+            #view-financeiro { display: block !important; padding: 0 !important; }
         }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
@@ -423,37 +427,20 @@
 
             <div id="fin-loading" class="hidden-public" style="text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 20px; display: none;">Calculando balanço na nuvem...</div>
 
-            <div class="card-secao-stats hidden-public">
-                <div class="header-secao-stats" style="background: #e0e7ff; color: var(--primary);"><span>📅 Relatório deste Mês</span></div>
-                <div style="padding: 15px;">
-                    <p style="font-size:11px; color:var(--text-muted); margin-top:0; text-align:center;">Inclui Mensalidades, Diárias e TODOS os custos (Diários e Mensais) do mês.</p>
-                    <div class="dash-grid" style="margin-bottom:0;">
-                        <div class="dash-card"><div class="dash-titulo">Receita Mensal</div><div class="dash-valor valor-positivo" id="fin-rec-mes">R$ 0</div></div>
-                        <div class="dash-card"><div class="dash-titulo">Custos Mês</div><div class="dash-valor valor-negativo" id="fin-cus-mes">R$ 0</div></div>
-                    </div>
-                    <div style="text-align:center; padding-top:15px; border-top:1px dashed var(--border); margin-top:15px;">
-                        <div class="dash-titulo">Saldo Mensal</div><div class="dash-valor valor-neutro" id="fin-sal-mes">R$ 0</div>
-                    </div>
+            <!-- RELATÓRIO MENSAL DETALHADO -->
+            <div class="card-secao-stats" id="card-relatorio-mensal">
+                <div class="header-secao-stats" style="background: var(--primary); color: white;">
+                    <span>📄 Relatório Mensal Detalhado (<span id="label-mes-relatorio">Atual</span>)</span>
+                </div>
+                <div style="padding: 15px;" id="conteudo-relatorio-mensal">
+                    <p style="text-align: center; color: var(--text-muted); font-size: 13px;">Carregando resumo do mês...</p>
                 </div>
             </div>
 
-            <div class="card-secao-stats hidden-public">
-                <div class="header-secao-stats" style="background: #fef3c7; color: var(--warning);"><span>🌎 Relatório deste Ano</span></div>
-                <div style="padding: 15px;">
-                    <div class="dash-grid" style="margin-bottom:0;">
-                        <div class="dash-card"><div class="dash-titulo">Receita Anual</div><div class="dash-valor valor-positivo" id="fin-rec-ano">R$ 0</div></div>
-                        <div class="dash-card"><div class="dash-titulo">Custos Ano</div><div class="dash-valor valor-negativo" id="fin-cus-ano">R$ 0</div></div>
-                    </div>
-                    <div style="text-align:center; padding-top:15px; border-top:1px dashed var(--border); margin-top:15px;">
-                        <div class="dash-titulo">Saldo Anual</div><div class="dash-valor valor-neutro" id="fin-sal-ano">R$ 0</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- BOTÕES DE EXPORTAÇÃO E WHATSAPP -->
+            <!-- BOTÕES DE EXPORTAÇÃO E WHATSAPP DO RELATÓRIO -->
             <div style="display: flex; gap: 10px; margin-top: 20px;" class="no-print">
                 <button onclick="window.print()" style="background: var(--dark); flex: 1; font-size: 14px; padding: 14px;">📄 Exportar PDF / Imprimir</button>
-                <button onclick="compartilharCaixaWhatsApp()" class="btn-whatsapp" style="flex: 1; font-size: 14px; padding: 14px; margin: 0;">📱 Enviar no WhatsApp</button>
+                <button onclick="compartilharRelatorioMensalWhatsApp()" class="btn-whatsapp" style="flex: 1; font-size: 14px; padding: 14px; margin: 0;">📱 Enviar no WhatsApp</button>
             </div>
         </div>
 
@@ -608,6 +595,9 @@
                         if (document.getElementById('view-estatisticas').classList.contains('active')) {
                             renderizarPainelDoDia();
                         }
+                        if (document.getElementById('view-financeiro').classList.contains('active')) {
+                            gerarRelatorioMensal();
+                        }
                     }
                 })
                 .subscribe();
@@ -695,6 +685,7 @@
             if(viewId === 'view-placares') renderizarSumula();
             if(viewId === 'view-financeiro') {
                 atualizarFinanceiro();
+                gerarRelatorioMensal();
                 if(!window.isModoPublico) calcularBalancoMesAno();
             }
             if(viewId === 'view-admin') carregarPainelAdmin();
@@ -951,6 +942,7 @@
             document.getElementById('status-db').innerText = "Online"; document.getElementById('status-db').style.backgroundColor = "var(--supabase)";
             atualizarListas();
             atualizarFinanceiro(); 
+            gerarRelatorioMensal();
         }
 
         function prepararEdicao(indexArray) {
@@ -999,6 +991,7 @@
             if (!j.pagamentos_json) j.pagamentos_json = {};
             if(j.pagamentos_json[mesKey] === true) delete j.pagamentos_json[mesKey]; else j.pagamentos_json[mesKey] = true;
             atualizarListas(); atualizarFinanceiro();
+            gerarRelatorioMensal();
             if (document.getElementById('view-financeiro').classList.contains('active')) calcularBalancoMesAno();
             await db.from('jogadores').update({ pagamentos_json: j.pagamentos_json }).eq('id', idNuvem);
         }
@@ -1247,25 +1240,109 @@
             return encodeURIComponent(texto);
         }
 
-        function compartilharCaixaWhatsApp() {
-            let valConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
-            let convPagantesHoje = jogadores.filter(j => j.tipo === 'Convidado' && j.presente && j.pagou).length;
-            let recHoje = (convPagantesHoje * valConv);
-            let custHojeDiario = window.custosDaRodada.filter(c => c.tipo !== 'mensal').reduce((acc, c) => acc + c.valor, 0);
-            let saldoHoje = recHoje - custHojeDiario;
+        async function gerarRelatorioMensal() {
+            let hoje = new Date();
+            let mesKey = hoje.toISOString().substring(0, 7);
+            let nomeMes = hoje.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+            document.getElementById('label-mes-relatorio').innerText = nomeMes;
 
-            let texto = `📊 *Prestação de Contas - Pega o Baba* ⚽\n\n`;
-            texto += `📅 Data: ${window.dataPartidaAtual || new Date().toLocaleDateString('pt-BR')}\n\n`;
-            texto += `💵 *Receita (Diárias):* R$ ${recHoje.toFixed(2)}\n`;
-            texto += `📉 *Custos do Dia:* R$ ${custHojeDiario.toFixed(2)}\n`;
-            texto += `💰 *Saldo do Dia:* R$ ${saldoHoje.toFixed(2)}\n\n`;
+            let valMens = parseFloat(document.getElementById('valor-mensalista').value) || 70;
+            const { data: partidas } = await db.from('partidas').select('*').like('data_sorteio', `%${hoje.getFullYear()}%`);
+            
+            let partidasDoMes = [];
+            if(partidas) {
+                partidasDoMes = partidas.filter(p => p.data_sorteio && p.data_sorteio.substring(0, 7) === mesKey);
+            }
 
-            if (window.custosDaRodada.length > 0) {
-                texto += `*Detalhamento de Custos:*\n`;
-                window.custosDaRodada.forEach(c => {
-                    texto += `• ${c.desc}: R$ ${c.valor.toFixed(2)} (${c.tipo})\n`;
+            let html = `<table class="relatorio-tabela">`;
+            
+            // 1. Mensalistas Pagantes
+            html += `<tr><th colspan="2">👥 Mensalidades Pagas no Mês</th></tr>`;
+            let mensalistas = jogadores.filter(j => j.tipo === 'Mensalista');
+            let totalMensalidades = 0;
+            if(mensalistas.length === 0) {
+                html += `<tr><td colspan="2" style="color:var(--text-muted);">Nenhum mensalista cadastrado.</td></tr>`;
+            } else {
+                mensalistas.forEach(j => {
+                    let pago = j.pagamentos_json && j.pagamentos_json[mesKey] === true;
+                    if(pago) totalMensalidades += valMens;
+                    html += `<tr><td>${j.nome}</td><td style="text-align:right;">${pago ? '✅ Pago (R$ ' + valMens.toFixed(2) + ')' : '❌ Pendente'}</td></tr>`;
                 });
             }
+            html += `<tr><td><strong>Subtotal Mensalidades:</strong></td><td style="text-align:right; font-weight:bold; color:var(--supabase);">R$ ${totalMensalidades.toFixed(2)}</td></tr>`;
+
+            // 2. Convidados por Rodada
+            html += `<tr><th colspan="2" style="padding-top:12px;">🎟️ Arrecadação de Convidados (Por Rodada)</th></tr>`;
+            let totalConvidados = 0;
+            if(partidasDoMes.length > 0) {
+                partidasDoMes.forEach((p, idx) => {
+                    let vConv = p.valor_por_convidado || 25;
+                    let qtdConv = p.renda_convidados || 0;
+                    let subConv = qtdConv * vConv;
+                    totalConvidados += subConv;
+                    let dataF = p.data_sorteio ? new Date(p.data_sorteio).toLocaleDateString('pt-BR') : `Rodada ${idx+1}`;
+                    html += `<tr><td>Rodada (${dataF}): ${qtdConv} convidados</td><td style="text-align:right;">R$ ${subConv.toFixed(2)}</td></tr>`;
+                });
+            } else {
+                html += `<tr><td colspan="2" style="color:var(--text-muted);">Nenhuma rodada finalizada registrada neste mês.</td></tr>`;
+            }
+            html += `<tr><td><strong>Subtotal Convidados:</strong></td><td style="text-align:right; font-weight:bold; color:var(--supabase);">R$ ${totalConvidados.toFixed(2)}</td></tr>`;
+
+            // 3. Detalhamento de Custos
+            html += `<tr><th colspan="2" style="padding-top:12px;">📉 Detalhamento de Despesas (Custos)</th></tr>`;
+            let totalCustos = 0;
+            if(partidasDoMes.length > 0) {
+                partidasDoMes.forEach(p => {
+                    (p.custos_json || []).forEach(c => {
+                        totalCustos += c.valor;
+                        let tLabel = c.tipo === 'mensal' ? 'Fixo Mensal' : 'Diário';
+                        html += `<tr><td>${c.desc} <span style="font-size:10px; color:var(--text-muted);">(${tLabel})</span></td><td style="text-align:right;">R$ ${c.valor.toFixed(2)}</td></tr>`;
+                    });
+                });
+            }
+            if(window.custosDaRodada && window.custosDaRodada.length > 0) {
+                window.custosDaRodada.forEach(c => {
+                    totalCustos += c.valor;
+                    let tLabel = c.tipo === 'mensal' ? 'Fixo Mensal' : 'Diário';
+                    html += `<tr><td>${c.desc} <span style="font-size:10px; color:var(--text-muted);">(${tLabel} - Rodada Atual)</span></td><td style="text-align:right;">R$ ${c.valor.toFixed(2)}</td></tr>`;
+                });
+            }
+            if(totalCustos === 0 && (!partidasDoMes || partidasDoMes.length === 0)) {
+                html += `<tr><td colspan="2" style="color:var(--text-muted);">Nenhuma despesa registrada no mês.</td></tr>`;
+            }
+            html += `<tr><td><strong>Total de Despesas:</strong></td><td style="text-align:right; font-weight:bold; color:var(--danger);">R$ ${totalCustos.toFixed(2)}</td></tr>`;
+
+            // Resumo Final
+            let receitaTotal = totalMensalidades + totalConvidados;
+            let saldoMensal = receitaTotal - totalCustos;
+
+            html += `<tr><th colspan="2" style="padding-top:15px; background:var(--dark); color:white; text-align:center;">💰 BALANÇO FINANCEIRO DO MÊS</th></tr>`;
+            html += `<tr><td>Receita Total (Mensalidades + Convidados):</td><td style="text-align:right; font-weight:bold; color:var(--supabase);">R$ ${receitaTotal.toFixed(2)}</td></tr>`;
+            html += `<tr><td>Despesas Totais:</td><td style="text-align:right; font-weight:bold; color:var(--danger);">R$ ${totalCustos.toFixed(2)}</td></tr>`;
+            html += `<tr><td><strong style="font-size:13px;">SALDO LÍQUIDO DO MÊS:</strong></td><td style="text-align:right; font-weight:bold; font-size:14px; color:var(--primary);">R$ ${saldoMensal.toFixed(2)}</td></tr>`;
+
+            html += `</table>`;
+            document.getElementById('conteudo-relatorio-mensal').innerHTML = html;
+        }
+
+        function compartilharRelatorioMensalWhatsApp() {
+            let nomeMes = document.getElementById('label-mes-relatorio').innerText;
+            let valMens = parseFloat(document.getElementById('valor-mensalista').value) || 70;
+            let mesKey = new Date().toISOString().substring(0, 7);
+
+            let texto = `📊 *Prestação de Contas Mensal (${nomeMes})* ⚽\n\n`;
+            
+            texto += `👥 *Mensalistas Pagantes:*\n`;
+            jogadores.filter(j => j.tipo === 'Mensalista').forEach(j => {
+                let pago = j.pagamentos_json && j.pagamentos_json[mesKey] === true;
+                texto += `• ${j.nome}: ${pago ? 'Pago ✅' : 'Pendente ❌'}\n`;
+            });
+
+            texto += `\n💰 *Resumo Geral:*\n`;
+            texto += `• Receita Total: ${document.getElementById('fin-rec-mes').innerText}\n`;
+            texto += `• Despesas Totais: ${document.getElementById('fin-cus-mes').innerText}\n`;
+            texto += `• *Saldo do Mês: ${document.getElementById('fin-sal-mes').innerText}*\n\n`;
+            texto += `_Relatório gerado via Pega o Baba_`;
 
             window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`, '_blank');
         }
@@ -1774,11 +1851,13 @@
             document.getElementById('desc-custo').value = ''; 
             document.getElementById('valor-custo').value = '';
             atualizarFinanceiro();
+            gerarRelatorioMensal();
             if(!window.isModoPublico && document.getElementById('view-financeiro').classList.contains('active')) calcularBalancoMesAno();
         }
         
         function removerCusto(index) { 
             window.custosDaRodada.splice(index, 1); atualizarFinanceiro(); 
+            gerarRelatorioMensal();
             if(!window.isModoPublico && document.getElementById('view-financeiro').classList.contains('active')) calcularBalancoMesAno();
         }
         
@@ -1836,6 +1915,7 @@
                 btn.innerText = "✅ Baba Encerrado e Salvo com Sucesso!";
                 salvarEstadoCompleto();
                 carregarElencoDaNuvem();
+                gerarRelatorioMensal();
 
                 alert("Baba finalizado e dados salvos com sucesso!");
 
