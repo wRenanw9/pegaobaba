@@ -202,7 +202,13 @@
                 <input type="text" id="nome" placeholder="Nome Completo ou Apelido" autocomplete="off">
                 <div class="linha-selects">
                     <select id="tipo"><option value="Mensalista">Mensalista</option><option value="Convidado">Convidado</option></select>
-                    <select id="posicao"><option value="Atacante">Atacante</option><option value="Meio c." selected>Meio-Campo</option><option value="Lateral">Lateral</option><option value="Zagueiro">Zagueiro</option><option value="Goleiro">Goleiro</option></select>
+                    <select id="posicao">
+                        <option value="Atacante">Atacante</option>
+                        <option value="Meia" selected>Meia</option>
+                        <option value="Lateral">Lateral</option>
+                        <option value="Zagueiro">Zagueiro</option>
+                        <option value="Goleiro">Goleiro</option>
+                    </select>
                     <select id="nivel"><option value="5">Craque (5)</option><option value="4">Bom (4)</option><option value="3" selected>Médio (3)</option><option value="2">Iniciante (2)</option><option value="1">Perna (1)</option></select>
                 </div>
                 <div style="display: flex; gap: 10px;">
@@ -259,7 +265,7 @@
             <!-- RESULTADO DO SORTEIO -->
             <div id="resultado" class="team-container"></div>
             
-            <!-- BOTÃO DE COMPARTILHAR ESCALAÇÃO E CÓDIGO -->
+            <!-- BOX PARA O CÓDIGO -->
             <div id="box-codigo-gerado-sorteio" class="codigo-gerado-box hidden-public" style="display:none; margin-top: 20px;"></div>
 
             <div class="hidden-public" style="display: flex; gap: 10px; margin-top: 20px;">
@@ -884,7 +890,7 @@
             document.getElementById('btn-adicionar').innerText = "Salvar Alterações"; document.getElementById('btn-cancelar-edicao').style.display = "block"; window.scrollTo({ top: 0, behavior: 'smooth' });
         }
         function cancelarEdicao() {
-            jogadorEdicaoId = null; document.getElementById('nome').value = ""; document.getElementById('tipo').value = "Mensalista"; document.getElementById('posicao').value = "Meio-Campo"; document.getElementById('nivel').value = "3";
+            jogadorEdicaoId = null; document.getElementById('nome').value = ""; document.getElementById('tipo').value = "Mensalista"; document.getElementById('posicao').value = "Meia"; document.getElementById('nivel').value = "3";
             document.getElementById('titulo-form').innerText = "Adicionar ao Elenco"; document.getElementById('card-formulario').classList.remove("editando");
             document.getElementById('btn-adicionar').innerText = "Incluir Jogador"; document.getElementById('btn-cancelar-edicao').style.display = "none";
         }
@@ -1074,7 +1080,7 @@
 
                 if (incluiGoleiros) { for (let t = 0; t < numTimesNoChunk; t++) { if (goleirosChunk.length > 0) timesLocais[t].push(goleirosChunk.shift()); } reservas.push(...goleirosChunk); }
 
-                const posicoes = ["Zagueiro", "Lateral", "Meio-Campo", "Atacante", "Linha"]; const grupos = {}; posicoes.forEach(p => grupos[p] = []);
+                const posicoes = ["Zagueiro", "Lateral", "Meia", "Atacante", "Linha"]; const grupos = {}; posicoes.forEach(p => grupos[p] = []);
                 linhaChunk.forEach(j => { if (grupos[j.posicao]) grupos[j.posicao].push(j); else grupos["Linha"].push(j); });
                 
                 posicoes.forEach(p => grupos[p].sort((a, b) => (Number(b.nivel) || 3) - (Number(a.nivel) || 3)));
