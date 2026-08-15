@@ -295,7 +295,7 @@
                         <option value="12">12 PRIMEIROS (2 times - Sem Goleiros)</option>
                         <option value="14">14 PRIMEIROS (2 times - Com Goleiros)</option>
                         <option value="todos_sem_goleiro">TODOS de linha (Múltiplos - Sem Goleiros)</option>
-                        <option value="todos">TODOS (Múltiplos - Com Goleiros)</option>
+                        <option value="todos" selected>TODOS (Múltiplos - Com Goleiros)</option>
                     </select>
                     
                     <div style="display:flex; gap:10px; align-items:flex-start; background: white; padding:10px; border-radius:8px; border:1px solid var(--border);">
@@ -338,7 +338,7 @@
                     <div id="texto-fila"></div>
 
                     <!-- PLACAR DE ARENA (SÓ ORGANIZADOR VÊ OS BOTÕES) -->
-                    <div class="placar-arena hidden-public">
+                    <div class="placar-arena hidden-public" id="painel-placar-arena">
                         <div class="placar-header">
                             <div class="placar-time">
                                 <select id="sumula_equipe_a" onchange="limparGolsTemp('A')"></select>
@@ -959,8 +959,8 @@
             const { data: jogos } = await db.from('jogos').select('*').eq('partida_id', partida.id);
             if(jogos) {
                 window.jogosDaRodada = jogos.map(j => ({
-                    equipe_a_nome: j.equipe_a, gols_a: new Array(j.gols_a).fill('Gol'),
-                    equipe_b_nome: j.equipe_b, gols_b: new Array(j.gols_b).fill('Gol')
+                    equipe_a_id: 0, equipe_a_nome: j.equipe_a, gols_a: new Array(j.gols_a).fill('Gol'),
+                    equipe_b_id: 0, equipe_b_nome: j.equipe_b, gols_b: new Array(j.gols_b).fill('Gol')
                 }));
             } else window.jogosDaRodada = [];
             
@@ -1292,7 +1292,6 @@
                 window.partidaAtualId = pData[0].id;
                 window.codigoAcessoAtual = codigoAleatorio;
 
-                // Inserir presencas iniciais
                 let presencas = [];
                 window.timesSorteadosObjs.forEach((t) => { 
                     t.jogadores.forEach(j => presencas.push({ partida_id: window.partidaAtualId, jogador_id: j.id, pagou: j.pagou || false, equipe: t.nome })); 
@@ -1355,7 +1354,7 @@
             const aviso = document.getElementById('aviso-sem-sorteio');
             const dataLabel = document.getElementById('data-rodada-label');
 
-            if(!window.timesSorteadosObjs || window.timesSorteadosObjs.length === 0) {
+            if((!window.timesSorteadosObjs || window.timesSorteadosObjs.length === 0) && window.jogosDaRodada.length === 0) {
                 container.style.display = 'none'; 
                 aviso.style.display = 'block'; 
                 if(dataLabel) dataLabel.innerText = "";
@@ -1370,11 +1369,13 @@
                 dataLabel.innerText = `📅 Data da Rodada: ${dataExibicao}`;
             }
             
-            if (window.filaEquipes.length === 0) {
+            if (window.timesSorteadosObjs && window.timesSorteadosObjs.length > 0 && window.filaEquipes.length === 0) {
                 window.filaEquipes = window.timesSorteadosObjs.map(t => t.id); 
             }
             
-            atualizarSelectsEquipes();
+            if (window.timesSorteadosObjs && window.timesSorteadosObjs.length > 0) {
+                atualizarSelectsEquipes();
+            }
             atualizarPlacarTempUI();
             atualizarListaJogosDaRodada();
         }
@@ -1457,7 +1458,6 @@
 
             window.jogosDaRodada.push({ equipe_a_id: idA, equipe_a_nome: nomeA, gols_a: gaList, equipe_b_id: idB, equipe_b_nome: nomeB, gols_b: gbList });
             
-            // Sincronizar o jogo em tempo real na nuvem se houver partida criada
             if(window.partidaAtualId) {
                 await db.from('jogos').insert([{
                     partida_id: window.partidaAtualId,
@@ -1482,7 +1482,12 @@
             limparGolsTemp('A'); limparGolsTemp('B'); atualizarSelectsEquipes(); atualizarListaJogosDaRodada(); salvarEstadoCompleto();
         }
 
-        function removerJogo(index) { window.jogosDaRodada.splice(index, 1); atualizarListaJogosDaRodada(); salvarEstadoCompleto();}
+        function removerJogo(index) { 
+            if(window.partidaSalva) return;
+            window.jogosDaRodada.splice(index, 1); 
+            atualizarListaJogosDaRodada(); 
+            salvarEstadoCompleto();
+        }
 
         function atualizarListaJogosDaRodada() {
             const lista = document.getElementById('lista-jogos-registrados'); lista.innerHTML = '';
@@ -1490,14 +1495,21 @@
             if(window.jogosDaRodada.length === 0) { lista.innerHTML = '<p style="color:var(--text-muted); font-size:13px; text-align:center;">Nenhum jogo confirmado</p>'; return; }
             
             window.jogosDaRodada.forEach((j, i) => {
+                let btnExcluirHtml = window.partidaSalva ? '' : `<button class="btn-excluir hidden-public" style="padding:2px 6px; margin-left:5px;" onclick="removerJogo(${i})">X</button>`;
                 lista.innerHTML += `
                     <div class="jogo-registrado">
                         <div style="flex:1; text-align:right;">${j.equipe_a_nome}</div>
                         <div class="placar-box" style="margin: 0 10px;">${j.gols_a.length} x ${j.gols_b.length}</div>
                         <div style="flex:1; text-align:left;">${j.equipe_b_nome}</div>
-                        <button class="btn-excluir hidden-public" style="padding:2px 6px; margin-left:5px;" onclick="removerJogo(${i})">X</button>
+                        ${btnExcluirHtml}
                     </div>`;
             });
+
+            const painelArena = document.getElementById('painel-placar-arena');
+            if(painelArena) painelArena.style.display = window.partidaSalva ? 'none' : 'block';
+
+            const btnEncerrar = document.getElementById('btn-encerrar-baba');
+            if(btnEncerrar) btnEncerrar.style.display = window.partidaSalva ? 'none' : 'block';
         }
 
         function renderizarPainelDoDia() {
@@ -1744,7 +1756,6 @@
                 let valorConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
                 let valorMens = parseFloat(document.getElementById('valor-mensalista').value) || 0;
 
-                // Atualizar a partida existente com os dados finais
                 const { error: errP } = await db.from('partidas').update({ 
                     renda_convidados: convidadosPagantes,
                     valor_por_convidado: valorConv,
@@ -1755,7 +1766,6 @@
 
                 if(errP) throw errP;
 
-                // Atualizar presencas pagas
                 for(let j of jogadores) {
                     if(j.presente) {
                         await db.from('presencas').update({ pagou: j.pagou || false }).eq('partida_id', window.partidaAtualId).eq('jogador_id', j.id);
@@ -1764,7 +1774,9 @@
 
                 await db.from('jogadores').delete().eq('tipo', 'Convidado').eq('user_id', currentUser.id);
 
-                window.partidaSalva = true; btn.innerText = "✅ Baba Encerrado e Salvo com Sucesso!";
+                window.partidaSalva = true; 
+                atualizarListaJogosDaRodada();
+                btn.innerText = "✅ Baba Encerrado e Salvo com Sucesso!";
                 salvarEstadoCompleto();
                 carregarElencoDaNuvem();
 
