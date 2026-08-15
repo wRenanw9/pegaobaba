@@ -229,7 +229,7 @@
     <div id="app-container" style="display: none;">
         
         <div class="top-bar">
-            <h1>Pega o Baba</h1>
+            <h1 id="top-bar-title">Pega o Baba</h1>
             <div class="top-actions">
                 <div class="status-nuvem" id="status-db">...</div>
                 <button class="btn-sair hidden-public" onclick="fazerLogout()">Sair</button>
@@ -499,7 +499,7 @@
 
         </div>
 
-        <!-- ABA 6: PAINEL MASTER (SÓ APARECE SE FOR ADMIN MASTER) -->
+        <!-- ABA 6: PAINEL MASTER (EXCLUSIVO DO ADMIN MASTER) -->
         <div id="view-admin" class="page-view">
             <h2 style="text-align: left; font-size:20px; margin-bottom: 20px;">Painel Master (Gestão de Assinaturas)</h2>
             <div class="card">
@@ -551,7 +551,7 @@
                 </div>
                 <span>Caixa</span>
             </div>
-            <!-- Aba Admin (Oculta por padrão, aparece apenas para Master Admin) -->
+            <!-- Aba Admin (Exclusiva do Admin Master) -->
             <div class="nav-item hidden-public" onclick="mudarAba('view-admin')" id="nav-admin" style="display: none;">
                 <div class="nav-icon">
                     <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/><path d="M12 6v6l4 2"/></svg>
@@ -572,7 +572,6 @@
         const coresTimes = ["Vermelho", "Azul", "Amarelo", "Verde", "Branco", "Preto", "Roxo", "Laranja"];
         const emojisTimes = ["🔴", "🔵", "🟡", "🟢", "⚪", "⚫", "🟣", "🟠"];
 
-        // Variáveis da Rodada Atual
         window.timesSorteadosObjs = []; 
         window.partidaSalva = true; 
         window.jogosDaRodada = []; 
@@ -581,7 +580,6 @@
         window.isModoPublico = false;
         window.dataPartidaAtual = null;
         
-        // Gols em Andamento
         window.golsTempA = []; 
         window.golsTempB = [];
 
@@ -775,13 +773,30 @@
             document.getElementById('btn-sair-publico').style.display = 'none';
             
             if (currentProfile && currentProfile.is_admin) {
+                // MASTER ADMIN: Vê apenas o painel de administração e gerencia assinaturas
                 document.getElementById('nav-admin').style.display = 'flex';
-            } else {
-                document.getElementById('nav-admin').style.display = 'none';
-            }
+                document.getElementById('top-bar-title').innerText = "Painel Master";
+                
+                // Oculta as abas de operacionais de futebol para o Master Admin
+                ['nav-elenco', 'nav-sorteio', 'nav-placares', 'nav-estatisticas', 'nav-financeiro'].forEach(id => {
+                    let el = document.getElementById(id);
+                    if(el) el.style.display = 'none';
+                });
 
-            carregarElencoDaNuvem();
-            mudarAba('view-sorteio');
+                mudarAba('view-admin');
+            } else {
+                // ORGANIZADOR COMUM: Vê todas as abas normais de gestão esportiva, exceto Admin
+                document.getElementById('nav-admin').style.display = 'none';
+                document.getElementById('top-bar-title').innerText = "Pega o Baba";
+                
+                ['nav-elenco', 'nav-sorteio', 'nav-placares', 'nav-estatisticas', 'nav-financeiro'].forEach(id => {
+                    let el = document.getElementById(id);
+                    if(el) el.style.display = 'flex';
+                });
+
+                carregarElencoDaNuvem();
+                mudarAba('view-sorteio');
+            }
         }
 
         function mostrarLogin() { 
@@ -810,7 +825,7 @@
                 let expDate = u.subscription_expires_at || '';
                 container.innerHTML += `
                     <div style="background: var(--light); padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 10px; font-size: 13px;">
-                        <div style="font-weight: 700; margin-bottom: 5px;">${u.email}</div>
+                        <div style="font-weight: 700; margin-bottom: 5px;">${u.email} ${u.is_admin ? '(Master Admin)' : ''}</div>
                         <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                             <label style="font-size: 11px;">Autorizado: 
                                 <input type="checkbox" id="auth-${u.id}" ${u.is_authorized ? 'checked' : ''} onchange="atualizarAdminUser('${u.id}')">
@@ -908,7 +923,6 @@
             window.location.reload();
         }
 
-        // CARREGA APENAS OS JOGADORES DO USUÁRIO LOGADO
         async function carregarElencoDaNuvem() {
             if (!currentUser) return;
             document.getElementById('status-db').innerText = "Sincronizando..."; document.getElementById('status-db').style.backgroundColor = "var(--warning)";
@@ -941,7 +955,6 @@
             document.getElementById('btn-adicionar').innerText = "Incluir Jogador"; document.getElementById('btn-cancelar-edicao').style.display = "none";
         }
 
-        // ADICIONA JOGADOR VINCULADO AO USER_ID
         async function adicionarJogador() {
             if (!currentUser) return;
             const nomeInput = document.getElementById('nome'); const tipo = document.getElementById('tipo').value;
@@ -1639,7 +1652,6 @@
                 let jogosInsert = window.jogosDaRodada.map(j => ({ partida_id: pData[0].id, equipe_a: j.equipe_a_nome, gols_a: j.gols_a.length, equipe_b: j.equipe_b_nome, gols_b: j.gols_b.length }));
                 if (jogosInsert.length > 0) await db.from('jogos').insert(jogosInsert);
 
-                // Exclui apenas os convidados do usuário logado
                 await db.from('jogadores').delete().eq('tipo', 'Convidado').eq('user_id', currentUser.id);
 
                 window.partidaSalva = true; btn.innerText = "✅ Baba Salvo e Convidados Limpos!";
