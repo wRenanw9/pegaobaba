@@ -150,10 +150,18 @@
         .valor-negativo { color: var(--danger); }
         .valor-neutro { color: var(--primary); }
 
-        /* MODO PÚBLICO */
+        /* MODO PÚBLICO E IMPRESSÃO / PDF */
         .hidden-public { display: block; }
         .public-mode .hidden-public { display: none !important; }
         .codigo-gerado-box { background: var(--light); padding: 15px; border: 2px dashed var(--primary); border-radius: 12px; text-align: center; margin-top: 15px; font-weight: 700; font-size: 20px; letter-spacing: 2px;}
+
+        @media print {
+            body { background: white; color: black; padding: 0; max-width: 100%; }
+            .top-bar, .bottom-nav, .no-print, button, input, select { display: none !important; }
+            .card-secao-stats { border: 1px solid #000; box-shadow: none; margin-bottom: 15px; }
+            .header-secao-stats { background: #eee !important; color: black !important; }
+            #view-financeiro { display: block !important; padding: 0; }
+        }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
@@ -440,6 +448,12 @@
                         <div class="dash-titulo">Saldo Anual</div><div class="dash-valor valor-neutro" id="fin-sal-ano">R$ 0</div>
                     </div>
                 </div>
+            </div>
+
+            <!-- BOTÕES DE EXPORTAÇÃO E WHATSAPP -->
+            <div style="display: flex; gap: 10px; margin-top: 20px;" class="no-print">
+                <button onclick="window.print()" style="background: var(--dark); flex: 1; font-size: 14px; padding: 14px;">📄 Exportar PDF / Imprimir</button>
+                <button onclick="compartilharCaixaWhatsApp()" class="btn-whatsapp" style="flex: 1; font-size: 14px; padding: 14px; margin: 0;">📱 Enviar no WhatsApp</button>
             </div>
         </div>
 
@@ -1233,6 +1247,29 @@
             return encodeURIComponent(texto);
         }
 
+        function compartilharCaixaWhatsApp() {
+            let valConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
+            let convPagantesHoje = jogadores.filter(j => j.tipo === 'Convidado' && j.presente && j.pagou).length;
+            let recHoje = (convPagantesHoje * valConv);
+            let custHojeDiario = window.custosDaRodada.filter(c => c.tipo !== 'mensal').reduce((acc, c) => acc + c.valor, 0);
+            let saldoHoje = recHoje - custHojeDiario;
+
+            let texto = `📊 *Prestação de Contas - Pega o Baba* ⚽\n\n`;
+            texto += `📅 Data: ${window.dataPartidaAtual || new Date().toLocaleDateString('pt-BR')}\n\n`;
+            texto += `💵 *Receita (Diárias):* R$ ${recHoje.toFixed(2)}\n`;
+            texto += `📉 *Custos do Dia:* R$ ${custHojeDiario.toFixed(2)}\n`;
+            texto += `💰 *Saldo do Dia:* R$ ${saldoHoje.toFixed(2)}\n\n`;
+
+            if (window.custosDaRodada.length > 0) {
+                texto += `*Detalhamento de Custos:*\n`;
+                window.custosDaRodada.forEach(c => {
+                    texto += `• ${c.desc}: R$ ${c.valor.toFixed(2)} (${c.tipo})\n`;
+                });
+            }
+
+            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`, '_blank');
+        }
+
         function exibirBoxCodigoSorteio(codigo) {
             let linkCompartilhamento = `https://pegaobaba.vercel.app?code=${codigo}`;
             let textoWpp = encodeURIComponent(`🏆 *Acompanhe nosso Baba ao Vivo!*\n\nVeja a súmula, artilharia e classificação da rodada pelo link:\n\n${linkCompartilhamento}\n\n_(Código de acesso direto: ${codigo})_`);
@@ -1629,9 +1666,8 @@
                     let mensalistasNesta = mensalistasPorPartida[p.id] || new Set();
 
                     for(let nome in arts) {
-                        // Verifica se o artilheiro era mensalista nesta partida ou no cadastro geral
                         let isMensalista = mensalistasNesta.has(nome) || jogadores.some(j => j.nome === nome && j.tipo === 'Mensalista');
-                        if(!isMensalista) continue; // Pula convidados para mês e ano
+                        if(!isMensalista) continue; 
 
                         let gols = arts[nome];
                         if(!rankingAnual[nome]) rankingAnual[nome] = { gols: 0, presencas: 0 };
