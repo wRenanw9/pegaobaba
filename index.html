@@ -71,8 +71,12 @@
             display: flex !important;
         }
         
-        /* Oculta abas operacionais quando o body estiver no modo Master Admin */
-        body.master-admin-mode .admin-hide {
+        /* REGRAS DE VISIBILIDADE POR PERFIL */
+        body.is-master-admin .organizer-only {
+            display: none !important;
+        }
+        
+        body:not(.is-master-admin) .master-only {
             display: none !important;
         }
         
@@ -237,13 +241,13 @@
             <h1 id="top-bar-title">Pega o Baba</h1>
             <div class="top-actions">
                 <div class="status-nuvem" id="status-db">...</div>
-                <button class="btn-sair hidden-public" onclick="fazerLogout()">Sair</button>
+                <button class="btn-sair hidden-public master-only" id="btn-sair-top" onclick="fazerLogout()">Sair</button>
                 <button class="btn-sair" id="btn-sair-publico" style="display:none;" onclick="sairModoPublico()">Sair da Visão</button>
             </div>
         </div>
 
         <!-- ABA 1: ELENCO (Administrativo) -->
-        <div id="view-elenco" class="page-view">
+        <div id="view-elenco" class="page-view organizer-only">
             <div class="card hidden-public" id="card-formulario">
                 <h2 id="titulo-form">Adicionar ao Elenco</h2>
                 <input type="text" id="nome" placeholder="Nome Completo ou Apelido" autocomplete="off">
@@ -268,7 +272,7 @@
         </div>
 
         <!-- ABA 2: SORTEIO (Ação do Jogo) -->
-        <div id="view-sorteio" class="page-view active">
+        <div id="view-sorteio" class="page-view organizer-only active">
             
             <!-- LISTA: AGUARDANDO CHEGADA -->
             <div class="card hidden-public" style="border: 2px dashed var(--border); background: var(--white);">
@@ -315,7 +319,7 @@
         </div>
 
         <!-- ABA 3: SÚMULA DINÂMICA (PLACAR DE ARENA) -->
-        <div id="view-placares" class="page-view">
+        <div id="view-placares" class="page-view organizer-only">
             <div class="card">
                 <h2>📝 Súmula de Jogo</h2>
                 <div id="data-rodada-label" style="font-size: 13px; color: var(--text-muted); text-align: center; margin-top: -10px; margin-bottom: 15px; font-weight: 600;"></div>
@@ -363,7 +367,7 @@
         </div>
 
         <!-- ABA 4: ESTATÍSTICAS COMPLETAS -->
-        <div id="view-estatisticas" class="page-view">
+        <div id="view-estatisticas" class="page-view organizer-only">
             <h2 style="text-align: left; font-size:20px; margin-bottom: 20px;">Painel de Estatísticas</h2>
             
             <!-- ESTATÍSTICAS DO DIA -->
@@ -417,7 +421,7 @@
         </div>
 
         <!-- ABA 5: FINANCEIRO (TRIPLO) -->
-        <div id="view-financeiro" class="page-view">
+        <div id="view-financeiro" class="page-view organizer-only">
             <h2 style="text-align: left; font-size:20px; margin-bottom: 20px;">Gestão de Caixa</h2>
             
             <div class="card hidden-public">
@@ -504,8 +508,34 @@
 
         </div>
 
-        <!-- ABA 6: PAINEL MASTER (EXCLUSIVO DO ADMIN MASTER) -->
-        <div id="view-admin" class="page-view">
+        <!-- ABA: CONTA (Exclusiva do Administrador/Organizador) -->
+        <div id="view-conta" class="page-view organizer-only">
+            <h2 style="text-align: left; font-size:20px; margin-bottom: 20px;">Minha Conta</h2>
+            
+            <div class="card">
+                <h3 style="font-size: 15px; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:10px;">👤 Dados de Acesso</h3>
+                <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 5px;">E-mail cadastrado:</p>
+                <strong id="organizer-email-label" style="font-size: 16px; color: var(--dark); display: block; margin-bottom: 15px;">...</strong>
+            </div>
+
+            <div class="card">
+                <h3 style="font-size: 15px; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:10px;">🔒 Segurança</h3>
+                <div style="margin-bottom: 12px;">
+                    <label style="font-size: 11px; font-weight: 600; color: var(--text-muted);">Nova Senha:</label>
+                    <input type="password" id="nova-senha-organizador" placeholder="Mínimo de 6 caracteres" style="margin-bottom: 8px;">
+                    <button onclick="alterarSenhaOrganizador()" style="background: var(--primary); padding: 12px; font-size: 14px;">Atualizar Senha</button>
+                </div>
+            </div>
+
+            <div class="card" style="border-color: var(--danger);">
+                <h3 style="font-size: 15px; margin-top:0; color: var(--danger); border-bottom:1px solid var(--border); padding-bottom:10px;">Sessão</h3>
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;">Deseja sair da sua conta neste dispositivo?</p>
+                <button onclick="fazerLogout()" style="background: var(--danger); padding: 12px; font-size: 14px;">Sair da Conta</button>
+            </div>
+        </div>
+
+        <!-- ABA: MASTER ADMIN (Exclusiva do Master) -->
+        <div id="view-admin" class="page-view master-only">
             <h2 style="text-align: left; font-size:20px; margin-bottom: 20px;">Painel Master (Gestão de Assinaturas)</h2>
             <div class="card">
                 <p style="font-size: 13px; color: var(--text-muted); margin-top: -5px; margin-bottom: 15px;">
@@ -526,43 +556,50 @@
 
         <!-- NAVEGAÇÃO INFERIOR 100% CENTRALIZADA -->
         <nav class="bottom-nav">
-            <!-- Abas operacionais com a classe admin-hide para sumir no modo Master Admin -->
-            <div class="nav-item hidden-public admin-hide" onclick="mudarAba('view-elenco')" id="nav-elenco">
+            <!-- Abas do Organizador (Ocultas para o Master) -->
+            <div class="nav-item hidden-public organizer-only" onclick="mudarAba('view-elenco')" id="nav-elenco">
                 <div class="nav-icon">
                     <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                 </div>
                 <span>Elenco</span>
             </div>
-            <div class="nav-item hidden-public admin-hide" onclick="mudarAba('view-sorteio')" id="nav-sorteio">
+            <div class="nav-item hidden-public organizer-only" onclick="mudarAba('view-sorteio')" id="nav-sorteio">
                 <div class="nav-icon">
                     <svg viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><path d="M16 8h.01"/><path d="M8 8h.01"/><path d="M8 16h.01"/><path d="M16 16h.01"/><path d="M12 12h.01"/></svg>
                 </div>
                 <span>Sorteio</span>
             </div>
-            <div class="nav-item active admin-hide" onclick="mudarAba('view-placares')" id="nav-placares">
+            <div class="nav-item active organizer-only" onclick="mudarAba('view-placares')" id="nav-placares">
                 <div class="nav-icon">
                     <svg viewBox="0 0 24 24"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></svg>
                 </div>
                 <span>Súmula</span>
             </div>
-            <div class="nav-item admin-hide" onclick="mudarAba('view-estatisticas')" id="nav-estatisticas">
+            <div class="nav-item organizer-only" onclick="mudarAba('view-estatisticas')" id="nav-estatisticas">
                 <div class="nav-icon">
                     <svg viewBox="0 0 24 24"><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/><line x1="2" x2="22" y1="20" y2="20"/></svg>
                 </div>
                 <span>Painel</span>
             </div>
-            <div class="nav-item admin-hide" onclick="mudarAba('view-financeiro')" id="nav-financeiro">
+            <div class="nav-item organizer-only" onclick="mudarAba('view-financeiro')" id="nav-financeiro">
                 <div class="nav-icon">
                     <svg viewBox="0 0 24 24"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2v-8h-2z"/></svg>
                 </div>
                 <span>Caixa</span>
             </div>
-            <!-- Aba Admin (Exclusiva do Admin Master) -->
-            <div class="nav-item hidden-public" onclick="mudarAba('view-admin')" id="nav-admin" style="display: none;">
+            <div class="nav-item hidden-public organizer-only" onclick="mudarAba('view-conta')" id="nav-conta">
+                <div class="nav-icon">
+                    <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </div>
+                <span>Conta</span>
+            </div>
+
+            <!-- Aba Master (Exclusiva do Master) -->
+            <div class="nav-item hidden-public master-only active" onclick="mudarAba('view-admin')" id="nav-admin">
                 <div class="nav-icon">
                     <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/><path d="M12 6v6l4 2"/></svg>
                 </div>
-                <span>Admin</span>
+                <span>Master</span>
             </div>
         </nav>
 
@@ -666,6 +703,10 @@
             document.getElementById(viewId).classList.add('active');
             
             let navId = viewId.replace('view-', 'nav-');
+            // Mapeia view-admin para nav-admin
+            if(viewId === 'view-admin') navId = 'nav-admin';
+            if(viewId === 'view-conta') navId = 'nav-conta';
+
             let navEl = document.getElementById(navId);
             if(navEl) navEl.classList.add('active');
             
@@ -779,17 +820,15 @@
             document.getElementById('btn-sair-publico').style.display = 'none';
             
             if (currentProfile && currentProfile.is_admin) {
-                // MASTER ADMIN: Oculta abas operacionais ativando a classe no body
-                document.body.classList.add('master-admin-mode');
-                document.getElementById('nav-admin').style.display = 'flex';
+                // MASTER ADMIN: Ativa estado master e vai direto para a aba Admin
+                document.body.classList.add('is-master-admin');
                 document.getElementById('top-bar-title').innerText = "Painel Master";
-
                 mudarAba('view-admin');
             } else {
-                // ORGANIZADOR COMUM: Mostra abas operacionais
-                document.body.classList.remove('master-admin-mode');
-                document.getElementById('nav-admin').style.display = 'none';
+                // ADMINISTRADOR (ORGANIZADOR): Ativa estado organizer e carrega o elenco
+                document.body.classList.remove('is-master-admin');
                 document.getElementById('top-bar-title').innerText = "Pega o Baba";
+                document.getElementById('organizer-email-label').innerText = currentUser.email;
 
                 carregarElencoDaNuvem();
                 mudarAba('view-sorteio');
@@ -797,9 +836,22 @@
         }
 
         function mostrarLogin() { 
-            document.body.classList.remove('master-admin-mode');
+            document.body.classList.remove('is-master-admin');
             document.getElementById('auth-container').style.display = 'block'; 
             document.getElementById('app-container').style.display = 'none'; 
+        }
+
+        async function alterarSenhaOrganizador() {
+            const novaSenha = document.getElementById('nova-senha-organizador').value;
+            if(!novaSenha || novaSenha.length < 6) return alert("A senha deve ter pelo menos 6 caracteres.");
+
+            const { error } = await db.auth.updateUser({ password: novaSenha });
+            if(error) {
+                alert("Erro ao alterar senha: " + error.message);
+            } else {
+                alert("✅ Senha alterada com sucesso!");
+                document.getElementById('nova-senha-organizador').value = '';
+            }
         }
 
         async function carregarPainelAdmin() {
