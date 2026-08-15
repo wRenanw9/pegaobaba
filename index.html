@@ -165,10 +165,11 @@
         .public-mode .hidden-public { display: none !important; }
         .codigo-gerado-box { background: var(--light); padding: 15px; border: 2px dashed var(--primary); border-radius: 12px; text-align: center; margin-top: 15px; font-weight: 700; font-size: 20px; letter-spacing: 2px;}
 
-        /* ASSINATURA DO DESENVOLVEDOR */
-        .dev-signature { text-align: center; padding: 20px; font-size: 12px; color: var(--text-muted); }
-        .dev-signature a { color: var(--primary); text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; margin-top: 4px;}
-        .dev-signature a:hover { text-decoration: underline; }
+        /* ASSINATURA DO DESENVOLVEDOR CTA */
+        .dev-signature { text-align: center; padding: 20px 10px; font-size: 12px; color: var(--text-muted); margin-top: 20px; border-top: 1px dashed var(--border); }
+        .dev-signature p.cta-title { font-size: 14px; font-weight: 700; color: var(--dark); margin-bottom: 5px; margin-top: 0; }
+        .dev-signature p.cta-desc { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; margin-top: 0; }
+        .dev-signature .btn-dev-whatsapp { display: inline-flex; align-items: center; justify-content: center; background: var(--whatsapp); color: white; padding: 8px 16px; border-radius: 8px; margin-top: 10px; font-weight: bold; text-decoration: none; box-shadow: 0 2px 4px rgba(37, 211, 102, 0.3); }
 
         @media print {
             body { background: white; color: black; padding: 0; margin: 0; max-width: 100%; font-size: 11px; }
@@ -213,11 +214,13 @@
             <button onclick="acessarModoPublico()" style="background: var(--dark);">Ver Súmula e Painel</button>
         </div>
 
-        <!-- Assinatura do Desenvolvedor -->
+        <!-- Assinatura do Desenvolvedor (CTA) -->
         <div class="dev-signature">
+            <p class="cta-title">Quer adicionar este sistema ao seu baba?</p>
+            <p class="cta-desc">Entre em contato e profissionalize a sua resenha!</p>
             Desenvolvido por <strong>Renan Barbosa</strong><br>
-            <a href="https://api.whatsapp.com/send?phone=5571996212118&text=Olá%20Renan!%20Gostaria%20de%20saber%20mais%20sobre%20o%20aplicativo%20de%20gestão%20esportiva." target="_blank">
-                📱 (71) 99621-2118
+            <a href="https://api.whatsapp.com/send?phone=5571996212118&text=Olá%20Renan!%20Gostaria%20de%20adicionar%20o%20sistema%20ao%20meu%20baba." target="_blank" class="btn-dev-whatsapp">
+                📱 Chamar no WhatsApp
             </a>
         </div>
     </div>
@@ -416,40 +419,40 @@
         <div id="view-financeiro" class="page-view">
             <h2 class="no-print" style="text-align: left; font-size:20px; margin-bottom: 20px;">Gestão de Caixa</h2>
             
-            <div class="card hidden-public no-print">
-                <p style="font-size:12px; color:var(--text-muted); margin-top:-5px; margin-bottom:15px; line-height: 1.4;">Defina o valor base para a contabilidade.</p>
-                <div style="display: flex; gap: 10px; margin-bottom: 5px;">
+            <div class="card hidden-public no-print" style="padding: 12px 15px; margin-bottom: 15px;">
+                <p style="font-size:11px; color:var(--text-muted); margin-top:0; margin-bottom:10px;">Defina o valor base para a contabilidade.</p>
+                <div style="display: flex; gap: 10px; margin-bottom: 0;">
                     <div style="flex: 1;">
                         <label style="font-size: 11px; font-weight: 600; color: var(--text-muted);">Mensalidade (R$):</label>
-                        <input type="number" id="valor-mensalista" value="70" onchange="atualizarFinanceiro()" style="font-size: 16px; font-weight: 700; margin-bottom: 0;">
+                        <input type="number" id="valor-mensalista" value="70" onchange="atualizarFinanceiro()" style="font-size: 16px; font-weight: 700; margin-bottom: 0; padding: 10px;">
                     </div>
                     <div style="flex: 1;">
                         <label style="font-size: 11px; font-weight: 600; color: var(--text-muted);">Diária Convidado (R$):</label>
-                        <input type="number" id="valor-convidado" value="25" onchange="atualizarFinanceiro()" style="font-size: 16px; font-weight: 700; margin-bottom: 0;">
+                        <input type="number" id="valor-convidado" value="25" onchange="atualizarFinanceiro()" style="font-size: 16px; font-weight: 700; margin-bottom: 0; padding: 10px;">
                     </div>
                 </div>
             </div>
 
-            <div class="card-secao-stats no-print">
-                <div class="header-secao-stats" style="background: var(--dark); color: white;"><span>⚽ Caixa da Rodada (Hoje)</span></div>
-                <div style="padding: 15px;">
-                    <div class="dash-grid">
-                        <div class="dash-card"><div class="dash-titulo">Diárias Hoje</div><div class="dash-valor valor-positivo" id="fin-receita-hoje">R$ 0</div></div>
-                        <div class="dash-card"><div class="dash-titulo">Custos Diários (Hoje)</div><div class="dash-valor valor-negativo" id="fin-custos-hoje">R$ 0</div></div>
+            <div class="card-secao-stats no-print" style="margin-bottom: 15px;">
+                <div class="header-secao-stats" style="background: var(--dark); color: white; padding: 8px 15px;"><span>⚽ Caixa da Rodada (Hoje)</span></div>
+                <div style="padding: 12px;">
+                    <div class="dash-grid" style="gap: 10px; margin-bottom: 12px;">
+                        <div class="dash-card" style="padding: 10px;"><div class="dash-titulo">Diárias Hoje</div><div class="dash-valor valor-positivo">R$ <span id="fin-receita-hoje">0</span></div></div>
+                        <div class="dash-card" style="padding: 10px;"><div class="dash-titulo">Custos Diários</div><div class="dash-valor valor-negativo">R$ <span id="fin-custos-hoje">0</span></div></div>
                     </div>
-                    <div class="card hidden-public" style="margin-bottom:0;">
-                        <h3 style="font-size: 13px; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:10px;">Lançar Despesa</h3>
-                        <div style="display: flex; gap: 8px; margin-bottom: 10px;">
-                            <input type="text" id="desc-custo" placeholder="Ex: Juiz, Água" style="flex:2; margin:0; padding:10px; font-size:12px;">
-                            <input type="number" id="valor-custo" placeholder="R$" style="flex:1; margin:0; padding:10px; font-size:12px;">
-                            <select id="tipo-custo" style="flex:1.2; margin:0; padding:10px; font-size:12px;">
+                    <div class="card hidden-public" style="margin-bottom:0; padding: 12px;">
+                        <h3 style="font-size: 13px; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:6px; margin-bottom: 8px;">Lançar Despesa</h3>
+                        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                            <input type="text" id="desc-custo" placeholder="Ex: Juiz, Água" style="flex:2; margin:0; padding:8px; font-size:12px;">
+                            <input type="number" id="valor-custo" placeholder="R$" style="flex:1; margin:0; padding:8px; font-size:12px;">
+                            <select id="tipo-custo" style="flex:1.2; margin:0; padding:8px; font-size:12px;">
                                 <option value="diario">Diário</option>
                                 <option value="mensal">Mensal (Fixo)</option>
                             </select>
                         </div>
                         <button onclick="adicionarCusto()" style="background: var(--dark); padding: 10px; font-size:13px;">Lançar Despesa</button>
                     </div>
-                    <div id="lista-custos" style="margin-top:15px;"></div>
+                    <div id="lista-custos" style="margin-top:12px;"></div>
                 </div>
             </div>
 
@@ -465,10 +468,9 @@
                 </div>
             </div>
 
-            <!-- BOTÕES DE EXPORTAÇÃO E WHATSAPP DO RELATÓRIO -->
+            <!-- BOTÕES DE EXPORTAÇÃO DO RELATÓRIO -->
             <div style="display: flex; gap: 10px; margin-top: 20px;" class="no-print hidden-public">
-                <button onclick="window.print()" style="background: var(--dark); flex: 1; font-size: 14px; padding: 14px;">📄 Exportar PDF</button>
-                <button onclick="compartilharRelatorioMensalWhatsApp()" class="btn-whatsapp" style="flex: 1; font-size: 14px; padding: 14px; margin: 0;">📱 Enviar Resumo WhatsApp</button>
+                <button onclick="window.print()" style="background: var(--dark); flex: 1; font-size: 14px; padding: 14px;">📄 Exportar PDF / Imprimir Relatório</button>
             </div>
         </div>
 
@@ -476,39 +478,42 @@
         <div id="view-conta" class="page-view organizer-only">
             <h2 style="text-align: left; font-size:20px; margin-bottom: 20px;">Minha Conta</h2>
             
-            <div class="card">
-                <h3 style="font-size: 15px; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:10px;">🏷️ Nome do Baba</h3>
-                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">Personalize o nome do seu grupo no topo do aplicativo.</p>
+            <div class="card" style="padding: 15px; margin-bottom: 15px;">
+                <h3 style="font-size: 14px; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom: 10px;">🏷️ Nome do Baba</h3>
+                <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Personalize o nome do seu grupo no topo do aplicativo.</p>
                 <div style="display:flex; gap:10px;">
-                    <input type="text" id="nome-baba-input" placeholder="Ex: Baba dos Amigos" style="margin-bottom:0;">
-                    <button onclick="salvarNomeBaba()" style="width:auto; padding:0 20px;">Salvar</button>
+                    <input type="text" id="nome-baba-input" placeholder="Ex: Baba dos Amigos" style="margin-bottom:0; padding: 10px;">
+                    <button onclick="salvarNomeBaba()" style="width:auto; padding:0 20px; font-size: 13px;">Salvar</button>
                 </div>
             </div>
 
-            <div class="card">
-                <h3 style="font-size: 15px; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:10px;">👤 Dados de Acesso</h3>
-                <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 5px;">E-mail cadastrado:</p>
-                <strong id="organizer-email-label" style="font-size: 16px; color: var(--dark); display: block; margin-bottom: 15px;">...</strong>
+            <div class="card" style="padding: 15px; margin-bottom: 15px;">
+                <h3 style="font-size: 14px; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom: 10px;">👤 Dados de Acesso</h3>
+                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 5px;">E-mail cadastrado:</p>
+                <strong id="organizer-email-label" style="font-size: 14px; color: var(--dark); display: block; margin-bottom: 5px;">...</strong>
             </div>
-            <div class="card">
-                <h3 style="font-size: 15px; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:10px;">🔒 Segurança</h3>
-                <div style="margin-bottom: 12px;">
+            
+            <div class="card" style="padding: 15px; margin-bottom: 15px;">
+                <h3 style="font-size: 14px; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom: 10px;">🔒 Segurança</h3>
+                <div style="margin-bottom: 0;">
                     <label style="font-size: 11px; font-weight: 600; color: var(--text-muted);">Nova Senha:</label>
-                    <input type="password" id="nova-senha-organizador" placeholder="Mínimo de 6 caracteres" style="margin-bottom: 8px;">
-                    <button onclick="alterarSenhaOrganizador()" style="background: var(--primary); padding: 12px; font-size: 14px;">Atualizar Senha</button>
+                    <input type="password" id="nova-senha-organizador" placeholder="Mínimo de 6 caracteres" style="margin-bottom: 8px; padding: 10px;">
+                    <button onclick="alterarSenhaOrganizador()" style="background: var(--primary); padding: 10px; font-size: 13px;">Atualizar Senha</button>
                 </div>
             </div>
-            <div class="card" style="border-color: var(--danger);">
-                <h3 style="font-size: 15px; margin-top:0; color: var(--danger); border-bottom:1px solid var(--border); padding-bottom:10px;">Sessão</h3>
-                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;">Deseja sair da sua conta neste dispositivo?</p>
-                <button onclick="fazerLogout()" style="background: var(--danger); padding: 12px; font-size: 14px;">Sair da Conta</button>
+            
+            <div class="card" style="border-color: var(--danger); padding: 15px; margin-bottom: 15px;">
+                <h3 style="font-size: 14px; margin-top:0; color: var(--danger); border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom: 10px;">Sessão</h3>
+                <button onclick="fazerLogout()" style="background: var(--danger); padding: 10px; font-size: 13px;">Sair da Conta neste dispositivo</button>
             </div>
 
-            <!-- Assinatura do Desenvolvedor -->
+            <!-- Assinatura do Desenvolvedor (CTA) -->
             <div class="dev-signature">
+                <p class="cta-title">Quer adicionar este sistema ao seu baba?</p>
+                <p class="cta-desc">Entre em contato e profissionalize a sua resenha!</p>
                 Desenvolvido por <strong>Renan Barbosa</strong><br>
-                <a href="https://api.whatsapp.com/send?phone=5571996212118&text=Olá%20Renan!%20Gostaria%20de%20saber%20mais%20sobre%20o%20aplicativo%20de%20gestão%20esportiva." target="_blank">
-                    📱 (71) 99621-2118
+                <a href="https://api.whatsapp.com/send?phone=5571996212118&text=Olá%20Renan!%20Gostaria%20de%20adicionar%20o%20sistema%20ao%20meu%20baba." target="_blank" class="btn-dev-whatsapp">
+                    📱 Chamar no WhatsApp
                 </a>
             </div>
         </div>
@@ -1428,28 +1433,6 @@
 
             html += `</table>`;
             document.getElementById('conteudo-relatorio-mensal').innerHTML = html;
-        }
-
-        function compartilharRelatorioMensalWhatsApp() {
-            let nomeMes = document.getElementById('label-mes-relatorio').innerText;
-            let valMens = parseFloat(document.getElementById('valor-mensalista').value) || 70;
-            let mesKey = new Date().toISOString().substring(0, 7);
-
-            let texto = `📊 *Prestação de Contas Mensal (${nomeMes})* ⚽\n\n`;
-            
-            texto += `👥 *Mensalistas Pagantes:*\n`;
-            jogadores.filter(j => j.tipo === 'Mensalista').forEach(j => {
-                let pago = j.pagamentos_json && j.pagamentos_json[mesKey] === true;
-                texto += `• ${j.nome}: ${pago ? 'Pago ✅' : 'Pendente ❌'}\n`;
-            });
-
-            texto += `\n💰 *Resumo Geral:*\n`;
-            texto += `• Receita Total: ${document.getElementById('fin-rec-mes').innerText}\n`;
-            texto += `• Despesas Totais: ${document.getElementById('fin-cus-mes').innerText}\n`;
-            texto += `• *Saldo do Mês: ${document.getElementById('fin-sal-mes').innerText}*\n\n`;
-            texto += `_Relatório gerado via Pega o Baba_`;
-
-            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`, '_blank');
         }
 
         function exibirBoxCodigoSorteio(codigo) {
