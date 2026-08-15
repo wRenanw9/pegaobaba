@@ -567,6 +567,7 @@
         let jogadores = [];
         let jogadorEdicaoId = null; 
         let currentProfile = null;
+        let currentUser = null;
 
         const coresTimes = ["Vermelho", "Azul", "Amarelo", "Verde", "Branco", "Preto", "Roxo", "Laranja"];
         const emojisTimes = ["🔴", "🔵", "🟡", "🟢", "⚪", "⚫", "🟣", "🟠"];
@@ -600,7 +601,6 @@
             }
         };
 
-        // ==== PERSISTÊNCIA LOCAL ====
         function salvarEstadoCompleto() {
             if(window.isModoPublico) return; 
             
@@ -656,7 +656,6 @@
             return false;
         }
 
-        // NAVEGAÇÃO
         function mudarAba(viewId) {
             document.querySelectorAll('.page-view').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
@@ -677,10 +676,10 @@
             if(viewId === 'view-admin') carregarPainelAdmin();
         }
 
-        // AUTENTICAÇÃO E VERIFICAÇÃO DE ASSINATURA/AUTORIZAÇÃO COM AUTO-CRIAÇÃO SE FALTAR PERFIL
         async function verificarSessao() { 
             const { data: { session } } = await db.auth.getSession(); 
             if (session) {
+                currentUser = session.user;
                 await checarPerfilEValidade(session.user);
             } else {
                 mostrarLogin();
@@ -716,13 +715,13 @@
                 return;
             }
 
+            currentUser = data.user;
             await checarPerfilEValidade(data.user);
         }
 
         async function checarPerfilEValidade(user) {
             let { data: profile, error } = await db.from('profiles').select('*').eq('id', user.id).single();
             
-            // Auto-criação de perfil caso a tabela estivesse vazia para este usuário
             if (error || !profile) {
                 const { data: newProfile, error: insertError } = await db.from('profiles').insert([{
                     id: user.id,
@@ -764,6 +763,7 @@
         async function fazerLogout() { 
             await db.auth.signOut(); 
             currentProfile = null;
+            currentUser = null;
             mostrarLogin(); 
         }
         
@@ -789,7 +789,6 @@
             document.getElementById('app-container').style.display = 'none'; 
         }
 
-        // GESTÃO DO PAINEL ADMIN MASTER
         async function carregarPainelAdmin() {
             if (!currentProfile || !currentProfile.is_admin) return;
             const container = document.getElementById('lista-organizadores-admin');
@@ -909,9 +908,12 @@
             window.location.reload();
         }
 
+        // CARREGA APENAS OS JOGADORES DO USUÁRIO LOGADO
         async function carregarElencoDaNuvem() {
+            if (!currentUser) return;
             document.getElementById('status-db').innerText = "Sincronizando..."; document.getElementById('status-db').style.backgroundColor = "var(--warning)";
-            const { data, error } = await db.from('jogadores').select('*').order('nome', { ascending: true }); 
+            
+            const { data, error } = await db.from('jogadores').select('*').eq('user_id', currentUser.id).order('nome', { ascending: true }); 
             if (error) { document.getElementById('status-db').innerText = "Off-line"; document.getElementById('status-db').style.backgroundColor = "var(--danger)"; return; }
             
             let estadoLocal = JSON.parse(localStorage.getItem('baba_presencas_temp')) || {};
@@ -928,7 +930,6 @@
             atualizarFinanceiro(); 
         }
 
-        // CADASTRO E EDIÇÃO
         function prepararEdicao(indexArray) {
             const j = jogadores[indexArray]; document.getElementById('nome').value = j.nome; document.getElementById('tipo').value = j.tipo; document.getElementById('posicao').value = j.posicao; document.getElementById('nivel').value = j.nivel;
             jogadorEdicaoId = j.id; document.getElementById('titulo-form').innerText = "Editando Jogador"; document.getElementById('card-formulario').classList.add("editando");
@@ -940,7 +941,9 @@
             document.getElementById('btn-adicionar').innerText = "Incluir Jogador"; document.getElementById('btn-cancelar-edicao').style.display = "none";
         }
 
+        // ADICIONA JOGADOR VINCULADO AO USER_ID
         async function adicionarJogador() {
+            if (!currentUser) return;
             const nomeInput = document.getElementById('nome'); const tipo = document.getElementById('tipo').value;
             const posicao = document.getElementById('posicao').value; const nivel = parseInt(document.getElementById('nivel').value); const nome = nomeInput.value.trim();
             if (nome === "") return alert("Preencha o nome.");
@@ -951,7 +954,7 @@
                 const { error } = await db.from('jogadores').update({ nome, tipo, posicao, nivel }).eq('id', jogadorEdicaoId);
                 if (!error) { let jIndex = jogadores.findIndex(j => j.id === jogadorEdicaoId); if (jIndex !== -1) { jogadores[jIndex].nome = nome; jogadores[jIndex].tipo = tipo; jogadores[jIndex].posicao = posicao; jogadores[jIndex].nivel = nivel; } cancelarEdicao(); atualizarListas(); } else alert("Erro: " + error.message);
             } else {
-                const { data, error } = await db.from('jogadores').insert([{ nome, tipo, posicao, nivel, pagamentos_json: {} }]).select(); 
+                const { data, error } = await db.from('jogadores').insert([{ nome, tipo, posicao, nivel, pagamentos_json: {}, user_id: currentUser.id }]).select(); 
                 if (!error) { nomeInput.value = ""; nomeInput.focus(); jogadores.push({ ...data[0], presente: false, ordemChegada: 0, pagou: false }); atualizarListas(); btn.innerText = "Incluir Jogador"; } else alert("Erro: " + error.message);
             }
             btn.disabled = false;
@@ -1636,7 +1639,8 @@
                 let jogosInsert = window.jogosDaRodada.map(j => ({ partida_id: pData[0].id, equipe_a: j.equipe_a_nome, gols_a: j.gols_a.length, equipe_b: j.equipe_b_nome, gols_b: j.gols_b.length }));
                 if (jogosInsert.length > 0) await db.from('jogos').insert(jogosInsert);
 
-                await db.from('jogadores').delete().eq('tipo', 'Convidado');
+                // Exclui apenas os convidados do usuário logado
+                await db.from('jogadores').delete().eq('tipo', 'Convidado').eq('user_id', currentUser.id);
 
                 window.partidaSalva = true; btn.innerText = "✅ Baba Salvo e Convidados Limpos!";
                 salvarEstadoCompleto();
