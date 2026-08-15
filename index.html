@@ -150,10 +150,14 @@
         .valor-negativo { color: var(--danger); }
         .valor-neutro { color: var(--primary); }
 
-        /* TABELA DE RELATÓRIO MENSAL */
+        /* TABELA DE RELATÓRIO MENSAL OTIMIZADA */
         .relatorio-tabela { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 5px; }
         .relatorio-tabela th { background: var(--light); text-align: left; padding: 8px; border-bottom: 2px solid var(--border); color: var(--dark); font-weight: 700; }
         .relatorio-tabela td { padding: 8px; border-bottom: 1px solid var(--border); }
+        
+        /* GRID DE MENSALISTAS (Colunas) */
+        .grid-mensalistas { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px 15px; padding: 8px 5px; }
+        .item-mensalista { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed var(--border); padding: 4px 0; font-size: 12px; }
 
         /* MODO PÚBLICO E IMPRESSÃO / PDF */
         .hidden-public { display: block; }
@@ -161,10 +165,20 @@
         .codigo-gerado-box { background: var(--light); padding: 15px; border: 2px dashed var(--primary); border-radius: 12px; text-align: center; margin-top: 15px; font-weight: 700; font-size: 20px; letter-spacing: 2px;}
 
         @media print {
-            body { background: white; color: black; padding: 10px; max-width: 100%; }
+            body { background: white; color: black; padding: 0; margin: 0; max-width: 100%; font-size: 11px; }
             .top-bar, .bottom-nav, .no-print, button, input, select, .card-secao-stats:not(#card-relatorio-mensal) { display: none !important; }
             #card-relatorio-mensal { display: block !important; border: none !important; box-shadow: none !important; margin: 0 !important; padding: 0 !important; }
-            #view-financeiro { display: block !important; padding: 0 !important; }
+            #view-financeiro { display: block !important; padding: 0 !important; margin: 0 !important; }
+            
+            /* Ajustes Finos para PDF */
+            .relatorio-tabela { font-size: 11px; }
+            .relatorio-tabela th, .relatorio-tabela td { padding: 4px; }
+            .header-secao-stats { padding: 6px 0 !important; background: transparent !important; color: black !important; border-bottom: 2px solid black !important; }
+            .header-secao-stats span { font-size: 14px !important; }
+            
+            /* Força 3 colunas para a lista de mensalistas ao imprimir */
+            .grid-mensalistas { grid-template-columns: repeat(3, 1fr) !important; gap: 4px 15px; padding: 4px 0; }
+            .item-mensalista { font-size: 10px; padding: 2px 0; border-bottom: 1px solid #eee; }
         }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
@@ -384,11 +398,11 @@
             </div>
         </div>
 
-        <!-- ABA 5: CAIXA -->
+        <!-- ABA 5: CAIXA E RELATÓRIOS -->
         <div id="view-financeiro" class="page-view">
-            <h2 style="text-align: left; font-size:20px; margin-bottom: 20px;">Gestão de Caixa</h2>
+            <h2 class="no-print" style="text-align: left; font-size:20px; margin-bottom: 20px;">Gestão de Caixa</h2>
             
-            <div class="card hidden-public">
+            <div class="card hidden-public no-print">
                 <p style="font-size:12px; color:var(--text-muted); margin-top:-5px; margin-bottom:15px; line-height: 1.4;">Defina o valor base para a contabilidade.</p>
                 <div style="display: flex; gap: 10px; margin-bottom: 5px;">
                     <div style="flex: 1;">
@@ -402,7 +416,7 @@
                 </div>
             </div>
 
-            <div class="card-secao-stats">
+            <div class="card-secao-stats no-print">
                 <div class="header-secao-stats" style="background: var(--dark); color: white;"><span>⚽ Caixa da Rodada (Hoje)</span></div>
                 <div style="padding: 15px;">
                     <div class="dash-grid">
@@ -425,10 +439,10 @@
                 </div>
             </div>
 
-            <div id="fin-loading" class="hidden-public" style="text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 20px; display: none;">Calculando balanço na nuvem...</div>
+            <div id="fin-loading" class="hidden-public no-print" style="text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 20px; display: none;">Calculando balanço na nuvem...</div>
 
-            <!-- RELATÓRIO MENSAL DETALHADO -->
-            <div class="card-secao-stats" id="card-relatorio-mensal">
+            <!-- RELATÓRIO MENSAL DETALHADO (Este será impresso/exportado) -->
+            <div class="card-secao-stats hidden-public" id="card-relatorio-mensal">
                 <div class="header-secao-stats" style="background: var(--primary); color: white;">
                     <span>📄 Relatório Mensal Detalhado (<span id="label-mes-relatorio">Atual</span>)</span>
                 </div>
@@ -438,9 +452,9 @@
             </div>
 
             <!-- BOTÕES DE EXPORTAÇÃO E WHATSAPP DO RELATÓRIO -->
-            <div style="display: flex; gap: 10px; margin-top: 20px;" class="no-print">
-                <button onclick="window.print()" style="background: var(--dark); flex: 1; font-size: 14px; padding: 14px;">📄 Exportar PDF / Imprimir</button>
-                <button onclick="compartilharRelatorioMensalWhatsApp()" class="btn-whatsapp" style="flex: 1; font-size: 14px; padding: 14px; margin: 0;">📱 Enviar no WhatsApp</button>
+            <div style="display: flex; gap: 10px; margin-top: 20px;" class="no-print hidden-public">
+                <button onclick="window.print()" style="background: var(--dark); flex: 1; font-size: 14px; padding: 14px;">📄 Exportar PDF</button>
+                <button onclick="compartilharRelatorioMensalWhatsApp()" class="btn-whatsapp" style="flex: 1; font-size: 14px; padding: 14px; margin: 0;">📱 Enviar Resumo WhatsApp</button>
             </div>
         </div>
 
@@ -1256,18 +1270,22 @@
 
             let html = `<table class="relatorio-tabela">`;
             
-            // 1. Mensalistas Pagantes
+            // 1. Mensalistas Pagantes (Formato GRID - Várias colunas)
             html += `<tr><th colspan="2">👥 Mensalidades Pagas no Mês</th></tr>`;
             let mensalistas = jogadores.filter(j => j.tipo === 'Mensalista');
             let totalMensalidades = 0;
             if(mensalistas.length === 0) {
                 html += `<tr><td colspan="2" style="color:var(--text-muted);">Nenhum mensalista cadastrado.</td></tr>`;
             } else {
+                let htmlMensalistas = `<div class="grid-mensalistas">`;
                 mensalistas.forEach(j => {
                     let pago = j.pagamentos_json && j.pagamentos_json[mesKey] === true;
                     if(pago) totalMensalidades += valMens;
-                    html += `<tr><td>${j.nome}</td><td style="text-align:right;">${pago ? '✅ Pago (R$ ' + valMens.toFixed(2) + ')' : '❌ Pendente'}</td></tr>`;
+                    let statusText = pago ? `<span style="color:var(--supabase); font-weight:bold;">✅ Pago</span>` : `<span style="color:var(--danger); font-weight:bold;">❌ Pendente</span>`;
+                    htmlMensalistas += `<div class="item-mensalista"><span>${j.nome}</span> <span>${statusText}</span></div>`;
                 });
+                htmlMensalistas += `</div>`;
+                html += `<tr><td colspan="2" style="padding: 0;">${htmlMensalistas}</td></tr>`;
             }
             html += `<tr><td><strong>Subtotal Mensalidades:</strong></td><td style="text-align:right; font-weight:bold; color:var(--supabase);">R$ ${totalMensalidades.toFixed(2)}</td></tr>`;
 
@@ -1281,7 +1299,9 @@
                     let subConv = qtdConv * vConv;
                     totalConvidados += subConv;
                     let dataF = p.data_sorteio ? new Date(p.data_sorteio).toLocaleDateString('pt-BR') : `Rodada ${idx+1}`;
-                    html += `<tr><td>Rodada (${dataF}): ${qtdConv} convidados</td><td style="text-align:right;">R$ ${subConv.toFixed(2)}</td></tr>`;
+                    if(qtdConv > 0) {
+                        html += `<tr><td>Rodada (${dataF}): ${qtdConv} convidados</td><td style="text-align:right;">R$ ${subConv.toFixed(2)}</td></tr>`;
+                    }
                 });
             } else {
                 html += `<tr><td colspan="2" style="color:var(--text-muted);">Nenhuma rodada finalizada registrada neste mês.</td></tr>`;
