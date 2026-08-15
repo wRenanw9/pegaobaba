@@ -349,7 +349,7 @@
 
             <div class="card-secao-stats hidden-public">
                 <div class="header-secao-stats" style="background: #e0e7ff; color: var(--primary);">
-                    <span>🔥 Artilharia do Mês</span>
+                    <span>🔥 Artilharia do Mês (Mensalistas)</span>
                     <span id="label-mes-atual" style="font-size: 11px; background: white; padding: 2px 6px; border-radius: 4px;">Atual</span>
                 </div>
                 <table class="tabela-stats">
@@ -360,7 +360,7 @@
 
             <div class="card-secao-stats hidden-public">
                 <div class="header-secao-stats" style="background: #fef3c7; color: var(--warning);">
-                    <span>🌟 Ranking Anual (Gols e Presenças)</span>
+                    <span>🌟 Ranking Anual (Mensalistas)</span>
                     <span id="label-ano-atual" style="font-size: 11px; background: white; padding: 2px 6px; border-radius: 4px;">Atual</span>
                 </div>
                 <div style="overflow-x: auto;">
@@ -1594,14 +1594,27 @@
             document.getElementById('label-ano-atual').innerText = anoAtual;
 
             const { data: partidas } = await db.from('partidas').select('id, data_sorteio, artilheiros_json').gte('data_sorteio', startOfYear);
-            const { data: presencas } = await db.from('presencas').select('partida_id, jogadores(nome)');
+            const { data: presencas } = await db.from('presencas').select('partida_id, jogadores(nome, tipo)');
+
+            let mensalistasPorPartida = {};
+            if(presencas) {
+                presencas.forEach(p => {
+                    let partidaId = p.partida_id;
+                    let jogador = p.jogadores;
+                    if(jogador && jogador.tipo === 'Mensalista') {
+                        if(!mensalistasPorPartida[partidaId]) mensalistasPorPartida[partidaId] = new Set();
+                        mensalistasPorPartida[partidaId].add(jogador.nome);
+                    }
+                });
+            }
 
             let artilhariaMes = {}; let rankingAnual = {};
 
             if(presencas && partidas) {
                 presencas.forEach(p => {
                     let nome = p.jogadores?.nome;
-                    if(!nome) return;
+                    let tipo = p.jogadores?.tipo;
+                    if(!nome || tipo !== 'Mensalista') return;
                     if(!rankingAnual[nome]) rankingAnual[nome] = { gols: 0, presencas: 0 };
                     let pt = partidas.find(x => x.id === p.partida_id);
                     if(pt) rankingAnual[nome].presencas++;
@@ -1613,7 +1626,13 @@
                     let dataP = new Date(p.data_sorteio);
                     let isEsteMes = dataP.getMonth() === mesAtual;
                     let arts = p.artilheiros_json || {};
+                    let mensalistasNesta = mensalistasPorPartida[p.id] || new Set();
+
                     for(let nome in arts) {
+                        // Verifica se o artilheiro era mensalista nesta partida ou no cadastro geral
+                        let isMensalista = mensalistasNesta.has(nome) || jogadores.some(j => j.nome === nome && j.tipo === 'Mensalista');
+                        if(!isMensalista) continue; // Pula convidados para mês e ano
+
                         let gols = arts[nome];
                         if(!rankingAnual[nome]) rankingAnual[nome] = { gols: 0, presencas: 0 };
                         rankingAnual[nome].gols += gols;
