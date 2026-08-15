@@ -956,13 +956,17 @@
             }
             renderizarListaCustos();
             
-            const { data: jogos } = await db.from('jogos').select('*').eq('partida_id', partida.id);
-            if(jogos) {
-                window.jogosDaRodada = jogos.map(j => ({
-                    equipe_a_id: 0, equipe_a_nome: j.equipe_a, gols_a: new Array(j.gols_a).fill('Gol'),
-                    equipe_b_id: 0, equipe_b_nome: j.equipe_b, gols_b: new Array(j.gols_b).fill('Gol')
-                }));
-            } else window.jogosDaRodada = [];
+            if (partida.jogos_json && partida.jogos_json.length > 0) {
+                window.jogosDaRodada = partida.jogos_json;
+            } else {
+                const { data: jogos } = await db.from('jogos').select('*').eq('partida_id', partida.id);
+                if(jogos) {
+                    window.jogosDaRodada = jogos.map(j => ({
+                        equipe_a_nome: j.equipe_a, gols_a: new Array(j.gols_a).fill('Gol'),
+                        equipe_b_nome: j.equipe_b, gols_b: new Array(j.gols_b).fill('Gol')
+                    }));
+                } else window.jogosDaRodada = [];
+            }
             
             window.partidaSalva = true;
             atualizarListaJogosDaRodada();
@@ -1263,7 +1267,6 @@
             renderizarTimesNaTela();
             atualizarFinanceiro(); 
 
-            // GERAR CODIGO IMEDIATAMENTE NO SUPABASE
             await criarPartidaInicialNoBanco();
             salvarEstadoCompleto();
         }
@@ -1285,6 +1288,7 @@
                     valor_por_mensalista: valorMens,
                     custos_json: [],
                     artilheiros_json: {},
+                    jogos_json: [],
                     codigo_acesso: codigoAleatorio
                 }]).select();
 
@@ -1445,6 +1449,13 @@
             document.getElementById('lista-gols-b').innerHTML = htmlB || '<span style="opacity:0.5;">Nenhum gol</span>';
         }
 
+        function formatarGolsResumo(golsArray) {
+            if(!golsArray || golsArray.length === 0) return '';
+            let contagem = {};
+            golsArray.forEach(g => { contagem[g] = (contagem[g] || 0) + 1; });
+            return Object.entries(contagem).map(([nome, qtd]) => qtd > 1 ? `${nome} (${qtd})` : nome).join(', ');
+        }
+
         async function adicionarJogoNaSumula() {
             let idA = parseInt(document.getElementById('sumula_equipe_a').value); 
             let idB = parseInt(document.getElementById('sumula_equipe_b').value);
@@ -1458,14 +1469,18 @@
 
             window.jogosDaRodada.push({ equipe_a_id: idA, equipe_a_nome: nomeA, gols_a: gaList, equipe_b_id: idB, equipe_b_nome: nomeB, gols_b: gbList });
             
+            // Calcular artilheiros atuais para sincronização em tempo real
+            let artilheiros = {};
+            window.jogosDaRodada.forEach(jogo => {
+                jogo.gols_a.forEach(nome => { if(nome !== 'Gol Contra') artilheiros[nome] = (artilheiros[nome] || 0) + 1; });
+                jogo.gols_b.forEach(nome => { if(nome !== 'Gol Contra') artilheiros[nome] = (artilheiros[nome] || 0) + 1; });
+            });
+
             if(window.partidaAtualId) {
-                await db.from('jogos').insert([{
-                    partida_id: window.partidaAtualId,
-                    equipe_a: nomeA,
-                    gols_a: ga,
-                    equipe_b: nomeB,
-                    gols_b: gb
-                }]);
+                await db.from('partidas').update({
+                    jogos_json: window.jogosDaRodada,
+                    artilheiros_json: artilheiros
+                }).eq('id', window.partidaAtualId);
             }
 
             window.filaEquipes = window.filaEquipes.filter(id => id !== idA && id !== idB);
@@ -1496,12 +1511,28 @@
             
             window.jogosDaRodada.forEach((j, i) => {
                 let btnExcluirHtml = window.partidaSalva ? '' : `<button class="btn-excluir hidden-public" style="padding:2px 6px; margin-left:5px;" onclick="removerJogo(${i})">X</button>`;
+                let autoresA = formatarGolsResumo(j.gols_a);
+                let autoresB = formatarGolsResumo(j.gols_b);
+                
+                let detalhesGolsHtml = '';
+                if (autoresA || autoresB) {
+                    detalhesGolsHtml = `
+                        <div style="font-size: 11px; color: var(--text-muted); display: flex; justify-content: space-between; margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border);">
+                            <span style="flex: 1; text-align: right; padding-right: 10px;">⚽ ${autoresA}</span>
+                            <span style="flex: 1; text-align: left; padding-left: 10px;">⚽ ${autoresB}</span>
+                        </div>
+                    `;
+                }
+
                 lista.innerHTML += `
-                    <div class="jogo-registrado">
-                        <div style="flex:1; text-align:right;">${j.equipe_a_nome}</div>
-                        <div class="placar-box" style="margin: 0 10px;">${j.gols_a.length} x ${j.gols_b.length}</div>
-                        <div style="flex:1; text-align:left;">${j.equipe_b_nome}</div>
-                        ${btnExcluirHtml}
+                    <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 8px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 600;">
+                            <div style="flex:1; text-align:right;">${j.equipe_a_nome}</div>
+                            <div class="placar-box" style="margin: 0 10px;">${j.gols_a.length} x ${j.gols_b.length}</div>
+                            <div style="flex:1; text-align:left;">${j.equipe_b_nome}</div>
+                            ${btnExcluirHtml}
+                        </div>
+                        ${detalhesGolsHtml}
                     </div>`;
             });
 
@@ -1761,7 +1792,8 @@
                     valor_por_convidado: valorConv,
                     valor_por_mensalista: valorMens,
                     custos_json: window.custosDaRodada,
-                    artilheiros_json: artilheiros
+                    artilheiros_json: artilheiros,
+                    jogos_json: window.jogosDaRodada
                 }).eq('id', window.partidaAtualId);
 
                 if(errP) throw errP;
