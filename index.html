@@ -243,7 +243,7 @@
             </div>
 
             <div class="card hidden-public" style="padding: 15px;">
-                <h2 style="margin-bottom: 10px;">Gestão de Mensalidades (<span id="total-elenco">0</span>)</h2>
+                <h2 style="margin-bottom: 10px;">Gestão de Elenco (<span id="total-elenco">0</span>)</h2>
                 <div class="busca-container">
                     <input type="text" id="busca-jogador-elenco" placeholder="🔍 Buscar jogador..." onkeyup="filtrarElencoAdmin()">
                 </div>
@@ -270,10 +270,10 @@
                 <div style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 20px;">
                     <label style="font-weight: 600; display: block; margin-bottom: 8px;">Modo de Sorteio:</label>
                     <select id="modo-sorteio" style="margin-bottom: 10px;">
-                        <option value="12">12 PRIMEIROS (2 times - Sem Goleiros)</option>
-                        <option value="14">14 PRIMEIROS (2 times - Com Goleiros)</option>
-                        <option value="todos_sem_goleiro">TODOS de linha (Múltiplos - Sem Goleiros)</option>
-                        <option value="todos" selected>TODOS (Múltiplos - Com Goleiros)</option>
+                        <option value="12">2 times - sem goleiro</option>
+                        <option value="14">2 times - com goleiro</option>
+                        <option value="todos_sem_goleiro">Todos - sem goleiro</option>
+                        <option value="todos" selected>Todos - com goleiro</option>
                     </select>
                     
                     <div style="display:flex; gap:10px; align-items:flex-start; background: white; padding:10px; border-radius:8px; border:1px solid var(--border);">
@@ -992,7 +992,16 @@
 
         function salvarEstadoLocal() { let estado = {}; jogadores.forEach(j => { if (j.presente || j.pagou) estado[j.id] = { presente: j.presente, ordemChegada: j.ordemChegada, pagou: j.pagou }; }); localStorage.setItem('baba_presencas_temp', JSON.stringify(estado)); }
         
-        function marcarPresenca(indexArray) { jogadores[indexArray].presente = true; jogadores[indexArray].ordemChegada = Date.now(); salvarEstadoLocal(); atualizarListas(); }
+        function marcarPresenca(indexArray) { 
+            if (jogadores[indexArray].tipo === 'Convidado' && !jogadores[indexArray].pagou) {
+                alert("⚠️ O convidado precisa efetuar o pagamento antes de entrar na lista do sorteio.");
+                return;
+            }
+            jogadores[indexArray].presente = true; 
+            jogadores[indexArray].ordemChegada = Date.now(); 
+            salvarEstadoLocal(); 
+            atualizarListas(); 
+        }
         
         function desmarcarPresenca(indexArray) { 
             jogadores[indexArray].presente = false; jogadores[indexArray].ordemChegada = 0; jogadores[indexArray].pagou = false; 
@@ -1011,7 +1020,14 @@
         }
         
         function alternarPagamentoDiaria(indexArray) { 
-            jogadores[indexArray].pagou = !jogadores[indexArray].pagou; salvarEstadoLocal(); atualizarListas(); atualizarFinanceiro(); 
+            jogadores[indexArray].pagou = !jogadores[indexArray].pagou; 
+            if (jogadores[indexArray].tipo === 'Convidado' && !jogadores[indexArray].pagou && jogadores[indexArray].presente) {
+                jogadores[indexArray].presente = false;
+                jogadores[indexArray].ordemChegada = 0;
+            }
+            salvarEstadoLocal(); 
+            atualizarListas(); 
+            atualizarFinanceiro(); 
         }
         
         function zerarPresencas() { 
@@ -1074,11 +1090,17 @@
                 if(j.presente) presentes.push({ ...j, indexArray: indexArray });
                 else {
                     if(listaAguardando) {
+                        let btnAcoesAguardando = '';
+                        if (j.tipo === 'Convidado') {
+                            btnAcoesAguardando += j.pagou ? `<button class="btn-small btn-pagou" onclick="alternarPagamentoDiaria(${indexArray})">Pago</button>` : `<button class="btn-small btn-devendo" onclick="alternarPagamentoDiaria(${indexArray})">Pendente</button>`;
+                        }
+                        btnAcoesAguardando += `<button class="btn-small btn-presente" onclick="marcarPresenca(${indexArray})">Chegou</button>`;
+
                         listaAguardando.innerHTML += `
                         <div class="linha-jogador grid-aguardando" data-nome="${j.nome}">
                             <div class="col-nome">${tagConvidado} ${j.nome}</div>
                             <div class="col-pos">${tagPosicao}</div>
-                            <div class="col-acoes"><button class="btn-small btn-presente" onclick="marcarPresenca(${indexArray})">Chegou</button></div>
+                            <div class="col-acoes">${btnAcoesAguardando}</div>
                         </div>`;
                     }
                 }
@@ -1088,7 +1110,13 @@
 
             presentes.forEach((j, pos) => {
                 let tagConvidado = j.tipo === 'Convidado' ? '<span class="badge badge-convidado">C</span>' : '';
-                let controleFinanceiro = j.tipo === 'Mensalista' ? (j.pagamentos_json && j.pagamentos_json[mesKey] === true ? `<button class="btn-small btn-pagou hidden-public" onclick="alternarMensalidade('${j.id}', ${j.indexArray})">Pago</button>` : `<button class="btn-small btn-devendo hidden-public" onclick="alternarMensalidade('${j.id}', ${j.indexArray})">Pendente</button>`) : (j.pagou ? `<button class="btn-small btn-pagou hidden-public" onclick="alternarPagamentoDiaria(${j.indexArray})">Pago</button>` : `<button class="btn-small btn-devendo hidden-public" onclick="alternarPagamentoDiaria(${j.indexArray})">Pendente</button>`);
+                
+                let controleFinanceiro = '';
+                if (j.tipo === 'Mensalista') {
+                    controleFinanceiro = (j.pagamentos_json && j.pagamentos_json[mesKey] === true) ? `<button class="btn-small btn-pagou hidden-public" onclick="alternarMensalidade('${j.id}', ${j.indexArray})">Pago</button>` : `<button class="btn-small btn-devendo hidden-public" onclick="alternarMensalidade('${j.id}', ${j.indexArray})">Pendente</button>`;
+                } else {
+                    controleFinanceiro = j.pagou ? `<button class="btn-small btn-pagou hidden-public" onclick="alternarPagamentoDiaria(${j.indexArray})">Pago</button>` : `<button class="btn-small btn-devendo hidden-public" onclick="alternarPagamentoDiaria(${j.indexArray})">Pendente</button>`;
+                }
 
                 if(listaPresentes) {
                     listaPresentes.innerHTML += `
@@ -1174,7 +1202,7 @@
             window.timesSorteadosObjs = [];
             times.forEach((timeArr, idx) => {
                 let cor = coresTimes[idx % coresTimes.length];
-                window.timesSorteadosObjs.push({ id: idx, corBase: cor, nome: `Equipe ${cor}`, jogadores: timeArr });
+                window.timesSorteadosObjs.push({ id: idx, corBase: cor, nome: cor, jogadores: timeArr });
             });
 
             window.reservasSorteados = reservas; window.partidaSalva = false;
@@ -1408,7 +1436,7 @@
 
         function atualizarNomeTime(id, novoNome) {
             let time = window.timesSorteadosObjs.find(t => t.id === id);
-            if(time) time.nome = novoNome.trim() || `Equipe ${time.corBase}`;
+            if(time) time.nome = novoNome.trim() || time.corBase;
             salvarEstadoCompleto();
             if (document.getElementById('view-placares').classList.contains('active')) atualizarSelectsEquipes();
         }
