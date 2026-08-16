@@ -496,6 +496,16 @@
                 </div>
             </div>
 
+            <!-- CONFIGURAÇÃO DE JOGADORES POR TIME -->
+            <div class="card" style="padding: 15px; margin-bottom: 15px;">
+                <h3 style="font-size: 14px; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom: 10px;">⚽ Tamanho das Equipes</h3>
+                <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Defina o total de jogadores por time em quadra <strong>(já incluindo o goleiro)</strong>:</p>
+                <div style="display:flex; gap:10px;">
+                    <input type="number" id="jogadores-por-time-input" min="3" max="15" value="7" style="margin-bottom:0; padding: 10px; font-weight: 700;">
+                    <button onclick="salvarJogadoresPorTime()" style="width:auto; padding:0 20px; font-size: 13px;">Salvar</button>
+                </div>
+            </div>
+
             <div class="card" style="padding: 15px; margin-bottom: 15px;">
                 <h3 style="font-size: 14px; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom: 10px;">👤 Dados de Acesso</h3>
                 <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 5px;">E-mail cadastrado:</p>
@@ -823,7 +833,7 @@
             
             if (error || !profile) {
                 const { data: newProfile, error: insertError } = await db.from('profiles').insert([{
-                    id: user.id, email: user.email, is_authorized: false, is_admin: false, nome_baba: ""
+                    id: user.id, email: user.email, is_authorized: false, is_admin: false, nome_baba: "", jogadores_por_time: 7
                 }]).select().single();
 
                 if (insertError || !newProfile) {
@@ -886,6 +896,7 @@
                 let tituloApp = currentProfile.nome_baba ? currentProfile.nome_baba : "Pega o Baba";
                 document.getElementById('top-bar-title').innerText = tituloApp;
                 if(currentProfile.nome_baba) document.getElementById('nome-baba-input').value = currentProfile.nome_baba;
+                if(currentProfile.jogadores_por_time) document.getElementById('jogadores-por-time-input').value = currentProfile.jogadores_por_time;
 
                 if (currentProfile.escudo_url) {
                     document.getElementById('top-bar-escudo').src = currentProfile.escudo_url;
@@ -921,6 +932,20 @@
                 alert("✅ Nome do Baba atualizado com sucesso!");
                 document.getElementById('top-bar-title').innerText = novoNome || "Pega o Baba";
                 if(currentProfile) currentProfile.nome_baba = novoNome;
+            }
+        }
+
+        async function salvarJogadoresPorTime() {
+            if (!currentUser) return;
+            let qtd = parseInt(document.getElementById('jogadores-por-time-input').value) || 7;
+            if (qtd < 3 || qtd > 15) return alert("Insira um número válido entre 3 e 15.");
+
+            const { error } = await db.from('profiles').update({ jogadores_por_time: qtd }).eq('id', currentUser.id);
+            if (error) {
+                alert("Erro ao salvar tamanho das equipes: " + error.message);
+            } else {
+                alert("✅ Tamanho das equipes atualizado com sucesso!");
+                if(currentProfile) currentProfile.jogadores_por_time = qtd;
             }
         }
 
@@ -1180,7 +1205,6 @@
             atualizarFinanceiro(); 
             gerarRelatorioMensal();
 
-            // Ao carregar o app do admin, verifica se há uma partida ativa recente (dentro de 6 dias)
             await checarPartidaAtivaAdmin();
         }
 
@@ -1423,11 +1447,13 @@
             let jogadoresValidos = presentes; let reservas = [];
             if (!incluiGoleiros) { reservas.push(...presentes.filter(j => j.posicao === 'Goleiro')); jogadoresValidos = presentes.filter(j => j.posicao !== 'Goleiro'); }
 
+            let tamanhoIdeal = currentProfile && currentProfile.jogadores_por_time ? parseInt(currentProfile.jogadores_por_time) : 7;
             let maxTitulares = jogadoresValidos.length;
-            if (modo === '12') maxTitulares = 12; if (modo === '14') maxTitulares = 14;
+            if (modo === '12') maxTitulares = 12; 
+            else if (modo === '14') maxTitulares = 14;
 
             let titulares = jogadoresValidos.slice(0, maxTitulares); reservas.push(...jogadoresValidos.slice(maxTitulares));
-            let times = []; let tamanhoIdeal = incluiGoleiros ? 7 : 6; let tamanhoPartida = tamanhoIdeal * 2; 
+            let times = []; let tamanhoPartida = tamanhoIdeal * 2; 
 
             if (!priorizarOrdem && (modo === 'todos' || modo === 'todos_sem_goleiro')) {
                 let qtdTimesGlobais = Math.ceil(titulares.length / tamanhoIdeal);
