@@ -305,10 +305,8 @@
             <!-- RESULTADO DO SORTEIO -->
             <div id="resultado" class="team-container"></div>
             
-            <div id="box-codigo-gerado-sorteio" class="codigo-gerado-box hidden-public" style="display:none; margin-top: 20px;"></div>
-
             <div class="hidden-public" style="display: flex; gap: 10px; margin-top: 20px;">
-                <button id="btn-ir-placares" style="background: var(--primary); display: none; width:100%;" onclick="mudarAba('view-placares')">📝 Preencher Súmula</button>
+                <button id="btn-ir-placares" style="background: var(--primary); display: none; width:100%;" onclick="mudarAba('view-placares')">📝 Ir para Súmula e Gerenciar Jogos</button>
             </div>
         </div>
 
@@ -327,6 +325,9 @@
 
                 <div id="container-sumula" style="display: none;">
                     
+                    <!-- BOX CÓDIGO E COMPARTILHAMENTO EXCLUSIVO NA SÚMULA -->
+                    <div id="box-codigo-gerado-sumula" class="codigo-gerado-box" style="margin-bottom: 20px; display:none;"></div>
+
                     <!-- DESTAQUE DA FILA / PRÓXIMA EQUIPE -->
                     <div id="container-status-fila"></div>
 
@@ -594,6 +595,20 @@
 
         const coresTimes = ["Vermelho", "Azul", "Amarelo", "Verde", "Branco", "Preto", "Roxo", "Laranja"];
         const emojisTimes = ["🔴", "🔵", "🟡", "🟢", "⚪", "⚫", "🟣", "🟠"];
+
+        function getCorHex(corBase) {
+            const map = {
+                "Vermelho": "#ef4444",
+                "Azul": "#3b82f6",
+                "Amarelo": "#d97706",
+                "Verde": "#10b981",
+                "Branco": "#64748b",
+                "Preto": "#0f172a",
+                "Roxo": "#8b5cf6",
+                "Laranja": "#f97316"
+            };
+            return map[corBase] || "#4f46e5";
+        }
 
         window.timesSorteadosObjs = []; 
         window.reservasSorteados = [];
@@ -1092,7 +1107,11 @@
             
             if(partida.data_sorteio) {
                 let d = new Date(partida.data_sorteio);
-                window.dataPartidaAtual = d.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
+                if (!isNaN(d.getTime())) {
+                    window.dataPartidaAtual = d.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
+                } else {
+                    window.dataPartidaAtual = partida.data_sorteio;
+                }
             }
             
             if (partida.times_json && partida.times_json.length > 0) {
@@ -1237,8 +1256,10 @@
             if(confirm("Encerrar o Baba de hoje?\n\nIsso vai retirar todos da quadra e ZERAR as DIÁRIAS dos convidados.")) { 
                 jogadores.forEach(j => { j.presente = false; j.ordemChegada = 0; j.pagou = false; }); 
                 salvarEstadoLocal(); limparEstadoRodada(); atualizarListas(); atualizarFinanceiro(); 
-                document.getElementById('resultado').innerHTML = ""; document.getElementById('btn-ir-placares').style.display = 'none'; 
-                document.getElementById('box-codigo-gerado-sorteio').style.display = 'none';
+                document.getElementById('resultado').innerHTML = ""; 
+                document.getElementById('btn-ir-placares').style.display = 'none'; 
+                let boxSumula = document.getElementById('box-codigo-gerado-sumula');
+                if(boxSumula) { boxSumula.style.display = 'none'; boxSumula.innerHTML = ''; }
             } 
         }
 
@@ -1345,7 +1366,6 @@
             if (presentes.length < 2) return alert("Adicione pelo menos 2 atletas na lista de Prontos.");
             
             document.getElementById('btn-ir-placares').style.display = 'none';
-            document.getElementById('box-codigo-gerado-sorteio').style.display = 'none';
             const resultado = document.getElementById('resultado');
             resultado.innerHTML = `<div style="text-align:center; padding:40px; font-weight:bold; color:var(--primary);">Processando Algoritmo...</div>`;
             setTimeout(() => { sortearTimes(presentes); }, 1500);
@@ -1417,6 +1437,10 @@
 
             await criarPartidaInicialNoBanco();
             salvarEstadoCompleto();
+
+            // Após gerar, limpa a exibição na aba de Sorteio e vai direto ou exibe botão para Súmula
+            document.getElementById('resultado').innerHTML = `<div style="text-align:center; padding: 20px; font-weight:600; color:var(--primary);">✅ Equipes sortidas com sucesso!<br>Os times e o código de acesso estão disponíveis na aba <strong>Súmula</strong>.</div>`;
+            document.getElementById('btn-ir-placares').style.display = 'block';
         }
 
         async function criarPartidaInicialNoBanco() {
@@ -1579,7 +1603,7 @@
             let textoWpp = encodeURIComponent(`🏆 *Acompanhe nosso Baba ao Vivo!*\n\nVeja a súmula, artilharia e classificação da rodada pelo link:\n\n${linkCompartilhamento}\n\n_(Código de acesso direto: ${codigo})_`);
             let textoWppEscalacao = gerarTextoWhatsAppEscalacao();
 
-            let boxCod = document.getElementById('box-codigo-gerado-sorteio');
+            let boxCod = document.getElementById('box-codigo-gerado-sumula');
             boxCod.innerHTML = `
                 <div style="font-size:12px; color:var(--text-muted); font-weight:normal; margin-bottom:5px;">CÓDIGO DESTE BABA PARA OS JOGADORES:</div>
                 <div style="color:var(--primary); font-size:28px; line-height:1; margin-bottom:15px;">${codigo}</div>
@@ -1592,25 +1616,10 @@
         }
 
         function renderizarTimesNaTela() {
-            document.getElementById('resultado').innerHTML = "";
-            window.timesSorteadosObjs.forEach((t) => {
-                let emoji = emojisTimes[coresTimes.indexOf(t.corBase)] || '⚽';
-                let html = `<div class="team">
-                    <div style="display:flex; align-items:center; gap:5px; margin-bottom:10px;">
-                        <span style="font-size:18px;">${emoji}</span>
-                        <input type="text" value="${t.nome}" onchange="atualizarNomeTime(${t.id}, this.value)" class="input-nome-time" placeholder="Nome do Time" ${window.isModoPublico ? 'disabled' : ''}>
-                    </div>
-                    <ul>`;
-                t.jogadores.forEach(j => { html += `<li><strong>${j.nome}</strong> ${j.posicao!=='Linha'?`<span class="badge badge-posicao">${j.posicao}</span>`:''}</li>`; });
-                document.getElementById('resultado').innerHTML += html + `</ul></div>`;
-            });
-
-            if (window.reservasSorteados && window.reservasSorteados.length > 0) {
-                let html = `<div class="team team-reservas"><h3 style="padding:5px;">Reservas</h3><ul>`;
-                window.reservasSorteados.forEach(j => html += `<li><strong>${j.nome}</strong></li>`);
-                document.getElementById('resultado').innerHTML += html + `</ul></div>`;
+            // Apenas atualiza a súmula com as equipes, removendo exibição redundante na aba de sorteio
+            if (window.timesSorteadosObjs && window.timesSorteadosObjs.length > 0 && !window.partidaSalva) {
+                document.getElementById('btn-ir-placares').style.display = 'block';
             }
-            document.getElementById('btn-ir-placares').style.display = 'block';
         }
 
         function atualizarNomeTime(id, novoNome) {
@@ -1629,11 +1638,17 @@
                 container.style.display = 'none'; 
                 aviso.style.display = 'block'; 
                 if(dataLabel) dataLabel.innerText = "";
+                let boxSumula = document.getElementById('box-codigo-gerado-sumula');
+                if(boxSumula) boxSumula.style.display = 'none';
                 return;
             }
 
             aviso.style.display = 'none'; 
             container.style.display = 'block';
+
+            if(window.codigoAcessoAtual) {
+                exibirBoxCodigoSorteio(window.codigoAcessoAtual);
+            }
 
             if(dataLabel) {
                 let dataExibicao = window.dataPartidaAtual || new Date().toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
@@ -1696,9 +1711,11 @@
 
             window.timesSorteadosObjs.forEach((t) => {
                 let emoji = emojisTimes[coresTimes.indexOf(t.corBase)] || '⚽';
-                let html = `<div class="team" style="border-top-color: var(--primary);">
-                    <div style="display:flex; align-items:center; gap:5px; margin-bottom:10px; font-weight:700; font-size:15px;">
-                        <span>${emoji}</span> ${t.nome}
+                let corHex = getCorHex(t.corBase);
+                let html = `<div class="team" style="border-top-color: ${corHex};">
+                    <div style="display:flex; align-items:center; gap:5px; margin-bottom:10px;">
+                        <span style="font-size:18px;">${emoji}</span>
+                        <input type="text" value="${t.nome}" onchange="atualizarNomeTime(${t.id}, this.value)" class="input-nome-time" placeholder="Nome do Time" style="color: ${corHex};" ${window.isModoPublico ? 'disabled' : ''}>
                     </div>
                     <ul>`;
                 t.jogadores.forEach(j => { html += `<li><strong>${j.nome}</strong> ${j.posicao!=='Linha'?`<span class="badge badge-posicao">${j.posicao}</span>`:''}</li>`; });
@@ -1905,7 +1922,16 @@
                 return b[1].gp - a[1].gp; 
             });
 
-            let dataExibicao = dataStr ? new Date(dataStr).toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}) : (window.dataPartidaAtual || new Date().toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}));
+            let dataExibicao = window.dataPartidaAtual || new Date().toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
+            if (dataStr) {
+                let d = new Date(dataStr);
+                if (!isNaN(d.getTime())) {
+                    dataExibicao = d.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
+                } else {
+                    dataExibicao = dataStr;
+                }
+            }
+
             let tituloClass = document.getElementById('titulo-classificacao-dia');
             let tituloArts = document.getElementById('titulo-artilheiros-dia');
             if (tituloClass) tituloClass.innerText = `🏆 Classificação do dia (${dataExibicao})`;
@@ -1939,13 +1965,11 @@
         }
 
         async function renderizarPainelDoDia() {
-            // Se já temos jogos na memória, renderiza direto
             if (window.jogosDaRodada && window.jogosDaRodada.length > 0) {
                 renderizarPainelDoDiaComJogos(window.jogosDaRodada, window.dataPartidaAtual);
                 return;
             }
 
-            // Se não tem na memória (ex: após recarregar a página), busca a última partida ativa na nuvem respeitando a regra dos 6 dias
             if (currentUser && !window.isModoPublico) {
                 const { data: partidas, error } = await db.from('partidas')
                     .select('*')
@@ -1956,7 +1980,6 @@
                 if (!error && partidas && partidas.length > 0) {
                     let ultimaPartida = partidas[0];
                     
-                    // Valida janela de 6 dias (518400000 ms)
                     if (ultimaPartida.created_at) {
                         let dataCriacao = new Date(ultimaPartida.created_at);
                         let agora = new Date();
@@ -1965,7 +1988,11 @@
                             window.jogosDaRodada = ultimaPartida.jogos_json || [];
                             if (ultimaPartida.data_sorteio) {
                                 let d = new Date(ultimaPartida.data_sorteio);
-                                window.dataPartidaAtual = d.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
+                                if (!isNaN(d.getTime())) {
+                                    window.dataPartidaAtual = d.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
+                                } else {
+                                    window.dataPartidaAtual = ultimaPartida.data_sorteio;
+                                }
                             }
                             renderizarPainelDoDiaComJogos(window.jogosDaRodada, ultimaPartida.data_sorteio);
                             return;
@@ -1974,7 +2001,6 @@
                 }
             }
 
-            // Se não encontrou nenhuma partida válida
             renderizarPainelDoDiaComJogos([], null);
         }
 
