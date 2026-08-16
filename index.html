@@ -710,7 +710,9 @@
         function checarReset24h() {
             let ultimoReset = localStorage.getItem('baba_last_reset');
             let agora = Date.now();
-            if(!ultimoReset || (agora - parseInt(ultimoReset)) > 86400000) {
+            
+            // Alterado de 86400000 (24h) para 28800000 (8h)
+            if(!ultimoReset || (agora - parseInt(ultimoReset)) > 28800000) {
                 localStorage.removeItem('baba_presencas_temp');
                 localStorage.setItem('baba_last_reset', agora);
                 return true;
@@ -827,6 +829,13 @@
             await db.auth.signOut(); 
             currentProfile = null; currentUser = null;
             if (supabaseChannel) db.removeChannel(supabaseChannel);
+            
+            // NOVO: Limpeza de Cache automática ao sair
+            localStorage.removeItem('baba_full_state');
+            localStorage.removeItem('baba_presencas_temp');
+            localStorage.removeItem('baba_last_reset');
+            limparEstadoRodada();
+
             mostrarLogin(); 
         }
         
