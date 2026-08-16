@@ -229,6 +229,7 @@
     <div id="app-container" style="display: none;">
         
         <div class="top-bar">
+            <img id="top-bar-escudo" src="" style="display:none; width:35px; height:35px; border-radius:50%; object-fit:cover; margin-right:10px; border: 1px solid var(--border);">
             <h1 id="top-bar-title">Pega o Baba</h1>
             <div class="top-actions">
                 <div class="status-nuvem" id="status-db">...</div>
@@ -479,6 +480,16 @@
             <h2 style="text-align: left; font-size:20px; margin-bottom: 20px;">Minha Conta</h2>
             
             <div class="card" style="padding: 15px; margin-bottom: 15px;">
+                <h3 style="font-size: 14px; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom: 10px;">🛡️ Escudo do Baba</h3>
+                <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 10px;">Faça o upload do brasão do seu time para aparecer no topo do app.</p>
+                <div style="text-align: center; margin-bottom: 10px;">
+                    <img id="preview-escudo" src="" style="display:none; width:80px; height:80px; border-radius:50%; object-fit:cover; margin: 0 auto 10px auto; border: 2px solid var(--primary);">
+                </div>
+                <input type="file" id="input-escudo-baba" accept="image/*" style="font-size: 12px; padding: 10px; margin-bottom: 10px; border: 1px dashed var(--border); width: 100%;">
+                <button id="btn-salvar-escudo" onclick="salvarEscudoBaba()" style="background: var(--dark); padding: 10px; font-size: 13px;">Fazer Upload da Imagem</button>
+            </div>
+
+            <div class="card" style="padding: 15px; margin-bottom: 15px;">
                 <h3 style="font-size: 14px; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom: 10px;">🏷️ Nome do Baba</h3>
                 <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Personalize o nome do seu grupo no topo do aplicativo.</p>
                 <div style="display:flex; gap:10px;">
@@ -711,8 +722,8 @@
             let ultimoReset = localStorage.getItem('baba_last_reset');
             let agora = Date.now();
             
-            // Alterado de 86400000 (24h) para 28800000 (8h)
-            if(!ultimoReset || (agora - parseInt(ultimoReset)) > 28800000) {
+            // Alterado para 6 dias: 6 * 24 * 60 * 60 * 1000 = 518400000
+            if(!ultimoReset || (agora - parseInt(ultimoReset)) > 518400000) {
                 localStorage.removeItem('baba_presencas_temp');
                 localStorage.setItem('baba_last_reset', agora);
                 return true;
@@ -830,7 +841,7 @@
             currentProfile = null; currentUser = null;
             if (supabaseChannel) db.removeChannel(supabaseChannel);
             
-            // NOVO: Limpeza de Cache automática ao sair
+            // Limpeza de Cache automática ao sair
             localStorage.removeItem('baba_full_state');
             localStorage.removeItem('baba_presencas_temp');
             localStorage.removeItem('baba_last_reset');
@@ -853,10 +864,20 @@
             } else {
                 document.body.classList.remove('is-master-admin');
                 
-                // Aplica o nome do Baba personalizado
+                // Aplica o nome do Baba e o escudo personalizado
                 let tituloApp = currentProfile.nome_baba ? currentProfile.nome_baba : "Pega o Baba";
                 document.getElementById('top-bar-title').innerText = tituloApp;
                 if(currentProfile.nome_baba) document.getElementById('nome-baba-input').value = currentProfile.nome_baba;
+
+                if (currentProfile.escudo_url) {
+                    document.getElementById('top-bar-escudo').src = currentProfile.escudo_url;
+                    document.getElementById('top-bar-escudo').style.display = 'block';
+                    document.getElementById('preview-escudo').src = currentProfile.escudo_url;
+                    document.getElementById('preview-escudo').style.display = 'block';
+                } else {
+                    document.getElementById('top-bar-escudo').style.display = 'none';
+                    document.getElementById('preview-escudo').style.display = 'none';
+                }
 
                 document.getElementById('organizer-email-label').innerText = currentUser.email;
 
@@ -883,6 +904,49 @@
                 document.getElementById('top-bar-title').innerText = novoNome || "Pega o Baba";
                 if(currentProfile) currentProfile.nome_baba = novoNome;
             }
+        }
+
+        async function salvarEscudoBaba() {
+            if (!currentUser) return;
+            const fileInput = document.getElementById('input-escudo-baba');
+            const file = fileInput.files[0];
+            if(!file) return alert("Por favor, selecione uma imagem no seu celular/computador.");
+            
+            const btn = document.getElementById('btn-salvar-escudo');
+            btn.innerText = "Enviando... Aguarde"; btn.disabled = true;
+            
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${currentUser.id}_${Date.now()}.${fileExt}`;
+            
+            // Faz o upload para o Storage (pasta "escudos")
+            const { data, error } = await db.storage.from('escudos').upload(fileName, file, { upsert: true });
+            
+            if (error) {
+                alert("Erro ao enviar imagem. Verifique se criou a pasta 'escudos' no Supabase: " + error.message);
+                btn.innerText = "Fazer Upload da Imagem"; btn.disabled = false;
+                return;
+            }
+            
+            // Pega a URL Pública da imagem
+            const { data: pubData } = db.storage.from('escudos').getPublicUrl(fileName);
+            const escudoUrl = pubData.publicUrl;
+            
+            // Salva a URL no perfil do usuário
+            const { error: errP } = await db.from('profiles').update({ escudo_url: escudoUrl }).eq('id', currentUser.id);
+            
+            if (errP) {
+                alert("Erro ao vincular escudo: " + errP.message);
+            } else {
+                alert("✅ Escudo atualizado com sucesso!");
+                if(currentProfile) currentProfile.escudo_url = escudoUrl;
+                document.getElementById('top-bar-escudo').src = escudoUrl;
+                document.getElementById('top-bar-escudo').style.display = 'block';
+                document.getElementById('preview-escudo').src = escudoUrl;
+                document.getElementById('preview-escudo').style.display = 'block';
+            }
+            
+            btn.innerText = "Fazer Upload da Imagem"; btn.disabled = false;
+            fileInput.value = ""; // limpa o input
         }
 
         async function alterarSenhaOrganizador() {
@@ -947,11 +1011,30 @@
                 sairModoPublico();
                 return;
             }
+
+            // Regra dos 6 dias para o visitante
+            if (partida.created_at) {
+                let dataCriacao = new Date(partida.created_at);
+                let agora = new Date();
+                let diffMs = agora.getTime() - dataCriacao.getTime();
+                if (diffMs > 518400000) { // 6 dias em ms
+                    alert("⚠️ A visualização desta rodada já expirou (mais de 6 dias). Aguarde o próximo baba!");
+                    sairModoPublico();
+                    return;
+                }
+            }
             
             if (partida.nome_baba) {
                 document.getElementById('top-bar-title').innerText = partida.nome_baba;
             } else {
                 document.getElementById('top-bar-title').innerText = "Pega o Baba";
+            }
+
+            if (partida.escudo_url) {
+                document.getElementById('top-bar-escudo').src = partida.escudo_url;
+                document.getElementById('top-bar-escudo').style.display = 'block';
+            } else {
+                document.getElementById('top-bar-escudo').style.display = 'none';
             }
 
             window.partidaAtualId = partida.id;
@@ -995,7 +1078,10 @@
             
             window.partidaSalva = true;
             atualizarListaJogosDaRodada();
-            mudarAba('view-estatisticas'); 
+            
+            // Alterado para iniciar na SÚMULA
+            mudarAba('view-placares'); 
+            
             window.artilheirosPub = partida.artilheiros_json || {};
             renderizarPainelDoDia(); 
             
@@ -1308,7 +1394,8 @@
                     times_json: window.timesSorteadosObjs,
                     fila_json: window.filaEquipes,
                     codigo_acesso: codigoAleatorio,
-                    nome_baba: currentProfile ? currentProfile.nome_baba : ""
+                    nome_baba: currentProfile ? currentProfile.nome_baba : "",
+                    escudo_url: currentProfile ? currentProfile.escudo_url : ""
                 }]).select();
 
                 if (errP) throw errP;
