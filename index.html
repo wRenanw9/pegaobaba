@@ -305,7 +305,7 @@
             <!-- RESULTADO DO SORTEIO -->
             <div id="resultado" class="team-container"></div>
             
-            <!-- CAIXA DE COMPARTILHAMENTO DE VOLTA NA ABA SORTEIO -->
+            <!-- CAIXA DE COMPARTILHAMENTO NA ABA SORTEIO -->
             <div id="box-codigo-gerado-sorteio" class="codigo-gerado-box hidden-public" style="display:none; margin-top: 20px;"></div>
 
             <div class="hidden-public" style="display: flex; gap: 10px; margin-top: 20px;">
@@ -658,13 +658,14 @@
                         if (novaPartida.jogos_json) window.jogosDaRodada = novaPartida.jogos_json;
                         if (novaPartida.times_json) {
                             window.timesSorteadosObjs = novaPartida.times_json;
-                            renderizarTimesNaTela();
                         }
                         if (novaPartida.artilheiros_json) window.artilheirosPub = novaPartida.artilheiros_json;
                         
                         window.filaEquipes = novaPartida.fila_json || [];
                         if(window.filaEquipes.length === 0) {
                             window.partidaSalva = true;
+                        } else {
+                            window.partidaSalva = false;
                         }
                         atualizarFilaUI();
                         
@@ -723,7 +724,6 @@
                 if (state.valorConvidadoAtual) document.getElementById('valor-convidado').value = state.valorConvidadoAtual;
 
                 if(window.timesSorteadosObjs.length > 0) {
-                    renderizarTimesNaTela();
                     if(window.codigoAcessoAtual) {
                         exibirBoxCodigoSorteio(window.codigoAcessoAtual);
                         iniciarOuvinteRealtime(window.partidaAtualId);
@@ -1117,7 +1117,6 @@
             if (partida.times_json && partida.times_json.length > 0) {
                 window.timesSorteadosObjs = partida.times_json;
             }
-            renderizarTimesNaTela();
 
             const { data: presencas } = await db.from('presencas').select('pagou, jogadores(tipo)').eq('partida_id', partida.id);
             if(presencas) {
@@ -1139,12 +1138,13 @@
 
             if (partida.fila_json && partida.fila_json.length > 0) {
                 window.filaEquipes = partida.fila_json;
-            } else if (window.jogosDaRodada.length > 0) {
+                window.partidaSalva = false;
+            } else {
+                window.filaEquipes = [];
                 window.partidaSalva = true;
             }
             
             atualizarListaJogosDaRodada();
-            
             mudarAba('view-placares'); 
             
             window.artilheirosPub = partida.artilheiros_json || {};
@@ -1179,6 +1179,45 @@
             atualizarListas();
             atualizarFinanceiro(); 
             gerarRelatorioMensal();
+
+            // Ao carregar o app do admin, verifica se há uma partida ativa recente (dentro de 6 dias)
+            await checarPartidaAtivaAdmin();
+        }
+
+        async function checarPartidaAtivaAdmin() {
+            if (!currentUser || window.isModoPublico) return;
+            const { data: partidas, error } = await db.from('partidas')
+                .select('*')
+                .eq('user_id', currentUser.id)
+                .order('created_at', { ascending: false })
+                .limit(1);
+
+            if (!error && partidas && partidas.length > 0) {
+                let p = partidas[0];
+                if (p.created_at) {
+                    let diffMs = Date.now() - new Date(p.created_at).getTime();
+                    if (diffMs <= 518400000) { // dentro de 6 dias
+                        window.partidaAtualId = p.id;
+                        window.codigoAcessoAtual = p.codigo_acesso;
+                        window.jogosDaRodada = p.jogos_json || [];
+                        window.custosDaRodada = p.custos_json || [];
+                        window.timesSorteadosObjs = p.times_json || [];
+                        window.filaEquipes = p.fila_json || [];
+                        window.partidaSalva = (window.filaEquipes.length === 0 && window.jogosDaRodada.length > 0);
+                        
+                        if (p.data_sorteio) {
+                            let d = new Date(p.data_sorteio);
+                            window.dataPartidaAtual = !isNaN(d.getTime()) ? d.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}) : p.data_sorteio;
+                        }
+
+                        if (window.timesSorteadosObjs.length > 0 && !window.partidaSalva) {
+                            exibirBoxCodigoSorteio(window.codigoAcessoAtual);
+                            document.getElementById('btn-ir-placares').style.display = 'block';
+                        }
+                        iniciarOuvinteRealtime(window.partidaAtualId);
+                    }
+                }
+            }
         }
 
         function prepararEdicao(indexArray) {
@@ -1435,9 +1474,7 @@
             window.jogosDaRodada = []; window.filaEquipes = window.timesSorteadosObjs.map(t => t.id); window.custosDaRodada = [];
             window.golsTempA = []; window.golsTempB = [];
             
-            renderizarTimesNaTela();
             atualizarFinanceiro(); 
-
             await criarPartidaInicialNoBanco();
             salvarEstadoCompleto();
 
@@ -1605,10 +1642,12 @@
             let textoWpp = encodeURIComponent(`🏆 *Acompanhe nosso Baba ao Vivo!*\n\nVeja a súmula, artilharia e classificação da rodada pelo link:\n\n${linkCompartilhamento}\n\n_(Código de acesso direto: ${codigo})_`);
             let textoWppEscalacao = gerarTextoWhatsAppEscalacao();
 
+            let dataBoxStr = window.dataPartidaAtual || new Date().toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
+
             let boxCod = document.getElementById('box-codigo-gerado-sorteio');
             if (boxCod) {
                 boxCod.innerHTML = `
-                    <div style="font-size:12px; color:var(--text-muted); font-weight:normal; margin-bottom:5px;">CÓDIGO DESTE BABA PARA OS JOGADORES:</div>
+                    <div style="font-size:13px; color:var(--text-muted); font-weight:700; margin-bottom:5px;">Código do jogo (${dataBoxStr}) para os jogadores</div>
                     <div style="color:var(--primary); font-size:28px; line-height:1; margin-bottom:15px;">${codigo}</div>
                     <div style="display: flex; flex-direction: column; gap: 8px;">
                         <a href="https://api.whatsapp.com/send?text=${textoWppEscalacao}" target="_blank" class="btn-whatsapp">👥 Compartilhar Escalação no WhatsApp</a>
@@ -2188,7 +2227,7 @@
 
         async function salvarPartidaComPlacares() {
             if(!window.partidaAtualId) return alert("Nenhuma partida ativa para encerrar.");
-            if(!confirm("Atenção! Ao finalizar o baba, a fila de espera e os presentes serão esvaziados para a próxima rodada.\nDeseja salvar e encerrar agora?")) return;
+            if(!confirm("Deseja encerrar o baba de hoje?")) return;
             
             const btn = document.getElementById('btn-encerrar-baba'); btn.innerText = "Sincronizando Servidor..."; btn.disabled = true;
             try {
@@ -2243,7 +2282,7 @@
                 gerarRelatorioMensal();
 
                 btn.innerText = "✅ Baba Encerrado e Salvo com Sucesso!";
-                alert("Baba finalizado e dados salvos com sucesso! A lista de presentes e a fila de jogos foram limpas para a próxima rodada.");
+                alert("Baba finalizado com sucesso!");
 
             } catch(err) { alert("Erro: " + err.message); btn.innerText = "Tentar Novamente"; btn.disabled = false; }
         }
