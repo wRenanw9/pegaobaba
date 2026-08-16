@@ -305,8 +305,11 @@
             <!-- RESULTADO DO SORTEIO -->
             <div id="resultado" class="team-container"></div>
             
+            <!-- CÓDIGO E COMPARTILHAMENTO DE VOLTA NA ABA SORTEIO -->
+            <div id="box-codigo-gerado-sorteio" class="codigo-gerado-box hidden-public" style="display:none; margin-top: 20px;"></div>
+
             <div class="hidden-public" style="display: flex; gap: 10px; margin-top: 20px;">
-                <button id="btn-ir-placares" style="background: var(--primary); display: none; width:100%;" onclick="mudarAba('view-placares')">📝 Ir para Súmula e Gerenciar Jogos</button>
+                <button id="btn-ir-placares" style="background: var(--primary); display: none; width:100%;" onclick="mudarAba('view-placares')">📝 Preencher Súmula</button>
             </div>
         </div>
 
@@ -325,9 +328,6 @@
 
                 <div id="container-sumula" style="display: none;">
                     
-                    <!-- BOX CÓDIGO E COMPARTILHAMENTO EXCLUSIVO NA SÚMULA -->
-                    <div id="box-codigo-gerado-sumula" class="codigo-gerado-box" style="margin-bottom: 20px; display:none;"></div>
-
                     <!-- DESTAQUE DA FILA / PRÓXIMA EQUIPE -->
                     <div id="container-status-fila"></div>
 
@@ -1258,8 +1258,8 @@
                 salvarEstadoLocal(); limparEstadoRodada(); atualizarListas(); atualizarFinanceiro(); 
                 document.getElementById('resultado').innerHTML = ""; 
                 document.getElementById('btn-ir-placares').style.display = 'none'; 
-                let boxSumula = document.getElementById('box-codigo-gerado-sumula');
-                if(boxSumula) { boxSumula.style.display = 'none'; boxSumula.innerHTML = ''; }
+                let boxSorteio = document.getElementById('box-codigo-gerado-sorteio');
+                if(boxSorteio) { boxSorteio.style.display = 'none'; boxSorteio.innerHTML = ''; }
             } 
         }
 
@@ -1366,6 +1366,9 @@
             if (presentes.length < 2) return alert("Adicione pelo menos 2 atletas na lista de Prontos.");
             
             document.getElementById('btn-ir-placares').style.display = 'none';
+            let boxSorteio = document.getElementById('box-codigo-gerado-sorteio');
+            if(boxSorteio) { boxSorteio.style.display = 'none'; boxSorteio.innerHTML = ''; }
+
             const resultado = document.getElementById('resultado');
             resultado.innerHTML = `<div style="text-align:center; padding:40px; font-weight:bold; color:var(--primary);">Processando Algoritmo...</div>`;
             setTimeout(() => { sortearTimes(presentes); }, 1500);
@@ -1438,8 +1441,8 @@
             await criarPartidaInicialNoBanco();
             salvarEstadoCompleto();
 
-            // Após gerar, limpa a exibição na aba de Sorteio e vai direto ou exibe botão para Súmula
-            document.getElementById('resultado').innerHTML = `<div style="text-align:center; padding: 20px; font-weight:600; color:var(--primary);">✅ Equipes sortidas com sucesso!<br>Os times e o código de acesso estão disponíveis na aba <strong>Súmula</strong>.</div>`;
+            // Limpa o container de resultado no Sorteio para não poluir, deixando apenas o botão para ir à súmula
+            document.getElementById('resultado').innerHTML = `<div style="text-align:center; padding: 20px; font-weight:600; color:var(--supabase);">✅ Sorteio realizado com sucesso! Vá para a aba Súmula para iniciar os jogos.</div>`;
             document.getElementById('btn-ir-placares').style.display = 'block';
         }
 
@@ -1603,20 +1606,22 @@
             let textoWpp = encodeURIComponent(`🏆 *Acompanhe nosso Baba ao Vivo!*\n\nVeja a súmula, artilharia e classificação da rodada pelo link:\n\n${linkCompartilhamento}\n\n_(Código de acesso direto: ${codigo})_`);
             let textoWppEscalacao = gerarTextoWhatsAppEscalacao();
 
-            let boxCod = document.getElementById('box-codigo-gerado-sumula');
-            boxCod.innerHTML = `
-                <div style="font-size:12px; color:var(--text-muted); font-weight:normal; margin-bottom:5px;">CÓDIGO DESTE BABA PARA OS JOGADORES:</div>
-                <div style="color:var(--primary); font-size:28px; line-height:1; margin-bottom:15px;">${codigo}</div>
-                <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <a href="https://api.whatsapp.com/send?text=${textoWppEscalacao}" target="_blank" class="btn-whatsapp">👥 Compartilhar Escalação no WhatsApp</a>
-                    <a href="https://api.whatsapp.com/send?text=${textoWpp}" target="_blank" style="display:inline-block; background:var(--dark); color:white; padding:12px 20px; border-radius:8px; text-decoration:none; font-size:14px; font-weight:bold; width:100%; box-sizing:border-box;">📱 Compartilhar Link Geral</a>
-                </div>
-            `;
-            boxCod.style.display = 'block';
+            let boxCod = document.getElementById('box-codigo-gerado-sorteio');
+            if (boxCod) {
+                boxCod.innerHTML = `
+                    <div style="font-size:12px; color:var(--text-muted); font-weight:normal; margin-bottom:5px;">CÓDIGO DESTE BABA PARA OS JOGADORES:</div>
+                    <div style="color:var(--primary); font-size:28px; line-height:1; margin-bottom:15px;">${codigo}</div>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <a href="https://api.whatsapp.com/send?text=${textoWppEscalacao}" target="_blank" class="btn-whatsapp">👥 Compartilhar Escalação no WhatsApp</a>
+                        <a href="https://api.whatsapp.com/send?text=${textoWpp}" target="_blank" style="display:inline-block; background:var(--dark); color:white; padding:12px 20px; border-radius:8px; text-decoration:none; font-size:14px; font-weight:bold; width:100%; box-sizing:border-box;">📱 Compartilhar Link Geral</a>
+                    </div>
+                `;
+                boxCod.style.display = 'block';
+            }
         }
 
         function renderizarTimesNaTela() {
-            // Apenas atualiza a súmula com as equipes, removendo exibição redundante na aba de sorteio
+            // Apenas garante visibilidade do botão para a súmula se houver times
             if (window.timesSorteadosObjs && window.timesSorteadosObjs.length > 0 && !window.partidaSalva) {
                 document.getElementById('btn-ir-placares').style.display = 'block';
             }
@@ -1638,17 +1643,11 @@
                 container.style.display = 'none'; 
                 aviso.style.display = 'block'; 
                 if(dataLabel) dataLabel.innerText = "";
-                let boxSumula = document.getElementById('box-codigo-gerado-sumula');
-                if(boxSumula) boxSumula.style.display = 'none';
                 return;
             }
 
             aviso.style.display = 'none'; 
             container.style.display = 'block';
-
-            if(window.codigoAcessoAtual) {
-                exibirBoxCodigoSorteio(window.codigoAcessoAtual);
-            }
 
             if(dataLabel) {
                 let dataExibicao = window.dataPartidaAtual || new Date().toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
