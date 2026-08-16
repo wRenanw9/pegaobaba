@@ -9,10 +9,7 @@
     <link rel="icon" type="image/svg+xml" href="icone.svg">
     <link rel="apple-touch-icon" href="icone.svg">
     <meta name="theme-color" content="#0f172a">
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pega o Baba | Gestão Esportiva</title>
-    
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -1087,7 +1084,7 @@
             window.partidaSalva = true;
             atualizarListaJogosDaRodada();
             
-            // Alterado para iniciar na SÚMULA
+            // Iniciar na SÚMULA
             mudarAba('view-placares'); 
             
             window.artilheirosPub = partida.artilheiros_json || {};
@@ -1870,12 +1867,6 @@
                 j.gols_a.forEach(nome => { if(nome !== 'Gol Contra') artilheiros[nome] = (artilheiros[nome] || 0) + 1; });
                 j.gols_b.forEach(nome => { if(nome !== 'Gol Contra') artilheiros[nome] = (artilheiros[nome] || 0) + 1; });
             });
-            
-            if (window.isModoPublico && window.artilheirosPub) {
-                for (let nome in window.artilheirosPub) {
-                    artilheiros[nome] = (artilheiros[nome] || 0) + window.artilheirosPub[nome];
-                }
-            }
 
             let rankTimes = Object.entries(timesStats).sort((a, b) => {
                 if(b[1].pts !== a[1].pts) return b[1].pts - a[1].pts; 
