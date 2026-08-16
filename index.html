@@ -367,7 +367,7 @@
             <h2 style="text-align: left; font-size:20px; margin-bottom: 20px;">Painel de Estatísticas</h2>
             
             <div class="card-secao-stats">
-                <div class="header-secao-stats"><span id="titulo-classificacao-dia">🏆 Classificação de Hoje</span></div>
+                <div class="header-secao-stats"><span id="titulo-classificacao-dia">🏆 Classificação do dia</span></div>
                 <div style="overflow-x: auto;">
                     <table class="tabela-stats" id="tabela-classificacao">
                         <thead><tr><th>Time</th><th>PTS</th><th>J</th><th>V</th><th>E</th><th>D</th><th>SG</th></tr></thead>
@@ -377,10 +377,10 @@
             </div>
 
             <div class="card-secao-stats">
-                <div class="header-secao-stats"><span id="titulo-artilheiros-dia">⚽ Artilheiros de Hoje</span></div>
+                <div class="header-secao-stats"><span id="titulo-artilheiros-dia">⚽ Artilheiros do dia</span></div>
                 <table class="tabela-stats">
                     <thead><tr><th>Jogador</th><th style="width:60px;">Gols</th></tr></thead>
-                    <tbody id="body-artilheiros-painel"><tr><td colspan="2" style="color:var(--text-muted);">Nenhum gol.</td></tr></tbody>
+                    <tbody id="body-artilheiros-painel"><tr><td colspan="2" style="color:var(--text-muted);">Nenhum gol lançado.</td></tr></tbody>
                 </table>
             </div>
 
@@ -510,7 +510,7 @@
                 </div>
             </div>
             
-            <!-- NOVO BOTÃO ZERAR TEMPORADA -->
+            <!-- BOTÃO ZERAR TEMPORADA -->
             <div class="card" style="border-color: var(--warning); padding: 15px; margin-bottom: 15px;">
                 <h3 style="font-size: 14px; margin-top:0; color: var(--warning); border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom: 10px;">⚠️ Nova Temporada</h3>
                 <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 10px;">Apaga todo o histórico de partidas, súmulas, estatísticas e finanças. <strong>O Elenco de jogadores será mantido.</strong></p>
@@ -647,10 +647,9 @@
                         }
                         if (novaPartida.artilheiros_json) window.artilheirosPub = novaPartida.artilheiros_json;
                         
-                        // Atualiza a fila pela nuvem, se estiver vazia (baba encerrado) também reflete
                         window.filaEquipes = novaPartida.fila_json || [];
                         if(window.filaEquipes.length === 0) {
-                            window.partidaSalva = true; // Se a fila zerou na nuvem, encerrou.
+                            window.partidaSalva = true;
                         }
                         atualizarFilaUI();
                         
@@ -729,7 +728,7 @@
         function checarReset24h() {
             let ultimoReset = localStorage.getItem('baba_last_reset');
             let agora = Date.now();
-            if(!ultimoReset || (agora - parseInt(ultimoReset)) > 518400000) { // 6 dias
+            if(!ultimoReset || (agora - parseInt(ultimoReset)) > 518400000) {
                 localStorage.removeItem('baba_presencas_temp');
                 localStorage.setItem('baba_last_reset', agora);
                 return true;
@@ -919,6 +918,19 @@
             const btn = document.getElementById('btn-salvar-escudo');
             btn.innerText = "Enviando... Aguarde"; btn.disabled = true;
             
+            if (currentProfile && currentProfile.escudo_url) {
+                try {
+                    let urlAntiga = currentProfile.escudo_url;
+                    let partes = urlAntiga.split('/escudos/');
+                    if (partes.length > 1) {
+                        let caminhoArquivoAntigo = partes[1];
+                        await db.storage.from('escudos').remove([caminhoArquivoAntigo]);
+                    }
+                } catch (err) {
+                    console.error("Aviso: Não foi possível remover o escudo antigo automaticamente.", err);
+                }
+            }
+
             const fileExt = file.name.split('.').pop();
             const fileName = `${currentUser.id}_${Date.now()}.${fileExt}`;
             
@@ -959,7 +971,6 @@
             else { alert("✅ Senha alterada com sucesso!"); document.getElementById('nova-senha-organizador').value = ''; }
         }
 
-        // FUNCIONALIDADE ZERAR TEMPORADA
         async function zerarHistoricoAdmin() {
             if(!currentUser) return;
             
@@ -1110,7 +1121,6 @@
             if (partida.fila_json && partida.fila_json.length > 0) {
                 window.filaEquipes = partida.fila_json;
             } else if (window.jogosDaRodada.length > 0) {
-                // Se não tem fila e tem jogos, o baba foi encerrado.
                 window.partidaSalva = true;
             }
             
@@ -1493,7 +1503,6 @@
 
             let html = `<table class="relatorio-tabela">`;
             
-            // 1. Mensalistas Pagantes (Formato GRID - Várias colunas)
             html += `<tr><th colspan="2">👥 Mensalidades Pagas no Mês</th></tr>`;
             let mensalistas = jogadores.filter(j => j.tipo === 'Mensalista');
             let totalMensalidades = 0;
@@ -1512,7 +1521,6 @@
             }
             html += `<tr><td><strong>Subtotal Mensalidades:</strong></td><td style="text-align:right; font-weight:bold; color:var(--supabase);">R$ ${totalMensalidades.toFixed(2)}</td></tr>`;
 
-            // 2. Convidados por Rodada
             html += `<tr><th colspan="2" style="padding-top:12px;">🎟️ Arrecadação de Convidados (Por Rodada)</th></tr>`;
             let totalConvidados = 0;
             if(partidasDoMes.length > 0) {
@@ -1531,7 +1539,6 @@
             }
             html += `<tr><td><strong>Subtotal Convidados:</strong></td><td style="text-align:right; font-weight:bold; color:var(--supabase);">R$ ${totalConvidados.toFixed(2)}</td></tr>`;
 
-            // 3. Detalhamento de Custos
             html += `<tr><th colspan="2" style="padding-top:12px;">📉 Detalhamento de Despesas (Custos)</th></tr>`;
             let totalCustos = 0;
             if(partidasDoMes.length > 0) {
@@ -1555,7 +1562,6 @@
             }
             html += `<tr><td><strong>Total de Despesas:</strong></td><td style="text-align:right; font-weight:bold; color:var(--danger);">R$ ${totalCustos.toFixed(2)}</td></tr>`;
 
-            // Resumo Final
             let receitaTotal = totalMensalidades + totalConvidados;
             let saldoMensal = receitaTotal - totalCustos;
 
@@ -1651,7 +1657,6 @@
             const containerFila = document.getElementById('container-status-fila');
             if(!containerFila) return;
 
-            // Se a rodada encerrou ou fila estiver zerada, esconde o bloco inteiro
             if(window.partidaSalva === true || !window.timesSorteadosObjs || window.timesSorteadosObjs.length === 0 || window.filaEquipes.length === 0) {
                 containerFila.style.display = 'none';
                 return;
@@ -1831,7 +1836,6 @@
             
             let htmlCompleto = '';
             
-            // Loop para processar os jogos e adicionar em ordem reversa (recentes no topo)
             window.jogosDaRodada.forEach((j, originalIndex) => {
                 let numJogo = originalIndex + 1;
                 let btnExcluirHtml = window.partidaSalva ? '' : `<button class="btn-excluir-mini" onclick="removerJogo(${originalIndex})">X</button>`;
@@ -1862,7 +1866,6 @@
                         ${detalhesGolsHtml}
                     </div>`;
                 
-                // Coloca o novo HTML antes do que já existe, empurrando o jogo antigo para baixo
                 htmlCompleto = cardHtml + htmlCompleto;
             });
             
@@ -1875,10 +1878,10 @@
             if(btnEncerrar) btnEncerrar.style.display = window.partidaSalva ? 'none' : 'block';
         }
 
-        function renderizarPainelDoDia() {
+        function renderizarPainelDoDiaComJogos(jogosArr, dataStr) {
             let timesStats = {}; let artilheiros = {};
 
-            window.jogosDaRodada.forEach(j => {
+            jogosArr.forEach(j => {
                 if(!timesStats[j.equipe_a_nome]) timesStats[j.equipe_a_nome] = { j:0, v:0, e:0, d:0, gp:0, gc:0, pts:0 };
                 if(!timesStats[j.equipe_b_nome]) timesStats[j.equipe_b_nome] = { j:0, v:0, e:0, d:0, gp:0, gc:0, pts:0 };
                 
@@ -1902,7 +1905,7 @@
                 return b[1].gp - a[1].gp; 
             });
 
-            let dataExibicao = window.dataPartidaAtual || new Date().toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
+            let dataExibicao = dataStr ? new Date(dataStr).toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}) : (window.dataPartidaAtual || new Date().toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}));
             let tituloClass = document.getElementById('titulo-classificacao-dia');
             let tituloArts = document.getElementById('titulo-artilheiros-dia');
             if (tituloClass) tituloClass.innerText = `🏆 Classificação do dia (${dataExibicao})`;
@@ -1935,8 +1938,48 @@
             }
         }
 
+        async function renderizarPainelDoDia() {
+            // Se já temos jogos na memória, renderiza direto
+            if (window.jogosDaRodada && window.jogosDaRodada.length > 0) {
+                renderizarPainelDoDiaComJogos(window.jogosDaRodada, window.dataPartidaAtual);
+                return;
+            }
+
+            // Se não tem na memória (ex: após recarregar a página), busca a última partida ativa na nuvem respeitando a regra dos 6 dias
+            if (currentUser && !window.isModoPublico) {
+                const { data: partidas, error } = await db.from('partidas')
+                    .select('*')
+                    .eq('user_id', currentUser.id)
+                    .order('created_at', { ascending: false })
+                    .limit(1);
+
+                if (!error && partidas && partidas.length > 0) {
+                    let ultimaPartida = partidas[0];
+                    
+                    // Valida janela de 6 dias (518400000 ms)
+                    if (ultimaPartida.created_at) {
+                        let dataCriacao = new Date(ultimaPartida.created_at);
+                        let agora = new Date();
+                        let diffMs = agora.getTime() - dataCriacao.getTime();
+                        if (diffMs <= 518400000) {
+                            window.jogosDaRodada = ultimaPartida.jogos_json || [];
+                            if (ultimaPartida.data_sorteio) {
+                                let d = new Date(ultimaPartida.data_sorteio);
+                                window.dataPartidaAtual = d.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
+                            }
+                            renderizarPainelDoDiaComJogos(window.jogosDaRodada, ultimaPartida.data_sorteio);
+                            return;
+                        }
+                    }
+                }
+            }
+
+            // Se não encontrou nenhuma partida válida
+            renderizarPainelDoDiaComJogos([], null);
+        }
+
         async function carregarEstatisticasGerais() {
-            renderizarPainelDoDia(); 
+            await renderizarPainelDoDia(); 
             if(window.isModoPublico) return;
 
             document.getElementById('loading-stats').style.display = 'block';
@@ -2133,7 +2176,6 @@
                 let valorConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
                 let valorMens = parseFloat(document.getElementById('valor-mensalista').value) || 0;
 
-                // Limpa a fila para indicar que o baba acabou para todos os usuários
                 window.filaEquipes = [];
 
                 const { error: errP } = await db.from('partidas').update({ 
@@ -2155,12 +2197,10 @@
                     }
                 }
 
-                // Limpa os convidados não mensais que existiam só para este baba
                 await db.from('jogadores').delete().eq('tipo', 'Convidado').eq('user_id', currentUser.id);
 
                 window.partidaSalva = true; 
                 
-                // Reseta localmente a presença de quem jogou para a próxima rodada
                 jogadores.forEach(j => { 
                     j.presente = false; 
                     j.ordemChegada = 0; 
