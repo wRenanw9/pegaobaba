@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Fundo do Ícone (Dark Blue) -->
+  <rect width="512" height="512" rx="110" fill="#0f172a"/>
+
+  <!-- Círculo de Destaque (Roxo) -->
+  <circle cx="256" cy="256" r="160" fill="none" stroke="#4f46e5" stroke-width="16"/>
+
+  <!-- Bola Branca -->
+  <circle cx="256" cy="256" r="130" fill="#ffffff"/>
+
+  <!-- Gomo Central da Bola -->
+  <polygon points="256,170 330,225 300,315 212,315 182,225" fill="#0f172a"/>
+
+  <!-- Linhas Externas da Bola -->
+  <line x1="256" y1="170" x2="256" y2="126" stroke="#0f172a" stroke-width="14" stroke-linecap="round"/>
+  <line x1="330" y1="225" x2="375" y2="205" stroke="#0f172a" stroke-width="14" stroke-linecap="round"/>
+  <line x1="300" y1="315" x2="335" y2="360" stroke="#0f172a" stroke-width="14" stroke-linecap="round"/>
+  <line x1="212" y1="315" x2="177" y2="360" stroke="#0f172a" stroke-width="14" stroke-linecap="round"/>
+  <line x1="182" y1="225" x2="137" y2="205" stroke="#0f172a" stroke-width="14" stroke-linecap="round"/>
+</svg>
