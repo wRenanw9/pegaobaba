@@ -305,7 +305,7 @@
             <!-- RESULTADO DO SORTEIO -->
             <div id="resultado" class="team-container"></div>
             
-            <!-- CÓDIGO E COMPARTILHAMENTO DE VOLTA NA ABA SORTEIO -->
+            <!-- CAIXA DE COMPARTILHAMENTO DE VOLTA NA ABA SORTEIO -->
             <div id="box-codigo-gerado-sorteio" class="codigo-gerado-box hidden-public" style="display:none; margin-top: 20px;"></div>
 
             <div class="hidden-public" style="display: flex; gap: 10px; margin-top: 20px;">
@@ -1441,8 +1441,7 @@
             await criarPartidaInicialNoBanco();
             salvarEstadoCompleto();
 
-            // Limpa o container de resultado no Sorteio para não poluir, deixando apenas o botão para ir à súmula
-            document.getElementById('resultado').innerHTML = `<div style="text-align:center; padding: 20px; font-weight:600; color:var(--supabase);">✅ Sorteio realizado com sucesso! Vá para a aba Súmula para iniciar os jogos.</div>`;
+            document.getElementById('resultado').innerHTML = "";
             document.getElementById('btn-ir-placares').style.display = 'block';
         }
 
@@ -1621,7 +1620,6 @@
         }
 
         function renderizarTimesNaTela() {
-            // Apenas garante visibilidade do botão para a súmula se houver times
             if (window.timesSorteadosObjs && window.timesSorteadosObjs.length > 0 && !window.partidaSalva) {
                 document.getElementById('btn-ir-placares').style.display = 'block';
             }
@@ -1648,6 +1646,10 @@
 
             aviso.style.display = 'none'; 
             container.style.display = 'block';
+
+            if(window.codigoAcessoAtual) {
+                exibirBoxCodigoSorteio(window.codigoAcessoAtual);
+            }
 
             if(dataLabel) {
                 let dataExibicao = window.dataPartidaAtual || new Date().toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
