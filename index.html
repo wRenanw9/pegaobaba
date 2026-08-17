@@ -788,7 +788,6 @@
             if(viewId === 'view-financeiro') {
                 atualizarFinanceiro();
                 gerarRelatorioMensal();
-                if(!window.isModoPublico) calcularBalancoMesAno();
             }
             if(viewId === 'view-admin') carregarPainelAdmin();
         }
@@ -1157,9 +1156,9 @@
                 let vConv = partida.valor_por_convidado || 0;
                 let qtdConvidadosPagos = presencas.filter(p => p.pagou && p.jogadores && p.jogadores.tipo === 'Convidado').length;
                 receitaPub += (qtdConvidadosPagos * vConv);
-                let custosDiariosPub = window.custosDaRodada.filter(c => c.tipo !== 'mensal').reduce((acc, c) => acc + c.valor, 0);
+                let totCustosPubDiarios = window.custosDaRodada.filter(c => c.tipo !== 'mensal').reduce((acc, c) => acc + c.valor, 0);
                 document.getElementById('fin-receita-hoje').innerText = `R$ ${receitaPub.toFixed(2)}`;
-                document.getElementById('fin-custos-hoje').innerText = `R$ ${custosDiariosPub.toFixed(2)}`;
+                document.getElementById('fin-custos-hoje').innerText = `R$ ${totCustosPubDiarios.toFixed(2)}`;
             }
             renderizarListaCustos();
             
@@ -1314,7 +1313,18 @@
             btn.disabled = false;
         }
 
-        async function removerJogador(idNuvem, indexArray) { if(confirm("Excluir jogador permanentemente?")) { const { error } = await db.from('jogadores').delete().eq('id', idNuvem); if (!error) { jogadores.splice(indexArray, 1); salvarEstadoLocal(); atualizarListas(); atualizarFinanceiro(); } } }
+        async function removerJogador(idNuvem, indexArray) { 
+            const nomeJogador = jogadores[indexArray].nome;
+            if(confirm(`Tem certeza que deseja remover ${nomeJogador} do elenco permanentemente?`)) { 
+                const { error } = await db.from('jogadores').delete().eq('id', idNuvem); 
+                if (!error) { 
+                    jogadores.splice(indexArray, 1); 
+                    salvarEstadoLocal(); 
+                    atualizarListas(); 
+                    atualizarFinanceiro(); 
+                } 
+            } 
+        }
 
         function salvarEstadoLocal() { let estado = {}; jogadores.forEach(j => { if (j.presente || j.pagou) estado[j.id] = { presente: j.presente, ordemChegada: j.ordemChegada, pagou: j.pagou }; }); localStorage.setItem('baba_presencas_temp', JSON.stringify(estado)); }
         
@@ -1341,7 +1351,6 @@
             if(j.pagamentos_json[mesKey] === true) delete j.pagamentos_json[mesKey]; else j.pagamentos_json[mesKey] = true;
             atualizarListas(); atualizarFinanceiro();
             gerarRelatorioMensal();
-            if (document.getElementById('view-financeiro').classList.contains('active')) calcularBalancoMesAno();
             await db.from('jogadores').update({ pagamentos_json: j.pagamentos_json }).eq('id', idNuvem);
         }
         
@@ -2202,64 +2211,32 @@
             salvarEstadoCompleto();
         }
 
-        async function calcularBalancoMesAno() {
-            let valMens = parseFloat(document.getElementById('valor-mensalista').value) || 0;
-            let valConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
-
-            let hoje = new Date(); let mesKey = hoje.toISOString().substring(0, 7); let anoKey = hoje.getFullYear().toString();
-            const { data: partidas } = await db.from('partidas').select('*').gte('data_sorteio', `${anoKey}-01-01`).eq('user_id', currentUser.id);
-            
-            let recConvMes = 0; let cusMes = 0; let recConvAno = 0; let cusAno = 0;
-            if(partidas) {
-                partidas.forEach(p => {
-                    let dataP = p.data_sorteio.substring(0, 7); 
-                    let recC = (p.renda_convidados || 0) * (p.valor_por_convidado || 0);
-                    let cus = (p.custos_json || []).reduce((acc, c) => acc + c.valor, 0);
-                    recConvAno += recC; cusAno += cus;
-                    if(dataP === mesKey) { recConvMes += recC; cusMes += cus; }
-                });
-            }
-            
-            let custHojeTotal = window.custosDaRodada.reduce((acc, c) => acc + c.valor, 0);
-            cusMes += custHojeTotal; cusAno += custHojeTotal;
-
-            let convPagantesHoje = jogadores.filter(j => j.tipo === 'Convidado' && j.presente && j.pagou).length;
-            let recHoje = (convPagantesHoje * valConv);
-            recConvMes += recHoje; recConvAno += recHoje;
-
-            let qtdMensalistasMes = jogadores.filter(j => j.tipo === 'Mensalista' && j.pagamentos_json && j.pagamentos_json[mesKey] === true).length;
-            let recMensalidadesMes = qtdMensalistasMes * valMens;
-
-            let recMensalidadesAno = 0;
-            jogadores.forEach(j => {
-                if(j.tipo === 'Mensalista' && j.pagamentos_json) {
-                    Object.keys(j.pagamentos_json).forEach(k => {
-                        if(k.startsWith(anoKey) && j.pagamentos_json[k] === true) recMensalidadesAno += valMens;
-                    });
-                }
-            });
-            
-            let recMesTotal = recConvMes + recMensalidadesMes;
-            let recAnoTotal = recConvAno + recMensalidadesAno;
-        }
-        
-        function adicionarCusto() {
+        async function adicionarCusto() {
             let desc = document.getElementById('desc-custo').value; 
             let val = parseFloat(document.getElementById('valor-custo').value) || 0;
             let tipo = document.getElementById('tipo-custo').value;
             if(!desc || val <= 0) return alert("Preencha descrição e valor válido.");
+            
             window.custosDaRodada.push({ desc: desc, valor: val, tipo: tipo });
             document.getElementById('desc-custo').value = ''; 
             document.getElementById('valor-custo').value = '';
+            
             atualizarFinanceiro();
             gerarRelatorioMensal();
-            if(!window.isModoPublico && document.getElementById('view-financeiro').classList.contains('active')) calcularBalancoMesAno();
+            
+            if (window.partidaAtualId) {
+                await db.from('partidas').update({ custos_json: window.custosDaRodada }).eq('id', window.partidaAtualId);
+            }
         }
         
-        function removerCusto(index) { 
-            window.custosDaRodada.splice(index, 1); atualizarFinanceiro(); 
+        async function removerCusto(index) { 
+            window.custosDaRodada.splice(index, 1); 
+            atualizarFinanceiro(); 
             gerarRelatorioMensal();
-            if(!window.isModoPublico && document.getElementById('view-financeiro').classList.contains('active')) calcularBalancoMesAno();
+            
+            if (window.partidaAtualId) {
+                await db.from('partidas').update({ custos_json: window.custosDaRodada }).eq('id', window.partidaAtualId);
+            }
         }
         
         function renderizarListaCustos() {
