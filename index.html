@@ -1257,19 +1257,54 @@
 
         async function adicionarJogador() {
             if (!currentUser) return;
-            const nomeInput = document.getElementById('nome'); const tipo = document.getElementById('tipo').value;
-            const posicao = document.getElementById('posicao').value; const nivel = parseInt(document.getElementById('nivel').value); const nome = nomeInput.value.trim();
+            const nomeInput = document.getElementById('nome'); 
+            const tipo = document.getElementById('tipo').value;
+            const posicao = document.getElementById('posicao').value; 
+            const nivel = parseInt(document.getElementById('nivel').value); 
+            
+            // Remove espaços extras nas pontas e normaliza o texto
+            const nome = nomeInput.value.trim().replace(/\s+/g, ' ');
             if (nome === "") return alert("Preencha o nome.");
-            if (jogadores.some(j => j.nome.toLowerCase() === nome.toLowerCase() && j.id !== jogadorEdicaoId)) return alert("⚠️ Jogador já cadastrado!");
-            const btn = document.getElementById('btn-adicionar'); btn.innerText = "Processando..."; btn.disabled = true;
+
+            // Validação rigorosa de nome duplicado (ignorando maiúsculas/minúsculas e espaços extras)
+            const nomeExiste = jogadores.some(j => {
+                let nomeCadastrado = (j.nome || "").trim().toLowerCase();
+                return nomeCadastrado === nome.toLowerCase() && j.id !== jogadorEdicaoId;
+            });
+
+            if (nomeExiste) return alert("⚠️ Já existe um jogador cadastrado com este nome!");
+
+            const btn = document.getElementById('btn-adicionar'); 
+            btn.innerText = "Processando..."; 
+            btn.disabled = true;
 
             if (jogadorEdicaoId) {
                 const { error } = await db.from('jogadores').update({ nome, tipo, posicao, nivel }).eq('id', jogadorEdicaoId);
-                if (!error) { let jIndex = jogadores.findIndex(j => j.id === jogadorEdicaoId); if (jIndex !== -1) { jogadores[jIndex].nome = nome; jogadores[jIndex].tipo = tipo; jogadores[jIndex].posicao = posicao; jogadores[jIndex].nivel = nivel; } cancelarEdicao(); atualizarListas(); } else alert("Erro: " + error.message);
+                if (!error) { 
+                    let jIndex = jogadores.findIndex(j => j.id === jogadorEdicaoId); 
+                    if (jIndex !== -1) { 
+                        jogadores[jIndex].nome = nome; 
+                        jogadores[jIndex].tipo = tipo; 
+                        jogadores[jIndex].posicao = posicao; 
+                        jogadores[jIndex].nivel = nivel; 
+                    } 
+                    cancelarEdicao(); 
+                    atualizarListas(); 
+                } else {
+                    alert("Erro: " + error.message);
+                }
             } else {
                 const { data, error } = await db.from('jogadores').insert([{ nome, tipo, posicao, nivel, pagamentos_json: {}, user_id: currentUser.id }]).select(); 
-                if (!error) { nomeInput.value = ""; nomeInput.focus(); jogadores.push({ ...data[0], presente: false, ordemChegada: 0, pagou: false }); atualizarListas(); btn.innerText = "Incluir Jogador"; } else alert("Erro: " + error.message);
+                if (!error) { 
+                    nomeInput.value = ""; 
+                    nomeInput.focus(); 
+                    jogadores.push({ ...data[0], presente: false, ordemChegada: 0, pagou: false }); 
+                    atualizarListas(); 
+                } else {
+                    alert("Erro: " + error.message);
+                }
             }
+            btn.innerText = "Incluir Jogador";
             btn.disabled = false;
         }
 
