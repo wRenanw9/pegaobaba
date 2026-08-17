@@ -432,30 +432,38 @@
                 </div>
             </div>
 
+            <!-- CAIXA DA RODADA (HOJE) -->
             <div class="card-secao-stats no-print" style="margin-bottom: 15px;">
                 <div class="header-secao-stats" style="background: var(--dark); color: white; padding: 8px 15px;"><span>⚽ Caixa da Rodada (Hoje)</span></div>
                 <div style="padding: 12px;">
                     <div class="dash-grid" style="gap: 10px; margin-bottom: 12px;">
-                        <div class="dash-card" style="padding: 10px;"><div class="dash-titulo">Diárias Hoje</div><div class="dash-valor valor-positivo">R$ <span id="fin-receita-hoje">0</span></div></div>
-                        <div class="dash-card" style="padding: 10px;"><div class="dash-titulo">Custos Diários</div><div class="dash-valor valor-negativo">R$ <span id="fin-custos-hoje">0</span></div></div>
+                        <div class="dash-card" style="padding: 10px;"><div class="dash-titulo">Diárias Hoje</div><div class="dash-valor valor-positivo" id="fin-receita-hoje">R$ 0,00</div></div>
+                        <div class="dash-card" style="padding: 10px;"><div class="dash-titulo">Custos Diários</div><div class="dash-valor valor-negativo" id="fin-custos-hoje">R$ 0,00</div></div>
                     </div>
                     <div class="card hidden-public" style="margin-bottom:0; padding: 12px;">
                         <h3 style="font-size: 13px; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:6px; margin-bottom: 8px;">Lançar Despesa</h3>
                         <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                            <input type="text" id="desc-custo" placeholder="Ex: Juiz, Água" style="flex:2; margin:0; padding:8px; font-size:12px;">
+                            <input type="text" id="desc-custo" placeholder="Ex: Juiz, Água, Campo" style="flex:2; margin:0; padding:8px; font-size:12px;">
                             <input type="number" id="valor-custo" placeholder="R$" style="flex:1; margin:0; padding:8px; font-size:12px;">
                             <select id="tipo-custo" style="flex:1.2; margin:0; padding:8px; font-size:12px;">
-                                <option value="diario">Diário</option>
+                                <option value="diario">Diário (Rodada)</option>
                                 <option value="mensal">Mensal (Fixo)</option>
                             </select>
                         </div>
                         <button onclick="adicionarCusto()" style="background: var(--dark); padding: 10px; font-size:13px;">Lançar Despesa</button>
                     </div>
+                    <!-- Lista específica de Custos Diários -->
                     <div id="lista-custos" style="margin-top:12px;"></div>
                 </div>
             </div>
 
-            <div id="fin-loading" class="hidden-public no-print" style="text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 20px; display: none;">Calculando balanço na nuvem...</div>
+            <!-- SEÇÃO DE DESPESAS FIXAS / MENSAIS DA RODADA -->
+            <div class="card-secao-stats no-print" style="margin-bottom: 15px;">
+                <div class="header-secao-stats" style="background: #fef3c7; color: #d97706; padding: 8px 15px;"><span>📅 Despesas Fixas / Mensais (desta Rodada)</span></div>
+                <div style="padding: 12px;" id="lista-custos-mensais">
+                    <p style="color:var(--text-muted); font-size:12px; text-align:center; padding:8px;">Nenhuma despesa mensal/fixa lançada.</p>
+                </div>
+            </div>
 
             <!-- RELATÓRIO MENSAL DETALHADO -->
             <div class="card-secao-stats hidden-public" id="card-relatorio-mensal">
@@ -1149,9 +1157,9 @@
                 let vConv = partida.valor_por_convidado || 0;
                 let qtdConvidadosPagos = presencas.filter(p => p.pagou && p.jogadores && p.jogadores.tipo === 'Convidado').length;
                 receitaPub += (qtdConvidadosPagos * vConv);
-                let totCustosPubDiarios = window.custosDaRodada.filter(c => c.tipo !== 'mensal').reduce((acc, c) => acc + c.valor, 0);
+                let custosDiariosPub = window.custosDaRodada.filter(c => c.tipo !== 'mensal').reduce((acc, c) => acc + c.valor, 0);
                 document.getElementById('fin-receita-hoje').innerText = `R$ ${receitaPub.toFixed(2)}`;
-                document.getElementById('fin-custos-hoje').innerText = `R$ ${totCustosPubDiarios.toFixed(2)}`;
+                document.getElementById('fin-custos-hoje').innerText = `R$ ${custosDiariosPub.toFixed(2)}`;
             }
             renderizarListaCustos();
             
@@ -1262,11 +1270,9 @@
             const posicao = document.getElementById('posicao').value; 
             const nivel = parseInt(document.getElementById('nivel').value); 
             
-            // Remove espaços extras nas pontas e normaliza o texto
             const nome = nomeInput.value.trim().replace(/\s+/g, ' ');
             if (nome === "") return alert("Preencha o nome.");
 
-            // Validação rigorosa de nome duplicado (ignorando maiúsculas/minúsculas e espaços extras)
             const nomeExiste = jogadores.some(j => {
                 let nomeCadastrado = (j.nome || "").trim().toLowerCase();
                 return nomeCadastrado === nome.toLowerCase() && j.id !== jogadorEdicaoId;
@@ -2109,7 +2115,6 @@
             await renderizarPainelDoDia(); 
             if(window.isModoPublico) return;
 
-            document.getElementById('loading-stats').style.display = 'block';
             let hoje = new Date(); let mesAtual = hoje.getMonth(); let anoAtual = hoje.getFullYear();
             const startOfYear = new Date(anoAtual, 0, 1).toISOString();
 
@@ -2189,24 +2194,15 @@
                     bodyRanking.innerHTML += `<tr><td>${ic} <strong>${r[0]}</strong></td><td style="font-weight:700; color:var(--primary);">${r[1].gols}</td><td style="color:var(--text-muted);">${r[1].presencas}</td></tr>`;
                 });
             }
-            document.getElementById('loading-stats').style.display = 'none';
         }
 
         function atualizarFinanceiro() {
             if(window.isModoPublico) return; 
-            let valConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
-            let convPagantesHoje = jogadores.filter(j => j.tipo === 'Convidado' && j.presente && j.pagou).length;
-            let recHoje = (convPagantesHoje * valConv); 
-            let custHojeDiario = window.custosDaRodada.filter(c => c.tipo !== 'mensal').reduce((acc, c) => acc + c.valor, 0);
-            
-            document.getElementById('fin-receita-hoje').innerText = `R$ ${recHoje.toFixed(2)}`;
-            document.getElementById('fin-custos-hoje').innerText = `R$ ${custHojeDiario.toFixed(2)}`;
             renderizarListaCustos();
             salvarEstadoCompleto();
         }
 
         async function calcularBalancoMesAno() {
-            document.getElementById('fin-loading').style.display = 'block';
             let valMens = parseFloat(document.getElementById('valor-mensalista').value) || 0;
             let valConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
 
@@ -2245,14 +2241,6 @@
             
             let recMesTotal = recConvMes + recMensalidadesMes;
             let recAnoTotal = recConvAno + recMensalidadesAno;
-            
-            document.getElementById('fin-rec-mes').innerText = `R$ ${recMesTotal.toFixed(2)}`;
-            document.getElementById('fin-cus-mes').innerText = `R$ ${cusMes.toFixed(2)}`;
-            document.getElementById('fin-sal-mes').innerText = `R$ ${(recMesTotal - cusMes).toFixed(2)}`;
-            document.getElementById('fin-rec-ano').innerText = `R$ ${recAnoTotal.toFixed(2)}`;
-            document.getElementById('fin-cus-ano').innerText = `R$ ${cusAno.toFixed(2)}`;
-            document.getElementById('fin-sal-ano').innerText = `R$ ${(recAnoTotal - cusAno).toFixed(2)}`;
-            document.getElementById('fin-loading').style.display = 'none';
         }
         
         function adicionarCusto() {
@@ -2275,15 +2263,50 @@
         }
         
         function renderizarListaCustos() {
-            let lista = document.getElementById('lista-custos'); lista.innerHTML = '';
-            if(window.custosDaRodada.length === 0) { lista.innerHTML = '<p style="color:var(--text-muted); font-size:13px; text-align:center; padding:15px;">Nenhuma despesa lançada nesta rodada.</p>'; return; }
-            window.custosDaRodada.forEach((c, i) => {
-                let tipoBadge = c.tipo === 'mensal' ? '<span style="font-size:10px; background:#fef3c7; color:#d97706; padding:2px 4px; border-radius:4px; margin-left:5px;">Mensal</span>' : '<span style="font-size:10px; background:#e0e7ff; color:#4f46e5; padding:2px 4px; border-radius:4px; margin-left:5px;">Diário</span>';
-                lista.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; padding:10px; background:var(--light); border:1px solid var(--border); border-radius:6px; margin-bottom:5px; font-size:14px;">
-                    <span>${c.desc} ${tipoBadge}</span>
-                    <span><strong class="valor-negativo">R$ ${c.valor.toFixed(2)}</strong> <button class="btn-excluir-mini" style="margin-left:10px;" onclick="removerCusto(${i})">X</button></span>
-                </div>`;
-            });
+            let listaDiarios = document.getElementById('lista-custos'); 
+            let listaMensais = document.getElementById('lista-custos-mensais'); 
+            if(!listaDiarios) return;
+
+            listaDiarios.innerHTML = '';
+            if(listaMensais) listaMensais.innerHTML = '';
+
+            let custosDiarios = window.custosDaRodada.filter(c => c.tipo !== 'mensal');
+            let custosMensais = window.custosDaRodada.filter(c => c.tipo === 'mensal');
+
+            if(custosDiarios.length === 0) { 
+                listaDiarios.innerHTML = '<p style="color:var(--text-muted); font-size:12px; text-align:center; padding:8px;">Nenhuma despesa diária lançada hoje.</p>'; 
+            } else {
+                custosDiarios.forEach((c) => {
+                    let realIndex = window.custosDaRodada.findIndex(item => item === c);
+                    listaDiarios.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 10px; background:var(--light); border:1px solid var(--border); border-radius:6px; margin-bottom:5px; font-size:13px;">
+                        <span>${c.desc}</span>
+                        <span><strong class="valor-negativo">R$ ${c.valor.toFixed(2)}</strong> <button class="btn-excluir-mini" style="margin-left:8px;" onclick="removerCusto(${realIndex})">X</button></span>
+                    </div>`;
+                });
+            }
+
+            if(listaMensais) {
+                if(custosMensais.length === 0) {
+                    listaMensais.innerHTML = '<p style="color:var(--text-muted); font-size:12px; text-align:center; padding:8px;">Nenhuma despesa mensal/fixa lançada.</p>';
+                } else {
+                    custosMensais.forEach((c) => {
+                        let realIndex = window.custosDaRodada.findIndex(item => item === c);
+                        listaMensais.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 10px; background:var(--light); border:1px solid var(--border); border-radius:6px; margin-bottom:5px; font-size:13px;">
+                            <span>${c.desc} <span style="font-size:10px; background:#fef3c7; color:#d97706; padding:2px 4px; border-radius:4px; margin-left:5px;">Mensal</span></span>
+                            <span><strong class="valor-negativo">R$ ${c.valor.toFixed(2)}</strong> <button class="btn-excluir-mini" style="margin-left:8px;" onclick="removerCusto(${realIndex})">X</button></span>
+                        </div>`;
+                    });
+                }
+            }
+
+            let valConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
+            let convPagantesHoje = jogadores.filter(j => j.tipo === 'Convidado' && j.presente && j.pagou).length;
+            let recHoje = (convPagantesHoje * valConv); 
+            let custHojeDiario = custosDiarios.reduce((acc, c) => acc + c.valor, 0);
+            
+            document.getElementById('fin-receita-hoje').innerText = `R$ ${recHoje.toFixed(2)}`;
+            document.getElementById('fin-custos-hoje').innerText = `R$ ${custHojeDiario.toFixed(2)}`;
+            salvarEstadoCompleto();
         }
 
         async function salvarPartidaComPlacares() {
