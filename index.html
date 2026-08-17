@@ -226,7 +226,7 @@
     <div id="app-container" style="display: none;">
         
         <div class="top-bar">
-            <img id="top-bar-escudo" src="" style="display:none; width:35px; height:35px; border-radius:50%; object-fit:cover; margin-right:10px; border: 1px solid var(--border);">
+            <img id="top-bar-escudo" src="" style="display:none; width:35px; height:35px; border-radius:50%; object-fit:cover; margin-right:10px; border: 1px solid var(--border); background:white;">
             <h1 id="top-bar-title">Pega o Baba</h1>
             <div class="top-actions">
                 <div class="status-nuvem" id="status-db">...</div>
@@ -437,8 +437,8 @@
                 <div class="header-secao-stats" style="background: var(--dark); color: white; padding: 8px 15px;"><span>⚽ Caixa da Rodada (Hoje)</span></div>
                 <div style="padding: 12px;">
                     <div class="dash-grid" style="gap: 10px; margin-bottom: 12px;">
-                        <div class="dash-card" style="padding: 10px;"><div class="dash-titulo">Diárias Hoje</div><div class="dash-valor valor-positivo" id="fin-receita-hoje">R$ 0,00</div></div>
-                        <div class="dash-card" style="padding: 10px;"><div class="dash-titulo">Custos Diários</div><div class="dash-valor valor-negativo" id="fin-custos-hoje">R$ 0,00</div></div>
+                        <div class="dash-card" style="padding: 10px;"><div class="dash-titulo">Diárias Hoje</div><div class="dash-valor valor-positivo" id="fin-receita-hoje">R$ 0.00</div></div>
+                        <div class="dash-card" style="padding: 10px;"><div class="dash-titulo">Custos Diários</div><div class="dash-valor valor-negativo" id="fin-custos-hoje">R$ 0.00</div></div>
                     </div>
                     <div class="card hidden-public" style="margin-bottom:0; padding: 12px;">
                         <h3 style="font-size: 13px; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:6px; margin-bottom: 8px;">Lançar Despesa</h3>
@@ -457,9 +457,9 @@
                 </div>
             </div>
 
-            <!-- SEÇÃO DE DESPESAS FIXAS / MENSAIS DA RODADA -->
-            <div class="card-secao-stats no-print" style="margin-bottom: 15px;">
-                <div class="header-secao-stats" style="background: #fef3c7; color: #d97706; padding: 8px 15px;"><span>📅 Despesas Fixas / Mensais (desta Rodada)</span></div>
+            <!-- SEÇÃO DE DESPESAS FIXAS / MENSAIS -->
+            <div class="card-secao-stats no-print hidden-public" style="margin-bottom: 15px;">
+                <div class="header-secao-stats" style="background: #fef3c7; color: #d97706; padding: 8px 15px;"><span>📅 Despesas Fixas (Este Mês)</span></div>
                 <div style="padding: 12px;" id="lista-custos-mensais">
                     <p style="color:var(--text-muted); font-size:12px; text-align:center; padding:8px;">Nenhuma despesa mensal/fixa lançada.</p>
                 </div>
@@ -634,6 +634,7 @@
         window.jogosDaRodada = []; 
         window.filaEquipes = []; 
         window.custosDaRodada = [];
+        window.despesasMensaisGlobais = [];
         window.isModoPublico = false;
         window.dataPartidaAtual = null;
         window.partidaAtualId = null;
@@ -715,6 +716,7 @@
                 filaEquipes: window.filaEquipes,
                 partidaSalva: window.partidaSalva,
                 custosDaRodada: window.custosDaRodada,
+                despesasMensaisGlobais: window.despesasMensaisGlobais,
                 dataPartidaAtual: window.dataPartidaAtual,
                 partidaAtualId: window.partidaAtualId,
                 codigoAcessoAtual: window.codigoAcessoAtual,
@@ -734,6 +736,7 @@
                 window.filaEquipes = state.filaEquipes || [];
                 window.partidaSalva = state.partidaSalva !== undefined ? state.partidaSalva : true;
                 window.custosDaRodada = state.custosDaRodada || [];
+                window.despesasMensaisGlobais = state.despesasMensaisGlobais || [];
                 window.dataPartidaAtual = state.dataPartidaAtual || null;
                 window.partidaAtualId = state.partidaAtualId || null;
                 window.codigoAcessoAtual = state.codigoAcessoAtual || null;
@@ -840,7 +843,7 @@
             
             if (error || !profile) {
                 const { data: newProfile, error: insertError } = await db.from('profiles').insert([{
-                    id: user.id, email: user.email, is_authorized: false, is_admin: false, nome_baba: "", jogadores_por_time: 7
+                    id: user.id, email: user.email, is_authorized: false, is_admin: false, nome_baba: "", jogadores_por_time: 7, despesas_mensais_json: []
                 }]).select().single();
 
                 if (insertError || !newProfile) {
@@ -870,6 +873,7 @@
             }
 
             currentProfile = profile;
+            window.despesasMensaisGlobais = profile.despesas_mensais_json || [];
             mostrarApp();
         }
 
@@ -1042,6 +1046,8 @@
                 localStorage.removeItem('baba_full_state');
                 localStorage.removeItem('baba_presencas_temp');
                 localStorage.removeItem('baba_last_reset');
+                window.despesasMensaisGlobais = [];
+                await db.from('profiles').update({ despesas_mensais_json: [] }).eq('id', currentUser.id);
                 
                 alert("✅ Histórico zerado com sucesso! Iniciando uma nova temporada.");
                 window.location.reload();
@@ -1098,12 +1104,18 @@
             window.isModoPublico = true;
             
             document.getElementById('status-db').innerText = "Buscando Baba...";
+            
             const { data: partida, error } = await db.from('partidas').select('*').eq('codigo_acesso', codigo).single();
             
             if(error || !partida) {
                 alert("Baba não encontrado ou código inválido.");
                 sairModoPublico();
                 return;
+            }
+
+            if (partida.user_id) {
+                const { data: prof } = await db.from('profiles').select('despesas_mensais_json').eq('id', partida.user_id).single();
+                window.despesasMensaisGlobais = prof ? (prof.despesas_mensais_json || []) : [];
             }
 
             if (partida.created_at) {
@@ -1227,7 +1239,7 @@
                 let p = partidas[0];
                 if (p.created_at) {
                     let diffMs = Date.now() - new Date(p.created_at).getTime();
-                    if (diffMs <= 518400000) { // dentro de 6 dias
+                    if (diffMs <= 518400000) { 
                         window.partidaAtualId = p.id;
                         window.codigoAcessoAtual = p.codigo_acesso;
                         window.jogosDaRodada = p.jogos_json || [];
@@ -1315,14 +1327,16 @@
 
         async function removerJogador(idNuvem, indexArray) { 
             const nomeJogador = jogadores[indexArray].nome;
-            if(confirm(`Tem certeza que deseja remover ${nomeJogador} do elenco permanentemente?`)) { 
+            if(confirm(`Tem certeza que deseja remover o jogador(a) "${nomeJogador}" do elenco permanentemente?`)) { 
                 const { error } = await db.from('jogadores').delete().eq('id', idNuvem); 
                 if (!error) { 
                     jogadores.splice(indexArray, 1); 
                     salvarEstadoLocal(); 
                     atualizarListas(); 
                     atualizarFinanceiro(); 
-                } 
+                } else {
+                    alert("Erro ao remover: " + error.message);
+                }
             } 
         }
 
@@ -1547,8 +1561,7 @@
             });
 
             window.reservasSorteados = reservas; window.partidaSalva = false;
-            window.jogosDaRodada = []; window.filaEquipes = window.timesSorteadosObjs.map(t => t.id); window.custosDaRodada = [];
-            window.golsTempA = []; window.golsTempB = [];
+            window.jogosDaRodada = []; window.filaEquipes = window.timesSorteadosObjs.map(t => t.id); window.golsTempA = []; window.golsTempB = [];
             
             atualizarFinanceiro(); 
             await criarPartidaInicialNoBanco();
@@ -1560,7 +1573,7 @@
 
         async function criarPartidaInicialNoBanco() {
             try {
-                let codigoAleatorio = Math.random().toString(36).substring(2, 8).toUpperCase();
+                let codigoAleatorio = window.codigoAcessoAtual || Math.random().toString(36).substring(2, 8).toUpperCase();
                 let valorConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
                 let valorMens = parseFloat(document.getElementById('valor-mensalista').value) || 0;
                 
@@ -1568,25 +1581,37 @@
                 window.timesSorteadosObjs.forEach(t => qJogadoresEmQuadra += t.jogadores.length);
                 if (window.reservasSorteados) qJogadoresEmQuadra += window.reservasSorteados.length;
 
-                const { data: pData, error: errP } = await db.from('partidas').insert([{ 
-                    quantidade_jogadores: qJogadoresEmQuadra, 
-                    renda_convidados: 0,
-                    valor_por_convidado: valorConv,
-                    valor_por_mensalista: valorMens,
-                    custos_json: [],
-                    artilheiros_json: {},
-                    jogos_json: [],
-                    times_json: window.timesSorteadosObjs,
-                    fila_json: window.filaEquipes,
-                    codigo_acesso: codigoAleatorio,
-                    nome_baba: currentProfile ? currentProfile.nome_baba : "",
-                    escudo_url: currentProfile ? currentProfile.escudo_url : ""
-                }]).select();
+                if (window.partidaAtualId) {
+                    await db.from('partidas').update({
+                        quantidade_jogadores: qJogadoresEmQuadra,
+                        times_json: window.timesSorteadosObjs,
+                        fila_json: window.filaEquipes,
+                        data_sorteio: new Date().toISOString()
+                    }).eq('id', window.partidaAtualId);
+                } else {
+                    const { data: pData, error: errP } = await db.from('partidas').insert([{ 
+                        quantidade_jogadores: qJogadoresEmQuadra, 
+                        renda_convidados: 0,
+                        valor_por_convidado: valorConv,
+                        valor_por_mensalista: valorMens,
+                        custos_json: window.custosDaRodada,
+                        artilheiros_json: {},
+                        jogos_json: [],
+                        times_json: window.timesSorteadosObjs,
+                        fila_json: window.filaEquipes,
+                        codigo_acesso: codigoAleatorio,
+                        nome_baba: currentProfile ? currentProfile.nome_baba : "",
+                        escudo_url: currentProfile ? currentProfile.escudo_url : "",
+                        user_id: currentUser.id
+                    }]).select();
 
-                if (errP) throw errP;
-                window.partidaAtualId = pData[0].id;
-                window.codigoAcessoAtual = codigoAleatorio;
-                iniciarOuvinteRealtime(window.partidaAtualId);
+                    if (errP) throw errP;
+                    window.partidaAtualId = pData[0].id;
+                    window.codigoAcessoAtual = codigoAleatorio;
+                    iniciarOuvinteRealtime(window.partidaAtualId);
+                }
+
+                await db.from('presencas').delete().eq('partida_id', window.partidaAtualId);
 
                 let presencas = [];
                 window.timesSorteadosObjs.forEach((t) => { 
@@ -1597,7 +1622,7 @@
                 }
                 if(presencas.length > 0) await db.from('presencas').insert(presencas);
 
-                exibirBoxCodigoSorteio(codigoAleatorio);
+                exibirBoxCodigoSorteio(window.codigoAcessoAtual);
             } catch(err) {
                 console.error("Erro ao gerar partida automática:", err.message);
             }
@@ -1680,23 +1705,31 @@
 
             html += `<tr><th colspan="2" style="padding-top:12px;">📉 Detalhamento de Despesas (Custos)</th></tr>`;
             let totalCustos = 0;
+
+            let custosMensaisMes = (window.despesasMensaisGlobais || []).filter(c => c.data === mesKey);
+            custosMensaisMes.forEach(c => {
+                totalCustos += c.valor;
+                html += `<tr><td>${c.desc} <span style="font-size:10px; color:var(--text-muted);">(Fixo Mensal)</span></td><td style="text-align:right;">R$ ${c.valor.toFixed(2)}</td></tr>`;
+            });
+
             if(partidasDoMes.length > 0) {
                 partidasDoMes.forEach(p => {
+                    if(window.partidaAtualId && p.id === window.partidaAtualId) return; 
                     (p.custos_json || []).forEach(c => {
                         totalCustos += c.valor;
-                        let tLabel = c.tipo === 'mensal' ? 'Fixo Mensal' : 'Diário';
-                        html += `<tr><td>${c.desc} <span style="font-size:10px; color:var(--text-muted);">(${tLabel})</span></td><td style="text-align:right;">R$ ${c.valor.toFixed(2)}</td></tr>`;
+                        html += `<tr><td>${c.desc} <span style="font-size:10px; color:var(--text-muted);">(Diário)</span></td><td style="text-align:right;">R$ ${c.valor.toFixed(2)}</td></tr>`;
                     });
                 });
             }
+
             if(window.custosDaRodada && window.custosDaRodada.length > 0) {
                 window.custosDaRodada.forEach(c => {
                     totalCustos += c.valor;
-                    let tLabel = c.tipo === 'mensal' ? 'Fixo Mensal' : 'Diário';
-                    html += `<tr><td>${c.desc} <span style="font-size:10px; color:var(--text-muted);">(${tLabel} - Rodada Atual)</span></td><td style="text-align:right;">R$ ${c.valor.toFixed(2)}</td></tr>`;
+                    html += `<tr><td>${c.desc} <span style="font-size:10px; color:var(--text-muted);">(Diário - Atual)</span></td><td style="text-align:right;">R$ ${c.valor.toFixed(2)}</td></tr>`;
                 });
             }
-            if(totalCustos === 0 && (!partidasDoMes || partidasDoMes.length === 0)) {
+
+            if(totalCustos === 0) {
                 html += `<tr><td colspan="2" style="color:var(--text-muted);">Nenhuma despesa registrada no mês.</td></tr>`;
             }
             html += `<tr><td><strong>Total de Despesas:</strong></td><td style="text-align:right; font-weight:bold; color:var(--danger);">R$ ${totalCustos.toFixed(2)}</td></tr>`;
@@ -2216,27 +2249,71 @@
             let val = parseFloat(document.getElementById('valor-custo').value) || 0;
             let tipo = document.getElementById('tipo-custo').value;
             if(!desc || val <= 0) return alert("Preencha descrição e valor válido.");
+
+            let hoje = new Date();
+            let mesKey = hoje.toISOString().substring(0, 7);
             
-            window.custosDaRodada.push({ desc: desc, valor: val, tipo: tipo });
+            if (tipo === 'mensal') {
+                window.despesasMensaisGlobais.push({ desc: desc, valor: val, data: mesKey });
+                if(currentUser) {
+                    await db.from('profiles').update({ despesas_mensais_json: window.despesasMensaisGlobais }).eq('id', currentUser.id);
+                }
+            } else {
+                window.custosDaRodada.push({ desc: desc, valor: val, tipo: tipo });
+                
+                if (!window.partidaAtualId) {
+                    let codigoAleatorio = Math.random().toString(36).substring(2, 8).toUpperCase();
+                    let valorConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
+                    let valorMens = parseFloat(document.getElementById('valor-mensalista').value) || 0;
+                    
+                    const { data: pData, error: errP } = await db.from('partidas').insert([{ 
+                        quantidade_jogadores: 0, 
+                        renda_convidados: 0,
+                        valor_por_convidado: valorConv,
+                        valor_por_mensalista: valorMens,
+                        custos_json: window.custosDaRodada,
+                        artilheiros_json: {},
+                        jogos_json: [],
+                        times_json: [],
+                        fila_json: [],
+                        codigo_acesso: codigoAleatorio,
+                        nome_baba: currentProfile ? currentProfile.nome_baba : "",
+                        escudo_url: currentProfile ? currentProfile.escudo_url : "",
+                        user_id: currentUser.id
+                    }]).select();
+
+                    if (!errP && pData && pData.length > 0) {
+                        window.partidaAtualId = pData[0].id;
+                        window.codigoAcessoAtual = codigoAleatorio;
+                        iniciarOuvinteRealtime(window.partidaAtualId);
+                    }
+                } else {
+                    await db.from('partidas').update({ custos_json: window.custosDaRodada }).eq('id', window.partidaAtualId);
+                }
+            }
+
             document.getElementById('desc-custo').value = ''; 
             document.getElementById('valor-custo').value = '';
             
             atualizarFinanceiro();
             gerarRelatorioMensal();
-            
-            if (window.partidaAtualId) {
-                await db.from('partidas').update({ custos_json: window.custosDaRodada }).eq('id', window.partidaAtualId);
-            }
         }
         
-        async function removerCusto(index) { 
-            window.custosDaRodada.splice(index, 1); 
+        async function removerCusto(tipo, index) { 
+            if (tipo === 'mensal') {
+                window.despesasMensaisGlobais.splice(index, 1);
+                if(currentUser) {
+                    await db.from('profiles').update({ despesas_mensais_json: window.despesasMensaisGlobais }).eq('id', currentUser.id);
+                }
+            } else {
+                window.custosDaRodada.splice(index, 1); 
+                if (window.partidaAtualId) {
+                    await db.from('partidas').update({ custos_json: window.custosDaRodada }).eq('id', window.partidaAtualId);
+                }
+            }
+            
             atualizarFinanceiro(); 
             gerarRelatorioMensal();
-            
-            if (window.partidaAtualId) {
-                await db.from('partidas').update({ custos_json: window.custosDaRodada }).eq('id', window.partidaAtualId);
-            }
         }
         
         function renderizarListaCustos() {
@@ -2247,32 +2324,37 @@
             listaDiarios.innerHTML = '';
             if(listaMensais) listaMensais.innerHTML = '';
 
-            let custosDiarios = window.custosDaRodada.filter(c => c.tipo !== 'mensal');
-            let custosMensais = window.custosDaRodada.filter(c => c.tipo === 'mensal');
+            let custosDiarios = window.custosDaRodada || [];
+            
+            let hoje = new Date();
+            let mesKey = hoje.toISOString().substring(0, 7);
+            let custosMensais = window.despesasMensaisGlobais || [];
 
             if(custosDiarios.length === 0) { 
                 listaDiarios.innerHTML = '<p style="color:var(--text-muted); font-size:12px; text-align:center; padding:8px;">Nenhuma despesa diária lançada hoje.</p>'; 
             } else {
-                custosDiarios.forEach((c) => {
-                    let realIndex = window.custosDaRodada.findIndex(item => item === c);
+                custosDiarios.forEach((c, index) => {
                     listaDiarios.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 10px; background:var(--light); border:1px solid var(--border); border-radius:6px; margin-bottom:5px; font-size:13px;">
                         <span>${c.desc}</span>
-                        <span><strong class="valor-negativo">R$ ${c.valor.toFixed(2)}</strong> <button class="btn-excluir-mini" style="margin-left:8px;" onclick="removerCusto(${realIndex})">X</button></span>
+                        <span><strong class="valor-negativo">R$ ${c.valor.toFixed(2)}</strong> <button class="btn-excluir-mini" style="margin-left:8px;" onclick="removerCusto('diario', ${index})">X</button></span>
                     </div>`;
                 });
             }
 
             if(listaMensais) {
-                if(custosMensais.length === 0) {
-                    listaMensais.innerHTML = '<p style="color:var(--text-muted); font-size:12px; text-align:center; padding:8px;">Nenhuma despesa mensal/fixa lançada.</p>';
-                } else {
-                    custosMensais.forEach((c) => {
-                        let realIndex = window.custosDaRodada.findIndex(item => item === c);
+                let temMensalEsteMes = false;
+                custosMensais.forEach((c, index) => {
+                    if (c.data === mesKey) {
+                        temMensalEsteMes = true;
                         listaMensais.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 10px; background:var(--light); border:1px solid var(--border); border-radius:6px; margin-bottom:5px; font-size:13px;">
-                            <span>${c.desc} <span style="font-size:10px; background:#fef3c7; color:#d97706; padding:2px 4px; border-radius:4px; margin-left:5px;">Mensal</span></span>
-                            <span><strong class="valor-negativo">R$ ${c.valor.toFixed(2)}</strong> <button class="btn-excluir-mini" style="margin-left:8px;" onclick="removerCusto(${realIndex})">X</button></span>
+                            <span>${c.desc}</span>
+                            <span><strong class="valor-negativo">R$ ${c.valor.toFixed(2)}</strong> <button class="btn-excluir-mini" style="margin-left:8px;" onclick="removerCusto('mensal', ${index})">X</button></span>
                         </div>`;
-                    });
+                    }
+                });
+
+                if(!temMensalEsteMes) {
+                    listaMensais.innerHTML = '<p style="color:var(--text-muted); font-size:12px; text-align:center; padding:8px;">Nenhuma despesa fixa lançada neste mês.</p>';
                 }
             }
 
