@@ -686,6 +686,13 @@
                 let parts = dateStr.split(' ')[0].split('/');
                 if (parts.length >= 3) return new Date(parts[2], parts[1] - 1, parts[0]);
             }
+            if (dateStr.includes('-')) {
+                let parts = dateStr.split(' ')[0].split('-');
+                if (parts.length >= 3) {
+                     if(parts[0].length === 4) return new Date(parts[0], parts[1]-1, parts[2]); 
+                     else return new Date(parts[2], parts[1]-1, parts[0]); 
+                }
+            }
             return new Date(dateStr);
         }
 
@@ -695,7 +702,10 @@
             if(dataStr.includes('/')) return dataStr; 
             if(dataStr.includes('-')) {
                 let p = dataStr.split('T')[0].split('-');
-                if(p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`; 
+                if(p.length === 3) {
+                    if (p[0].length === 4) return `${p[2]}/${p[1]}/${p[0]}`;
+                    return dataStr;
+                }
             }
             return new Date(dataStr).toLocaleDateString('pt-BR'); 
         }
@@ -1220,9 +1230,9 @@
             }
 
             if (partida.created_at) {
-                let dataCriacao = new Date(partida.created_at);
+                let dCriacao = parseCustomDate(partida.created_at);
                 let agora = new Date();
-                let diffMs = agora.getTime() - dataCriacao.getTime();
+                let diffMs = agora.getTime() - dCriacao.getTime();
                 if (diffMs > 518400000) {
                     alert("⚠️ A visualização desta rodada já expirou (mais de 6 dias). Aguarde o próximo baba!");
                     sairModoPublico();
@@ -1262,11 +1272,17 @@
             if(partida.valor_por_convidado) document.getElementById('valor-convidado').value = partida.valor_por_convidado;
             if(partida.valor_por_mensalista) document.getElementById('valor-mensalista').value = partida.valor_por_mensalista;
             
-            const { data: presencas } = await db.from('presencas').select('pagou, jogadores(tipo)').eq('partida_id', partida.id);
-            if(presencas) {
+            const { data: presencas } = await db.from('presencas').select('pagou, jogador_id').eq('partida_id', partida.id);
+            if(presencas && jogadores.length > 0) {
                 let receitaPub = 0;
                 let vConv = partida.valor_por_convidado || 0;
-                let qtdConvidadosPagos = presencas.filter(p => p.pagou && p.jogadores && p.jogadores.tipo === 'Convidado').length;
+                let qtdConvidadosPagos = 0;
+                
+                presencas.forEach(p => {
+                    let jLoc = jogadores.find(x => x.id === p.jogador_id);
+                    if(jLoc && jLoc.tipo === 'Convidado' && p.pagou) qtdConvidadosPagos++;
+                });
+
                 receitaPub += (qtdConvidadosPagos * vConv);
                 let totCustosPubDiarios = window.custosDaRodada.filter(c => c.tipo !== 'mensal').reduce((acc, c) => acc + c.valor, 0);
                 document.getElementById('fin-receita-hoje').innerText = `R$ ${receitaPub.toFixed(2)}`;
@@ -1338,7 +1354,8 @@
             if (!error && partidas && partidas.length > 0) {
                 let p = partidas[0];
                 if (p.created_at) {
-                    let diffMs = Date.now() - new Date(p.created_at).getTime();
+                    let dC = parseCustomDate(p.created_at);
+                    let diffMs = Date.now() - dC.getTime();
                     if (diffMs <= 518400000 || !p.caixa_fechado || (p.fila_json && p.fila_json.length > 0)) { 
                         window.partidaAtualId = p.id;
                         window.codigoAcessoAtual = p.codigo_acesso;
@@ -2319,57 +2336,119 @@
             await renderizarPainelDoDia(); 
             if(window.isModoPublico) return;
 
-            let hoje = new Date(); let mesAtual = hoje.getMonth(); let anoAtual = hoje.getFullYear();
-            const startOfYear = new Date(anoAtual, 0, 1).toISOString();
+            let hoje = new Date(); 
+            let mesAtual = hoje.getMonth(); 
+            let anoAtual = hoje.getFullYear();
 
             document.getElementById('label-mes-atual').innerText = hoje.toLocaleString('pt-BR', { month: 'long' });
             document.getElementById('label-ano-atual').innerText = anoAtual;
 
-            const { data: partidas } = await db.from('partidas').select('id, data_sorteio, created_at, artilheiros_json').gte('created_at', startOfYear).eq('user_id', currentUser.id);
-            const { data: presencas } = await db.from('presencas').select('partida_id, jogador_id, jogadores(nome, tipo)');
+            const { data: partidas } = await db.from('partidas')
+                                               .select('id, data_sorteio, created_at, artilheiros_json')
+                                               .eq('user_id', currentUser.id);
 
-            let artilhariaMes = {}; let rankingAnual = {};
-            let mensalistasPorPartida = {};
-
-            if(presencas && partidas) {
-                presencas.forEach(p => {
-                    let pt = partidas.find(x => x.id === p.partida_id);
-                    if(pt) {
-                        // Cruza o banco com os dados locais para 100% de garantia
-                        let jBanco = Array.isArray(p.jogadores) ? p.jogadores[0] : p.jogadores;
-                        let jLocal = jogadores.find(x => x.id === p.jogador_id);
-                        
-                        let nome = jLocal ? jLocal.nome : (jBanco ? jBanco.nome : null);
-                        let tipo = jLocal ? jLocal.tipo : (jBanco ? jBanco.tipo : null);
-
-                        if (nome && tipo === 'Mensalista') {
-                            if(!mensalistasPorPartida[pt.id]) mensalistasPorPartida[pt.id] = new Set();
-                            mensalistasPorPartida[pt.id].add(nome);
-
-                            if(!rankingAnual[nome]) rankingAnual[nome] = { gols: 0, presencas: 0 };
-                            rankingAnual[nome].presencas++;
-                        }
-                    }
+            let partidasDoAno = [];
+            let idsPartidasDoAno = [];
+            
+            if (partidas) {
+                partidasDoAno = partidas.filter(p => {
+                    let d = p.data_sorteio ? parseCustomDate(p.data_sorteio) : parseCustomDate(p.created_at);
+                    return d.getFullYear() === anoAtual;
                 });
+                idsPartidasDoAno = partidasDoAno.map(p => p.id);
             }
 
-            if(partidas) {
-                partidas.forEach(p => {
-                    let dataP = p.data_sorteio ? parseCustomDate(p.data_sorteio) : parseCustomDate(p.created_at);
-                    let isEsteMes = (dataP.getMonth() === mesAtual && dataP.getFullYear() === anoAtual);
-                    let arts = p.artilheiros_json || {};
-                    let mensalistasNesta = mensalistasPorPartida[p.id] || new Set();
+            let presencas = [];
+            if (idsPartidasDoAno.length > 0) {
+                const { data: pData } = await db.from('presencas').select('partida_id, jogador_id').in('partida_id', idsPartidasDoAno);
+                if(pData) presencas = pData;
+            }
 
-                    for(let nome in arts) {
-                        let isMensalista = mensalistasNesta.has(nome) || jogadores.some(j => j.nome === nome && j.tipo === 'Mensalista');
-                        if(!isMensalista) continue; 
+            let artilhariaMes = {}; 
+            let rankingAnual = {};
 
-                        let gols = arts[nome];
+            // Pré-popular com todos os mensalistas atuais para aparecerem no ranking mesmo com 0 gols
+            jogadores.filter(j => j.tipo === 'Mensalista').forEach(j => {
+                rankingAnual[j.nome] = { gols: 0, presencas: 0 };
+            });
+
+            let presencasSet = {}; // nome -> Set(partida_id)
+            
+            presencas.forEach(p => {
+                let jLocal = jogadores.find(x => x.id === p.jogador_id);
+                if (jLocal && jLocal.tipo === 'Mensalista') {
+                    if(!presencasSet[jLocal.nome]) presencasSet[jLocal.nome] = new Set();
+                    presencasSet[jLocal.nome].add(p.partida_id);
+                }
+            });
+
+            for (let nome in presencasSet) {
+                if(!rankingAnual[nome]) rankingAnual[nome] = { gols: 0, presencas: 0 };
+                rankingAnual[nome].presencas = presencasSet[nome].size;
+            }
+
+            partidasDoAno.forEach(p => {
+                let dataP = p.data_sorteio ? parseCustomDate(p.data_sorteio) : parseCustomDate(p.created_at);
+                let isEsteMes = (dataP.getMonth() === mesAtual);
+                let arts = p.artilheiros_json || {};
+
+                for(let nome in arts) {
+                    let isMensalista = jogadores.some(j => j.nome === nome && j.tipo === 'Mensalista');
+                    if(!isMensalista) continue; 
+
+                    let gols = arts[nome];
+                    if(!rankingAnual[nome]) rankingAnual[nome] = { gols: 0, presencas: 0 };
+                    rankingAnual[nome].gols += gols;
+                    
+                    if(isEsteMes) {
+                        artilhariaMes[nome] = (artilhariaMes[nome] || 0) + gols;
+                    }
+                }
+            });
+
+            // SOMAR A RODADA ATUAL AO VIVO (Se houver jogo não salvo)
+            if (window.jogosDaRodada && window.jogosDaRodada.length > 0 && !window.partidaSalva) {
+                let dataAt = window.dataPartidaAtual ? parseCustomDate(window.dataPartidaAtual) : new Date();
+                let isEsteMesAt = (dataAt.getMonth() === mesAtual && dataAt.getFullYear() === anoAtual);
+                let isEsteAnoAt = (dataAt.getFullYear() === anoAtual);
+
+                let artsAtuais = {};
+                window.jogosDaRodada.forEach(jogo => {
+                    jogo.gols_a.forEach(nome => { if(nome !== 'Gol Contra') artsAtuais[nome] = (artsAtuais[nome] || 0) + 1; });
+                    jogo.gols_b.forEach(nome => { if(nome !== 'Gol Contra') artsAtuais[nome] = (artsAtuais[nome] || 0) + 1; });
+                });
+
+                if (isEsteAnoAt) {
+                    // Adiciona presença em tempo real
+                    let jQuadra = new Set();
+                    window.timesSorteadosObjs.forEach(t => t.jogadores.forEach(j => jQuadra.add(j.nome)));
+                    window.reservasSorteados.forEach(j => jQuadra.add(j.nome));
+                    
+                    jQuadra.forEach(nome => {
+                        let jLocal = jogadores.find(x => x.nome === nome && x.tipo === 'Mensalista');
+                        if (jLocal) {
+                            if (!rankingAnual[nome]) rankingAnual[nome] = { gols: 0, presencas: 0 };
+                            // Como a partida não salvou na tabela de presenças, adicionamos +1 apenas se não constar no Set
+                            if(!presencasSet[nome] || !presencasSet[nome].has(window.partidaAtualId)) {
+                                rankingAnual[nome].presencas += 1;
+                            }
+                        }
+                    });
+                }
+
+                for(let nome in artsAtuais) {
+                    let isMensalista = jogadores.some(j => j.nome === nome && j.tipo === 'Mensalista');
+                    if(!isMensalista) continue;
+
+                    let gols = artsAtuais[nome];
+                    if(isEsteAnoAt) {
                         if(!rankingAnual[nome]) rankingAnual[nome] = { gols: 0, presencas: 0 };
                         rankingAnual[nome].gols += gols;
-                        if(isEsteMes) artilhariaMes[nome] = (artilhariaMes[nome] || 0) + gols;
                     }
-                });
+                    if(isEsteMesAt) {
+                        artilhariaMes[nome] = (artilhariaMes[nome] || 0) + gols;
+                    }
+                }
             }
 
             const bodyArtsMes = document.getElementById('body-artilharia-mes');
@@ -2381,10 +2460,12 @@
             }
 
             const bodyRanking = document.getElementById('body-ranking-anual');
-            let rankArr = Object.entries(rankingAnual).sort((a,b) => {
-                if(b[1].gols !== a[1].gols) return b[1].gols - a[1].gols;
-                return b[1].presencas - a[1].presencas;
-            });
+            let rankArr = Object.entries(rankingAnual)
+                .filter(r => r[1].presencas > 0 || r[1].gols > 0)
+                .sort((a,b) => {
+                    if(b[1].gols !== a[1].gols) return b[1].gols - a[1].gols;
+                    return b[1].presencas - a[1].presencas;
+                });
             
             if(rankArr.length === 0) bodyRanking.innerHTML = '<tr><td colspan="3" style="color:var(--text-muted);">Sem histórico no ano.</td></tr>';
             else {
