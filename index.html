@@ -460,7 +460,7 @@
                     <!-- Lista específica de Custos Diários -->
                     <div id="lista-custos" style="margin-top:12px;"></div>
                     
-                    <!-- BOTAO DE ENCERRAR CAIXA (Exigirá que a partida esteja salva) -->
+                    <!-- BOTAO DE ENCERRAR CAIXA -->
                     <div id="btn-fechar-caixa-container" class="hidden-public" style="display:none; margin-top: 15px;">
                         <button onclick="encerrarCaixaDaRodada()" style="background: var(--dark); border-radius:8px; width:100%; padding: 14px; font-weight:700;">🔒 Encerrar Caixa desta Rodada</button>
                     </div>
@@ -1221,7 +1221,7 @@
             window.custosDaRodada = partida.custos_json || [];
             window.caixaFechado = partida.caixa_fechado || false;
             
-            // Sincroniza a data estritamente com a do banco (data_sorteio)
+            // SINCRONIZAÇÃO DE DATA EXATA COM O BANCO DE DADOS
             if(partida.data_sorteio) {
                 let d = new Date(partida.data_sorteio);
                 window.dataPartidaAtual = !isNaN(d.getTime()) ? d.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}) : partida.data_sorteio;
@@ -1666,7 +1666,9 @@
                         quantidade_jogadores: qJogadoresEmQuadra,
                         times_json: window.timesSorteadosObjs,
                         fila_json: window.filaEquipes,
-                        data_sorteio: new Date().toISOString()
+                        data_sorteio: window.dataPartidaAtual,
+                        valor_por_convidado: valorConv,
+                        valor_por_mensalista: valorMens
                     }).eq('id', window.partidaAtualId);
                 } else {
                     const { data: pData, error: errP } = await db.from('partidas').insert([{ 
@@ -1684,7 +1686,7 @@
                         escudo_url: currentProfile ? currentProfile.escudo_url : "",
                         user_id: currentUser.id,
                         caixa_fechado: false,
-                        data_sorteio: new Date().toISOString()
+                        data_sorteio: window.dataPartidaAtual
                     }]).select();
 
                     if (errP) throw errP;
@@ -1792,13 +1794,13 @@
             let totalConvidados = 0;
             if(partidasDoMes.length > 0) {
                 partidasDoMes.forEach((p, idx) => {
-                    let vConv = p.valor_por_convidado || 25;
+                    let vConv = p.valor_por_convidado || parseFloat(document.getElementById('valor-convidado').value) || 25;
                     let qtdConv = p.renda_convidados || 0;
                     let subConv = qtdConv * vConv;
                     totalConvidados += subConv;
-                    let dataF = p.data_sorteio ? new Date(p.data_sorteio).toLocaleDateString('pt-BR') : `Rodada ${idx+1}`;
+                    let dataF = p.data_sorteio ? (p.data_sorteio.includes('/') ? p.data_sorteio : new Date(p.data_sorteio).toLocaleDateString('pt-BR')) : `Rodada ${idx+1}`;
                     if(qtdConv > 0) {
-                        html += `<tr><td>Rodada (${dataF}): ${qtdConv} convidados</td><td style="text-align:right;">R$ ${subConv.toFixed(2)}</td></tr>`;
+                        html += `<tr><td>Rodada (${dataF}): ${qtdConv} convidados (R$ ${vConv} cada)</td><td style="text-align:right;">R$ ${subConv.toFixed(2)}</td></tr>`;
                     }
                 });
             } else {
@@ -1824,7 +1826,7 @@
                     (p.custos_json || []).forEach(c => {
                         totalCustos += c.valor;
                         temCustosDiarios = true;
-                        let dData = p.data_sorteio ? new Date(p.data_sorteio).toLocaleDateString('pt-BR') : new Date(p.created_at).toLocaleDateString('pt-BR');
+                        let dData = p.data_sorteio ? (p.data_sorteio.includes('/') ? p.data_sorteio : new Date(p.data_sorteio).toLocaleDateString('pt-BR')) : new Date(p.created_at).toLocaleDateString('pt-BR');
                         htmlCustosDiarios += `<div class="item-custo-relatorio"><span>${c.desc} <span style="color:var(--text-muted); font-size:10px;">(${dData})</span></span> <strong class="valor-negativo">R$ ${c.valor.toFixed(2)}</strong></div>`;
                     });
                 });
@@ -2361,7 +2363,7 @@
             
             let btnEncerrarCaixa = document.getElementById('btn-fechar-caixa-container');
             if(btnEncerrarCaixa) {
-                // TRAVA DE SEGURANÇA: O caixa só pode ser fechado se a partida estiver na nuvem E já tiver sido salva (Finalizar Baba)
+                // TRAVA DE SEGURANÇA: Só exibe se a partida existir, NÃO estiver fechada e a SÚMULA JÁ TIVER SIDO FINALIZADA
                 let podeFechar = (!window.caixaFechado && window.partidaAtualId && window.partidaSalva === true);
                 btnEncerrarCaixa.style.display = podeFechar ? 'block' : 'none';
             }
@@ -2376,10 +2378,12 @@
             if(!confirm("Atenção: Isso vai FECHAR O CAIXA desta rodada.\n\nNovas despesas diárias criarão automaticamente o caixa do PRÓXIMO baba.\n\nDeseja confirmar?")) return;
             
             let convidadosPagantes = jogadores.filter(j => j.presente && j.pagou && j.tipo === 'Convidado').length;
+            let valorConv = parseFloat(document.getElementById('valor-convidado').value) || 25;
 
             const { error } = await db.from('partidas').update({ 
                 caixa_fechado: true,
-                renda_convidados: convidadosPagantes
+                renda_convidados: convidadosPagantes,
+                valor_por_convidado: valorConv
             }).eq('id', window.partidaAtualId);
 
             if(error) {
@@ -2415,8 +2419,9 @@
                 if (!window.partidaAtualId || window.caixaFechado) {
                     window.custosDaRodada = [{ desc: desc, valor: val, tipo: tipo }];
                     let codigoAleatorio = Math.random().toString(36).substring(2, 8).toUpperCase();
-                    let valorConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
-                    let valorMens = parseFloat(document.getElementById('valor-mensalista').value) || 0;
+                    let valorConv = parseFloat(document.getElementById('valor-convidado').value) || 25;
+                    let valorMens = parseFloat(document.getElementById('valor-mensalista').value) || 70;
+                    window.dataPartidaAtual = calcularProximaDataBaba();
                     
                     const { data: pData, error: errP } = await db.from('partidas').insert([{ 
                         quantidade_jogadores: 0, 
@@ -2433,7 +2438,7 @@
                         escudo_url: currentProfile ? currentProfile.escudo_url : "",
                         user_id: currentUser.id,
                         caixa_fechado: false,
-                        data_sorteio: new Date().toISOString()
+                        data_sorteio: window.dataPartidaAtual
                     }]).select();
 
                     if (!errP && pData && pData.length > 0) {
@@ -2443,13 +2448,6 @@
                         iniciarOuvinteRealtime(window.partidaAtualId);
                     }
                 } else {
-                    let hojeStr = new Date().toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
-                    let dataCriacao = window.dataPartidaAtual || calcularProximaDataBaba();
-                    
-                    if (dataCriacao !== hojeStr && window.partidaSalva) {
-                        if(!confirm(`Esta despesa será vinculada ao caixa do baba do dia ${dataCriacao}.\n\nDeseja confirmar o lançamento?`)) return;
-                    }
-                    
                     window.custosDaRodada.push({ desc: desc, valor: val, tipo: tipo });
                     await db.from('partidas').update({ custos_json: window.custosDaRodada }).eq('id', window.partidaAtualId);
                 }
@@ -2521,7 +2519,7 @@
                 }
             }
 
-            let valConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
+            let valConv = parseFloat(document.getElementById('valor-convidado').value) || 25;
             let convPagantesHoje = jogadores.filter(j => j.tipo === 'Convidado' && j.presente && j.pagou).length;
             let recHoje = (convPagantesHoje * valConv); 
             let custHojeDiario = custosDiarios.reduce((acc, c) => acc + c.valor, 0);
@@ -2533,7 +2531,7 @@
 
         async function salvarPartidaComPlacares() {
             if(!window.partidaAtualId) return alert("Nenhuma partida ativa para encerrar.");
-            if(!confirm("Deseja encerrar o baba de hoje?\nIsso vai salvar o placar, presenças e artilharia.")) return;
+            if(!confirm("Deseja encerrar o baba de hoje?\nIsso vai salvar o placar, presenças, artilharia e contabilizar a renda dos convidados no caixa.")) return;
             
             const btn = document.getElementById('btn-encerrar-baba'); btn.innerText = "Sincronizando Servidor..."; btn.disabled = true;
             try {
@@ -2545,8 +2543,8 @@
 
                 let presentesPagantes = jogadores.filter(j => j.presente && j.pagou && j.tipo === 'Convidado');
                 let convidadosPagantes = presentesPagantes.length;
-                let valorConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
-                let valorMens = parseFloat(document.getElementById('valor-mensalista').value) || 0;
+                let valorConv = parseFloat(document.getElementById('valor-convidado').value) || 25;
+                let valorMens = parseFloat(document.getElementById('valor-mensalista').value) || 70;
 
                 window.filaEquipes = [];
 
@@ -2558,7 +2556,8 @@
                     artilheiros_json: artilheiros,
                     jogos_json: window.jogosDaRodada,
                     times_json: window.timesSorteadosObjs,
-                    fila_json: window.filaEquipes
+                    fila_json: window.filaEquipes,
+                    data_sorteio: window.dataPartidaAtual || calcularProximaDataBaba()
                 }).eq('id', window.partidaAtualId);
 
                 if(errP) throw errP;
@@ -2588,7 +2587,7 @@
                 gerarRelatorioMensal();
 
                 btn.innerText = "✅ Baba Encerrado e Salvo com Sucesso!";
-                alert("Súmula finalizada com sucesso! Agora você já pode encerrar o caixa na aba Finanças.");
+                alert("Súmula finalizada com sucesso! A renda dos convidados foi salva. Agora você já pode encerrar o caixa na aba Finanças.");
                 atualizarFinanceiro();
 
             } catch(err) { alert("Erro: " + err.message); btn.innerText = "Tentar Novamente"; btn.disabled = false; }
