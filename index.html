@@ -788,9 +788,10 @@
                 if (state.valorMensalistaAtual) document.getElementById('valor-mensalista').value = state.valorMensalistaAtual;
                 if (state.valorConvidadoAtual) document.getElementById('valor-convidado').value = state.valorConvidadoAtual;
 
-                if(window.timesSorteadosObjs.length > 0) {
+                if(window.timesSorteadosObjs.length > 0 && !window.partidaSalva) {
                     if(window.codigoAcessoAtual) {
                         exibirBoxCodigoSorteio(window.codigoAcessoAtual);
+                        document.getElementById('btn-ir-placares').style.display = 'block';
                         iniciarOuvinteRealtime(window.partidaAtualId);
                     }
                 }
@@ -1221,14 +1222,10 @@
             window.custosDaRodada = partida.custos_json || [];
             window.caixaFechado = partida.caixa_fechado || false;
             
-            window.timesSorteadosObjs = partida.times_json || [];
-
             if(partida.data_sorteio) {
-                let d = new Date(partida.data_sorteio);
-                window.dataPartidaAtual = !isNaN(d.getTime()) ? d.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}) : partida.data_sorteio;
+                window.dataPartidaAtual = partida.data_sorteio;
             } else if(partida.created_at) {
-                let d = new Date(partida.created_at);
-                window.dataPartidaAtual = !isNaN(d.getTime()) ? d.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}) : null;
+                window.dataPartidaAtual = partida.created_at.split('T')[0];
             }
 
             if(partida.valor_por_convidado) document.getElementById('valor-convidado').value = partida.valor_por_convidado;
@@ -1257,7 +1254,7 @@
                 window.partidaSalva = false;
             } else {
                 window.filaEquipes = [];
-                window.partidaSalva = (!window.timesSorteadosObjs || window.timesSorteadosObjs.length === 0) ? true : (window.jogosDaRodada.length > 0 && window.filaEquipes.length === 0);
+                window.partidaSalva = true;
             }
             
             atualizarListaJogosDaRodada();
@@ -1648,7 +1645,11 @@
             await criarPartidaInicialNoBanco();
             salvarEstadoCompleto();
 
+            // Garantir que a tela de Sorteio fique limpa de times e o código apareça
             document.getElementById('resultado').innerHTML = "";
+            if(window.codigoAcessoAtual) {
+                exibirBoxCodigoSorteio(window.codigoAcessoAtual);
+            }
             document.getElementById('btn-ir-placares').style.display = 'block';
         }
 
@@ -1667,9 +1668,7 @@
                         quantidade_jogadores: qJogadoresEmQuadra,
                         times_json: window.timesSorteadosObjs,
                         fila_json: window.filaEquipes,
-                        data_sorteio: window.dataPartidaAtual,
-                        valor_por_convidado: valorConv,
-                        valor_por_mensalista: valorMens
+                        data_sorteio: new Date().toISOString()
                     }).eq('id', window.partidaAtualId);
                 } else {
                     const { data: pData, error: errP } = await db.from('partidas').insert([{ 
@@ -1686,8 +1685,7 @@
                         nome_baba: currentProfile ? currentProfile.nome_baba : "",
                         escudo_url: currentProfile ? currentProfile.escudo_url : "",
                         user_id: currentUser.id,
-                        caixa_fechado: false,
-                        data_sorteio: window.dataPartidaAtual
+                        caixa_fechado: false
                     }]).select();
 
                     if (errP) throw errP;
@@ -1795,13 +1793,13 @@
             let totalConvidados = 0;
             if(partidasDoMes.length > 0) {
                 partidasDoMes.forEach((p, idx) => {
-                    let vConv = p.valor_por_convidado || parseFloat(document.getElementById('valor-convidado').value) || 25;
+                    let vConv = p.valor_por_convidado || 25;
                     let qtdConv = p.renda_convidados || 0;
                     let subConv = qtdConv * vConv;
                     totalConvidados += subConv;
-                    let dataF = p.data_sorteio ? (p.data_sorteio.includes('/') ? p.data_sorteio : new Date(p.data_sorteio).toLocaleDateString('pt-BR')) : `Rodada ${idx+1}`;
+                    let dataF = p.data_sorteio ? new Date(p.data_sorteio).toLocaleDateString('pt-BR') : `Rodada ${idx+1}`;
                     if(qtdConv > 0) {
-                        html += `<tr><td>Rodada (${dataF}): ${qtdConv} convidados (R$ ${vConv} cada)</td><td style="text-align:right;">R$ ${subConv.toFixed(2)}</td></tr>`;
+                        html += `<tr><td>Rodada (${dataF}): ${qtdConv} convidados</td><td style="text-align:right;">R$ ${subConv.toFixed(2)}</td></tr>`;
                     }
                 });
             } else {
@@ -1827,7 +1825,7 @@
                     (p.custos_json || []).forEach(c => {
                         totalCustos += c.valor;
                         temCustosDiarios = true;
-                        let dData = p.data_sorteio ? (p.data_sorteio.includes('/') ? p.data_sorteio : new Date(p.data_sorteio).toLocaleDateString('pt-BR')) : new Date(p.created_at).toLocaleDateString('pt-BR');
+                        let dData = p.data_sorteio ? new Date(p.data_sorteio).toLocaleDateString('pt-BR') : new Date(p.created_at).toLocaleDateString('pt-BR');
                         htmlCustosDiarios += `<div class="item-custo-relatorio"><span>${c.desc} <span style="color:var(--text-muted); font-size:10px;">(${dData})</span></span> <strong class="valor-negativo">R$ ${c.valor.toFixed(2)}</strong></div>`;
                     });
                 });
