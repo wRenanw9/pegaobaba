@@ -1221,7 +1221,6 @@
             window.custosDaRodada = partida.custos_json || [];
             window.caixaFechado = partida.caixa_fechado || false;
             
-            // SINCRONIZAÇÃO DE DATA EXATA COM O BANCO DE DADOS
             if(partida.data_sorteio) {
                 let d = new Date(partida.data_sorteio);
                 window.dataPartidaAtual = !isNaN(d.getTime()) ? d.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}) : partida.data_sorteio;
@@ -1236,7 +1235,7 @@
             const { data: presencas } = await db.from('presencas').select('pagou, jogadores(tipo)').eq('partida_id', partida.id);
             if(presencas) {
                 let receitaPub = 0;
-                let vConv = partida.valor_por_convidado || 0;
+                let vConv = partida.valor_por_convidado || 25;
                 let qtdConvidadosPagos = presencas.filter(p => p.pagou && p.jogadores && p.jogadores.tipo === 'Convidado').length;
                 receitaPub += (qtdConvidadosPagos * vConv);
                 let totCustosPubDiarios = window.custosDaRodada.filter(c => c.tipo !== 'mensal').reduce((acc, c) => acc + c.valor, 0);
@@ -1647,16 +1646,36 @@
             await criarPartidaInicialNoBanco();
             salvarEstadoCompleto();
 
-            document.getElementById('resultado').innerHTML = "";
+            renderizarTimesSorteadosNaTela();
+            if(window.codigoAcessoAtual) exibirBoxCodigoSorteio(window.codigoAcessoAtual);
             document.getElementById('btn-ir-placares').style.display = 'block';
+        }
+
+        function renderizarTimesSorteadosNaTela() {
+            const resultado = document.getElementById('resultado');
+            resultado.innerHTML = "";
+            window.timesSorteadosObjs.forEach(t => {
+                let corHex = getCorHex(t.corBase);
+                let emoji = emojisTimes[coresTimes.indexOf(t.corBase)] || '⚽';
+                let html = `<div class="team" style="border-top-color: ${corHex};">
+                    <div style="display:flex; align-items:center; gap:5px; margin-bottom:10px;">
+                        <span style="font-size:18px;">${emoji}</span>
+                        <input type="text" value="${t.nome}" onchange="atualizarNomeTime(${t.id}, this.value)" class="input-nome-time" placeholder="Nome do Time" style="color: ${corHex};">
+                    </div>
+                    <ul>`;
+                t.jogadores.forEach(j => { html += `<li><strong>${j.nome}</strong> ${j.posicao!=='Linha'?`<span class="badge badge-posicao">${j.posicao}</span>`:''}</li>`; });
+                resultado.innerHTML += html + `</ul></div>`;
+            });
         }
 
         async function criarPartidaInicialNoBanco() {
             try {
                 let codigoAleatorio = window.codigoAcessoAtual || Math.random().toString(36).substring(2, 8).toUpperCase();
-                let valorConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
-                let valorMens = parseFloat(document.getElementById('valor-mensalista').value) || 0;
+                let valorConv = parseFloat(document.getElementById('valor-convidado').value) || 25;
+                let valorMens = parseFloat(document.getElementById('valor-mensalista').value) || 70;
                 
+                window.codigoAcessoAtual = codigoAleatorio;
+
                 let qJogadoresEmQuadra = 0;
                 window.timesSorteadosObjs.forEach(t => qJogadoresEmQuadra += t.jogadores.length);
                 if (window.reservasSorteados) qJogadoresEmQuadra += window.reservasSorteados.length;
@@ -1691,7 +1710,6 @@
 
                     if (errP) throw errP;
                     window.partidaAtualId = pData[0].id;
-                    window.codigoAcessoAtual = codigoAleatorio;
                     window.caixaFechado = false;
                     iniciarOuvinteRealtime(window.partidaAtualId);
                 }
@@ -2363,7 +2381,6 @@
             
             let btnEncerrarCaixa = document.getElementById('btn-fechar-caixa-container');
             if(btnEncerrarCaixa) {
-                // TRAVA DE SEGURANÇA: Só exibe se a partida existir, NÃO estiver fechada e a SÚMULA JÁ TIVER SIDO FINALIZADA
                 let podeFechar = (!window.caixaFechado && window.partidaAtualId && window.partidaSalva === true);
                 btnEncerrarCaixa.style.display = podeFechar ? 'block' : 'none';
             }
@@ -2448,6 +2465,7 @@
                         iniciarOuvinteRealtime(window.partidaAtualId);
                     }
                 } else {
+                    // Correção: Agora utiliza .push() corretamente para somar e acumular os lançamentos diários
                     window.custosDaRodada.push({ desc: desc, valor: val, tipo: tipo });
                     await db.from('partidas').update({ custos_json: window.custosDaRodada }).eq('id', window.partidaAtualId);
                 }
