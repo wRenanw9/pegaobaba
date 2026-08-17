@@ -460,7 +460,7 @@
                     <!-- Lista específica de Custos Diários -->
                     <div id="lista-custos" style="margin-top:12px;"></div>
                     
-                    <!-- BOTAO DE ENCERRAR CAIXA -->
+                    <!-- BOTAO DE ENCERRAR CAIXA (Exigirá que a partida esteja salva) -->
                     <div id="btn-fechar-caixa-container" class="hidden-public" style="display:none; margin-top: 15px;">
                         <button onclick="encerrarCaixaDaRodada()" style="background: var(--dark); border-radius:8px; width:100%; padding: 14px; font-weight:700;">🔒 Encerrar Caixa desta Rodada</button>
                     </div>
@@ -678,6 +678,17 @@
         window.golsTempA = []; 
         window.golsTempB = [];
 
+        // FUNÇÃO DE PARSE DE DATA UNIVERSAL (Resolve conflitos DD/MM/YYYY vs YYYY-MM)
+        function parseCustomDate(dateStr) {
+            if (!dateStr) return new Date();
+            if (dateStr.includes('T')) return new Date(dateStr);
+            if (dateStr.includes('/')) {
+                let parts = dateStr.split(' ')[0].split('/');
+                if (parts.length >= 3) return new Date(parts[2], parts[1] - 1, parts[0]);
+            }
+            return new Date(dateStr);
+        }
+
         window.onload = async function() {
             if(typeof supabaseUrl === 'undefined' || typeof supabaseKey === 'undefined') { alert("Erro crítico: config.js ausente."); return; }
             db = window.supabase.createClient(supabaseUrl, supabaseKey);
@@ -790,6 +801,7 @@
 
                 if(window.timesSorteadosObjs.length > 0) {
                     if(window.codigoAcessoAtual) {
+                        renderizarTimesSorteadosNaTela();
                         exibirBoxCodigoSorteio(window.codigoAcessoAtual);
                         iniciarOuvinteRealtime(window.partidaAtualId);
                     }
@@ -1192,9 +1204,8 @@
             }
 
             if (partida.created_at) {
-                let dataCriacao = new Date(partida.created_at);
-                let agora = new Date();
-                let diffMs = agora.getTime() - dataCriacao.getTime();
+                let dObj = parseCustomDate(partida.created_at);
+                let diffMs = Date.now() - dObj.getTime();
                 if (diffMs > 518400000) {
                     alert("⚠️ A visualização desta rodada já expirou (mais de 6 dias). Aguarde o próximo baba!");
                     sairModoPublico();
@@ -1222,10 +1233,10 @@
             window.caixaFechado = partida.caixa_fechado || false;
             
             if(partida.data_sorteio) {
-                let d = new Date(partida.data_sorteio);
+                let d = parseCustomDate(partida.data_sorteio);
                 window.dataPartidaAtual = !isNaN(d.getTime()) ? d.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}) : partida.data_sorteio;
             } else if(partida.created_at) {
-                let d = new Date(partida.created_at);
+                let d = parseCustomDate(partida.created_at);
                 window.dataPartidaAtual = !isNaN(d.getTime()) ? d.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}) : null;
             }
 
@@ -1308,7 +1319,8 @@
             if (!error && partidas && partidas.length > 0) {
                 let p = partidas[0];
                 if (p.created_at) {
-                    let diffMs = Date.now() - new Date(p.created_at).getTime();
+                    let dObj = parseCustomDate(p.created_at);
+                    let diffMs = Date.now() - dObj.getTime();
                     if (diffMs <= 518400000 || !p.caixa_fechado || (p.fila_json && p.fila_json.length > 0)) { 
                         window.partidaAtualId = p.id;
                         window.codigoAcessoAtual = p.codigo_acesso;
@@ -1320,11 +1332,12 @@
                         window.partidaSalva = (window.filaEquipes.length === 0 && window.jogosDaRodada.length > 0);
                         
                         if (p.data_sorteio) {
-                            let d = new Date(p.data_sorteio);
+                            let d = parseCustomDate(p.data_sorteio);
                             window.dataPartidaAtual = !isNaN(d.getTime()) ? d.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}) : p.data_sorteio;
                         }
 
                         if (window.timesSorteadosObjs.length > 0 && !window.partidaSalva) {
+                            renderizarTimesSorteadosNaTela();
                             exibirBoxCodigoSorteio(window.codigoAcessoAtual);
                             document.getElementById('btn-ir-placares').style.display = 'block';
                         }
@@ -1783,7 +1796,11 @@
                 if(partidas) {
                     partidasDoMes = partidas.filter(p => {
                         let dataRef = p.data_sorteio || p.created_at;
-                        return dataRef && dataRef.substring(0, 7) === mesKey;
+                        if (!dataRef) return false;
+                        let dObj = parseCustomDate(dataRef);
+                        if (isNaN(dObj.getTime())) return false;
+                        let strMes = dObj.getFullYear() + "-" + String(dObj.getMonth() + 1).padStart(2, '0');
+                        return strMes === mesKey;
                     });
                 }
             }
@@ -2211,7 +2228,7 @@
 
             let dataExibicao = window.dataPartidaAtual || calcularProximaDataBaba();
             if (dataStr) {
-                let d = new Date(dataStr);
+                let d = parseCustomDate(dataStr);
                 if (!isNaN(d.getTime())) {
                     dataExibicao = d.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
                 } else {
@@ -2268,13 +2285,12 @@
                     let ultimaPartida = partidas[0];
                     
                     if (ultimaPartida.created_at) {
-                        let dataCriacao = new Date(ultimaPartida.created_at);
-                        let agora = new Date();
-                        let diffMs = agora.getTime() - dataCriacao.getTime();
+                        let dObj = parseCustomDate(ultimaPartida.created_at);
+                        let diffMs = Date.now() - dObj.getTime();
                         if (diffMs <= 518400000 || !ultimaPartida.caixa_fechado) {
                             window.jogosDaRodada = ultimaPartida.jogos_json || [];
                             if (ultimaPartida.data_sorteio) {
-                                let d = new Date(ultimaPartida.data_sorteio);
+                                let d = parseCustomDate(ultimaPartida.data_sorteio);
                                 if (!isNaN(d.getTime())) {
                                     window.dataPartidaAtual = d.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
                                 } else {
@@ -2301,7 +2317,7 @@
             document.getElementById('label-mes-atual').innerText = hoje.toLocaleString('pt-BR', { month: 'long' });
             document.getElementById('label-ano-atual').innerText = anoAtual;
 
-            const { data: partidas } = await db.from('partidas').select('id, data_sorteio, artilheiros_json').gte('created_at', startOfYear).eq('user_id', currentUser.id);
+            const { data: partidas } = await db.from('partidas').select('id, data_sorteio, created_at, artilheiros_json').gte('created_at', startOfYear).eq('user_id', currentUser.id);
             const { data: presencas } = await db.from('presencas').select('partida_id, jogadores(nome, tipo, user_id)');
 
             let mensalistasPorPartida = {};
@@ -2335,8 +2351,8 @@
 
             if(partidas) {
                 partidas.forEach(p => {
-                    let dataP = p.data_sorteio ? new Date(p.data_sorteio) : new Date();
-                    let isEsteMes = dataP.getMonth() === mesAtual;
+                    let dataP = p.data_sorteio ? parseCustomDate(p.data_sorteio) : parseCustomDate(p.created_at);
+                    let isEsteMes = (dataP.getMonth() === mesAtual && dataP.getFullYear() === anoAtual);
                     let arts = p.artilheiros_json || {};
                     let mensalistasNesta = mensalistasPorPartida[p.id] || new Set();
 
@@ -2465,7 +2481,6 @@
                         iniciarOuvinteRealtime(window.partidaAtualId);
                     }
                 } else {
-                    // Correção: Agora utiliza .push() corretamente para somar e acumular os lançamentos diários
                     window.custosDaRodada.push({ desc: desc, valor: val, tipo: tipo });
                     await db.from('partidas').update({ custos_json: window.custosDaRodada }).eq('id', window.partidaAtualId);
                 }
