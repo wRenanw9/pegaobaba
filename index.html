@@ -160,6 +160,10 @@
         .grid-mensalistas { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px 15px; padding: 8px 5px; }
         .item-mensalista { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed var(--border); padding: 4px 0; font-size: 12px; }
 
+        /* DUAS COLUNAS PARA CUSTOS LONGOS */
+        .grid-relatorio-custos { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; margin-top: 5px; }
+        .item-custo-relatorio { background: var(--light); padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); font-size: 11px; display: flex; justify-content: space-between; align-items: center; }
+
         /* MODO PÚBLICO E IMPRESSÃO / PDF */
         .hidden-public { display: block; }
         .public-mode .hidden-public { display: none !important; }
@@ -181,7 +185,7 @@
             .relatorio-tabela th, .relatorio-tabela td { padding: 4px; }
             .header-secao-stats { padding: 6px 0 !important; background: transparent !important; color: black !important; border-bottom: 2px solid black !important; }
             .header-secao-stats span { font-size: 14px !important; }
-            .header-secao-stats div { display: none !important; } /* Oculta o seletor de mês na impressão */
+            .header-secao-stats div { display: none !important; } 
             .grid-mensalistas { grid-template-columns: repeat(3, 1fr) !important; gap: 4px 15px; padding: 4px 0; }
             .item-mensalista { font-size: 10px; padding: 2px 0; border-bottom: 1px solid #eee; }
         }
@@ -456,7 +460,7 @@
                     <!-- Lista específica de Custos Diários -->
                     <div id="lista-custos" style="margin-top:12px;"></div>
                     
-                    <!-- NOVO BOTAO DE ENCERRAR CAIXA -->
+                    <!-- BOTAO DE ENCERRAR CAIXA -->
                     <div id="btn-fechar-caixa-container" class="hidden-public" style="display:none; margin-top: 15px;">
                         <button onclick="encerrarCaixaDaRodada()" style="background: var(--dark); border-radius:8px; width:100%; padding: 14px; font-weight:700;">🔒 Encerrar Caixa desta Rodada</button>
                     </div>
@@ -661,7 +665,7 @@
         window.timesSorteadosObjs = []; 
         window.reservasSorteados = [];
         window.partidaSalva = true; 
-        window.caixaFechado = false; // Controle financeiro independente
+        window.caixaFechado = false; 
         window.jogosDaRodada = []; 
         window.filaEquipes = []; 
         window.custosDaRodada = [];
@@ -691,7 +695,8 @@
             
             let hoje = new Date();
             let mesAtualStr = hoje.toISOString().substring(0, 7);
-            document.getElementById('filtro-mes-relatorio').value = mesAtualStr;
+            let elFiltro = document.getElementById('filtro-mes-relatorio');
+            if(elFiltro) elFiltro.value = mesAtualStr;
         };
 
         function iniciarOuvinteRealtime(partidaId) {
@@ -1024,7 +1029,6 @@
             } else {
                 alert("✅ Dia da semana do baba atualizado com sucesso!");
                 if(currentProfile) currentProfile.dia_semana_baba = dia;
-                // Recalcula próxima data para fins de exibição
                 calcularProximaDataBaba();
             }
         }
@@ -1310,7 +1314,6 @@
                 let p = partidas[0];
                 if (p.created_at) {
                     let diffMs = Date.now() - new Date(p.created_at).getTime();
-                    // Limite de tempo visual de 6 dias, mas se o caixa não estiver fechado, consideramos a rodada financeira ativa.
                     if (diffMs <= 518400000 || !p.caixa_fechado) { 
                         window.partidaAtualId = p.id;
                         window.codigoAcessoAtual = p.codigo_acesso;
@@ -1435,9 +1438,9 @@
         async function alternarMensalidade(idNuvem, indexArray) {
             const j = jogadores[indexArray];
             
-            let filtroInput = document.getElementById('filtro-mes-relatorio').value;
+            let filtroInput = document.getElementById('filtro-mes-relatorio');
             let hoje = new Date();
-            const mesKey = filtroInput || hoje.toISOString().substring(0, 7); 
+            const mesKey = filtroInput ? filtroInput.value : hoje.toISOString().substring(0, 7); 
             
             if (!j.pagamentos_json) j.pagamentos_json = {};
             if(j.pagamentos_json[mesKey] === true) delete j.pagamentos_json[mesKey]; else j.pagamentos_json[mesKey] = true;
@@ -1662,7 +1665,6 @@
                 window.timesSorteadosObjs.forEach(t => qJogadoresEmQuadra += t.jogadores.length);
                 if (window.reservasSorteados) qJogadoresEmQuadra += window.reservasSorteados.length;
 
-                // Se houver uma partida aberta (caixa não fechado), reaproveita.
                 if (window.partidaAtualId && !window.caixaFechado) {
                     await db.from('partidas').update({
                         quantidade_jogadores: qJogadoresEmQuadra,
@@ -1760,9 +1762,13 @@
             if(currentUser) {
                 const { data: partidas } = await db.from('partidas')
                                                    .select('*')
-                                                   .eq('user_id', currentUser.id)
-                                                   .like('created_at', `${mesKey}%`);
-                if(partidas) partidasDoMes = partidas;
+                                                   .eq('user_id', currentUser.id);
+                if(partidas) {
+                    partidasDoMes = partidas.filter(p => {
+                        let dataRef = p.data_sorteio || p.created_at;
+                        return dataRef && dataRef.substring(0, 7) === mesKey;
+                    });
+                }
             }
 
             let html = `<table class="relatorio-tabela">`;
@@ -1812,13 +1818,17 @@
                 html += `<tr><td>${c.desc} <span style="font-size:10px; color:var(--text-muted);">(Fixo Mensal)</span></td><td style="text-align:right;">R$ ${c.valor.toFixed(2)}</td></tr>`;
             });
 
+            let htmlCustosDiarios = `<div class="grid-relatorio-custos">`;
+            let temCustosDiarios = false;
+
             if(partidasDoMes.length > 0) {
                 partidasDoMes.forEach(p => {
                     if(window.partidaAtualId && p.id === window.partidaAtualId && !window.caixaFechado) return; 
                     (p.custos_json || []).forEach(c => {
                         totalCustos += c.valor;
-                        let dData = p.data_sorteio ? new Date(p.data_sorteio).toLocaleDateString('pt-BR').substring(0,5) : '';
-                        html += `<tr><td>${c.desc} <span style="font-size:10px; color:var(--text-muted);">(Rodada ${dData})</span></td><td style="text-align:right;">R$ ${c.valor.toFixed(2)}</td></tr>`;
+                        temCustosDiarios = true;
+                        let dData = p.data_sorteio ? new Date(p.data_sorteio).toLocaleDateString('pt-BR') : new Date(p.created_at).toLocaleDateString('pt-BR');
+                        htmlCustosDiarios += `<div class="item-custo-relatorio"><span>${c.desc} <span style="color:var(--text-muted); font-size:10px;">(${dData})</span></span> <strong class="valor-negativo">R$ ${c.valor.toFixed(2)}</strong></div>`;
                     });
                 });
             }
@@ -1827,13 +1837,19 @@
             if(mesKey === hojeStr && window.partidaAtualId && !window.caixaFechado && window.custosDaRodada && window.custosDaRodada.length > 0) {
                 window.custosDaRodada.forEach(c => {
                     totalCustos += c.valor;
-                    html += `<tr><td>${c.desc} <span style="font-size:10px; color:var(--text-muted);">(Diário - Caixa Aberto)</span></td><td style="text-align:right;">R$ ${c.valor.toFixed(2)}</td></tr>`;
+                    temCustosDiarios = true;
+                    let dData = window.dataPartidaAtual || new Date().toLocaleDateString('pt-BR');
+                    htmlCustosDiarios += `<div class="item-custo-relatorio"><span>${c.desc} <span style="color:var(--text-muted); font-size:10px;">(${dData} - Aberto)</span></span> <strong class="valor-negativo">R$ ${c.valor.toFixed(2)}</strong></div>`;
                 });
             }
+            htmlCustosDiarios += `</div>`;
 
-            if(totalCustos === 0) {
-                html += `<tr><td colspan="2" style="color:var(--text-muted);">Nenhuma despesa registrada no mês selecionado.</td></tr>`;
+            if(temCustosDiarios || (custosMensaisMes.length > 0)) {
+                html += `<tr><td colspan="2" style="padding: 0 0 10px 0;">${htmlCustosDiarios}</td></tr>`;
+            } else {
+                html += `<tr><td colspan="2" style="color:var(--text-muted);">Nenhuma despesa diária registrada no mês selecionado.</td></tr>`;
             }
+
             html += `<tr><td><strong>Total de Despesas:</strong></td><td style="text-align:right; font-weight:bold; color:var(--danger);">R$ ${totalCustos.toFixed(2)}</td></tr>`;
 
             let receitaTotal = totalMensalidades + totalConvidados;
@@ -2359,7 +2375,13 @@
             if(!window.partidaAtualId) return;
             if(!confirm("Atenção: Isso vai FECHAR O CAIXA desta rodada.\n\nNovas despesas diárias criarão automaticamente o caixa do PRÓXIMO baba.\n\nDeseja confirmar?")) return;
             
-            const { error } = await db.from('partidas').update({ caixa_fechado: true }).eq('id', window.partidaAtualId);
+            let convidadosPagantes = jogadores.filter(j => j.presente && j.pagou && j.tipo === 'Convidado').length;
+
+            const { error } = await db.from('partidas').update({ 
+                caixa_fechado: true,
+                renda_convidados: convidadosPagantes
+            }).eq('id', window.partidaAtualId);
+
             if(error) {
                 alert("Erro ao fechar caixa: " + error.message);
             } else {
@@ -2371,6 +2393,7 @@
                 window.dataPartidaAtual = null;
                 salvarEstadoCompleto();
                 atualizarFinanceiro();
+                gerarRelatorioMensal();
             }
         }
 
