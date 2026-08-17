@@ -840,7 +840,12 @@
         }
         
         function calcularProximaDataBaba() {
-            if (window.dataPartidaAtual && !window.partidaSalva) return window.dataPartidaAtual; 
+            if (window.dataPartidaAtual && !window.partidaSalva) {
+                if (window.dataPartidaAtual.includes('/')) {
+                    return window.dataPartidaAtual.split('/').reverse().join('-');
+                }
+                return window.dataPartidaAtual.split('T')[0];
+            }
             
             let diaAlvo = currentProfile && currentProfile.dia_semana_baba !== undefined ? parseInt(currentProfile.dia_semana_baba) : 6; 
             let hoje = new Date();
@@ -849,7 +854,7 @@
             
             let dataAlvo = new Date(hoje);
             dataAlvo.setDate(hoje.getDate() + diasAteAlvo);
-            return dataAlvo.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
+            return dataAlvo.toISOString().split('T')[0];
         }
 
         function mudarAba(viewId) {
@@ -1244,16 +1249,12 @@
             window.custosDaRodada = partida.custos_json || [];
             window.caixaFechado = partida.caixa_fechado || false;
             
-            // CORREÇÃO: PUXAR TIMES PARA MOSTRAR OS JOGOS NA TELA
             window.timesSorteadosObjs = partida.times_json || [];
 
-            // CORREÇÃO: FORMATAR A DATA
             if(partida.data_sorteio) {
-                let d = parseCustomDate(partida.data_sorteio);
-                window.dataPartidaAtual = !isNaN(d.getTime()) ? d.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}) : partida.data_sorteio;
+                window.dataPartidaAtual = partida.data_sorteio.split('T')[0];
             } else if(partida.created_at) {
-                let d = parseCustomDate(partida.created_at);
-                window.dataPartidaAtual = !isNaN(d.getTime()) ? d.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}) : null;
+                window.dataPartidaAtual = partida.created_at.split('T')[0];
             }
 
             if(partida.valor_por_convidado) document.getElementById('valor-convidado').value = partida.valor_por_convidado;
@@ -1282,7 +1283,7 @@
                 window.partidaSalva = false;
             } else {
                 window.filaEquipes = [];
-                window.partidaSalva = (!window.timesSorteadosObjs || window.timesSorteadosObjs.length === 0) ? true : (window.jogosDaRodada.length > 0 && window.filaEquipes.length === 0);
+                window.partidaSalva = true;
             }
             
             atualizarListaJogosDaRodada();
@@ -1347,8 +1348,7 @@
                         window.partidaSalva = (window.filaEquipes.length === 0 && window.jogosDaRodada.length > 0);
                         
                         if (p.data_sorteio) {
-                            let d = parseCustomDate(p.data_sorteio);
-                            window.dataPartidaAtual = !isNaN(d.getTime()) ? d.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}) : p.data_sorteio;
+                            window.dataPartidaAtual = p.data_sorteio.split('T')[0];
                         }
 
                         if (window.timesSorteadosObjs.length > 0 && !window.partidaSalva) {
@@ -1682,7 +1682,10 @@
 
         async function criarPartidaInicialNoBanco() {
             try {
-                let codigoAleatorio = window.codigoAcessoAtual || Math.random().toString(36).substring(2, 8).toUpperCase();
+                if (!window.codigoAcessoAtual) {
+                    window.codigoAcessoAtual = Math.random().toString(36).substring(2, 8).toUpperCase();
+                }
+                let codigoAleatorio = window.codigoAcessoAtual;
                 let valorConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
                 let valorMens = parseFloat(document.getElementById('valor-mensalista').value) || 0;
                 
@@ -1695,6 +1698,7 @@
                         quantidade_jogadores: qJogadoresEmQuadra,
                         times_json: window.timesSorteadosObjs,
                         fila_json: window.filaEquipes,
+                        codigo_acesso: codigoAleatorio,
                         data_sorteio: window.dataPartidaAtual,
                         valor_por_convidado: valorConv,
                         valor_por_mensalista: valorMens
@@ -1718,9 +1722,11 @@
                         data_sorteio: window.dataPartidaAtual
                     }]).select();
 
-                    if (errP) throw errP;
+                    if (errP) {
+                        alert("Erro de conexão (Sorteio): " + errP.message);
+                        throw errP;
+                    }
                     window.partidaAtualId = pData[0].id;
-                    window.codigoAcessoAtual = codigoAleatorio;
                     window.caixaFechado = false;
                     iniciarOuvinteRealtime(window.partidaAtualId);
                 }
@@ -1794,11 +1800,7 @@
                 if(partidas) {
                     partidasDoMes = partidas.filter(p => {
                         let dataRef = p.data_sorteio || p.created_at;
-                        if (!dataRef) return false;
-                        let dObj = parseCustomDate(dataRef);
-                        if (isNaN(dObj.getTime())) return false;
-                        let strMes = dObj.getFullYear() + "-" + String(dObj.getMonth() + 1).padStart(2, '0');
-                        return strMes === mesKey;
+                        return dataRef && dataRef.substring(0, 7) === mesKey;
                     });
                 }
             }
@@ -2226,7 +2228,7 @@
 
             let dataExibicao = window.dataPartidaAtual || calcularProximaDataBaba();
             if (dataStr) {
-                let d = parseCustomDate(dataStr);
+                let d = new Date(dataStr);
                 if (!isNaN(d.getTime())) {
                     dataExibicao = d.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
                 } else {
@@ -2289,7 +2291,7 @@
                         if (diffMs <= 518400000 || !ultimaPartida.caixa_fechado) {
                             window.jogosDaRodada = ultimaPartida.jogos_json || [];
                             if (ultimaPartida.data_sorteio) {
-                                let d = parseCustomDate(ultimaPartida.data_sorteio);
+                                let d = new Date(ultimaPartida.data_sorteio);
                                 if (!isNaN(d.getTime())) {
                                     window.dataPartidaAtual = d.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
                                 } else {
@@ -2310,13 +2312,14 @@
             await renderizarPainelDoDia(); 
             if(window.isModoPublico) return;
 
-            let hoje = new Date(); let mesAtual = hoje.getMonth(); let anoAtual = hoje.getFullYear();
+            let hoje = new Date(); let mesAtual = hoje.getMonth() + 1; let anoAtual = hoje.getFullYear();
             const startOfYear = new Date(anoAtual, 0, 1).toISOString();
+            let mesAtualStr = anoAtual + "-" + String(mesAtual).padStart(2, '0');
 
             document.getElementById('label-mes-atual').innerText = hoje.toLocaleString('pt-BR', { month: 'long' });
             document.getElementById('label-ano-atual').innerText = anoAtual;
 
-            const { data: partidas } = await db.from('partidas').select('id, data_sorteio, created_at, artilheiros_json').gte('created_at', startOfYear).eq('user_id', currentUser.id);
+            const { data: partidas } = await db.from('partidas').select('id, data_sorteio, artilheiros_json').gte('created_at', startOfYear).eq('user_id', currentUser.id);
             const { data: presencas } = await db.from('presencas').select('partida_id, jogadores(nome, tipo, user_id)');
 
             let mensalistasPorPartida = {};
@@ -2350,8 +2353,8 @@
 
             if(partidas) {
                 partidas.forEach(p => {
-                    let dataP = p.data_sorteio ? parseCustomDate(p.data_sorteio) : parseCustomDate(p.created_at);
-                    let isEsteMes = (dataP.getMonth() === mesAtual && dataP.getFullYear() === anoAtual);
+                    let pDateStr = p.data_sorteio ? p.data_sorteio : p.created_at.split('T')[0];
+                    let isEsteMes = pDateStr.substring(0, 7) === mesAtualStr;
                     let arts = p.artilheiros_json || {};
                     let mensalistasNesta = mensalistasPorPartida[p.id] || new Set();
 
@@ -2476,7 +2479,7 @@
                     }
                 } else {
                     let hojeStr = new Date().toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
-                    let dataCriacao = window.dataPartidaAtual || calcularProximaDataBaba();
+                    let dataCriacao = window.dataPartidaAtual ? formatarDataBr(window.dataPartidaAtual) : calcularProximaDataBaba();
                     
                     if (dataCriacao !== hojeStr && window.partidaSalva) {
                         if(!confirm(`Esta despesa será vinculada ao caixa do baba do dia ${dataCriacao}.\n\nDeseja confirmar o lançamento?`)) return;
