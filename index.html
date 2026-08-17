@@ -684,12 +684,30 @@
             return (new Date(Date.now() - tzoffset)).toISOString().split('T')[0];
         }
 
-        // TRADUTOR DE DATAS PARA A TELA (YYYY-MM-DD -> DD/MM/YYYY)
-        function isoParaDataBr(dataStr) {
+        // TRADUTOR UNIVERSAL DE DATAS (Resolve qualquer formato de entrada)
+        function parseCustomDate(dateStr) {
+            if (!dateStr) return new Date();
+            if (dateStr.includes('T')) return new Date(dateStr);
+            if (dateStr.includes('/')) {
+                let parts = dateStr.split(' ')[0].split('/');
+                if (parts.length >= 3) return new Date(parts[2], parts[1] - 1, parts[0]);
+            }
+            if (dateStr.includes('-')) {
+                let parts = dateStr.split(' ')[0].split('-');
+                if (parts.length >= 3) {
+                     if(parts[0].length === 4) return new Date(parts[0], parts[1]-1, parts[2]); 
+                     else return new Date(parts[2], parts[1]-1, parts[0]); 
+                }
+            }
+            return new Date(dateStr);
+        }
+
+        // TRADUTOR DE DATAS PARA A TELA (Qualquer formato -> DD/MM/YYYY)
+        function formatarDataBr(dataStr) {
             if(!dataStr) return '';
-            let p = dataStr.split('T')[0].split('-');
-            if(p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
-            return dataStr;
+            let dObj = parseCustomDate(dataStr);
+            if(isNaN(dObj.getTime())) return dataStr;
+            return dObj.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
         }
 
         window.onload = async function() {
@@ -713,7 +731,7 @@
         };
 
         function iniciarOuvinteRealtime(partidaId) {
-            if (!partidaId || !window.isModoPublico) return; // TRAVA DE SEGURANÇA: Administrador não usa realtime para não ter tela apagada por lentidão da internet
+            if (!partidaId || !window.isModoPublico) return; 
             
             if (supabaseChannel) {
                 db.removeChannel(supabaseChannel);
@@ -734,7 +752,6 @@
                         
                         window.filaEquipes = novaPartida.fila_json || [];
                         
-                        // VERIFICAÇÃO COM STATUS EXPLÍCITO JSON HACK
                         window.partidaSalva = (novaPartida.artilheiros_json && novaPartida.artilheiros_json._is_finalizado === true);
                         if (window.partidaSalva === undefined) {
                             window.partidaSalva = (!window.timesSorteadosObjs || window.timesSorteadosObjs.length === 0) ? true : (window.jogosDaRodada.length > 0 && window.filaEquipes.length === 0);
@@ -831,7 +848,11 @@
         
         function calcularProximaDataBaba() {
             if (window.dataPartidaAtual && !window.partidaSalva) {
-                return window.dataPartidaAtual.split('T')[0];
+                let dObj = parseCustomDate(window.dataPartidaAtual);
+                if(!isNaN(dObj.getTime())) {
+                    let tzoffset = dObj.getTimezoneOffset() * 60000;
+                    return (new Date(dObj.getTime() - tzoffset)).toISOString().split('T')[0];
+                }
             }
             
             let diaAlvo = currentProfile && currentProfile.dia_semana_baba !== undefined ? parseInt(currentProfile.dia_semana_baba) : 6; 
@@ -1209,9 +1230,9 @@
             }
 
             if (partida.created_at) {
-                let dataCriacao = new Date(partida.created_at);
+                let dCriacao = parseCustomDate(partida.created_at);
                 let agora = new Date();
-                let diffMs = agora.getTime() - dataCriacao.getTime();
+                let diffMs = agora.getTime() - dCriacao.getTime();
                 if (diffMs > 518400000) {
                     alert("⚠️ A visualização desta rodada já expirou (mais de 6 dias). Aguarde o próximo baba!");
                     sairModoPublico();
@@ -1241,9 +1262,10 @@
             window.timesSorteadosObjs = partida.times_json || [];
 
             if(partida.data_sorteio) {
-                window.dataPartidaAtual = partida.data_sorteio.split('T')[0];
+                window.dataPartidaAtual = partida.data_sorteio;
             } else if(partida.created_at) {
-                window.dataPartidaAtual = partida.created_at.split('T')[0];
+                let d = parseCustomDate(partida.created_at);
+                window.dataPartidaAtual = !isNaN(d.getTime()) ? d.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}) : null;
             }
 
             if(partida.valor_por_convidado) document.getElementById('valor-convidado').value = partida.valor_por_convidado;
@@ -1275,7 +1297,6 @@
 
             window.filaEquipes = partida.fila_json || [];
             
-            // LER O STATUS EXPLÍCITO DE PARTIDA SALVA
             window.partidaSalva = (partida.artilheiros_json && partida.artilheiros_json._is_finalizado === true);
             if (window.partidaSalva === undefined || window.partidaSalva === false) {
                  window.partidaSalva = (!window.timesSorteadosObjs || window.timesSorteadosObjs.length === 0) ? true : (window.jogosDaRodada.length > 0 && window.filaEquipes.length === 0);
@@ -1331,7 +1352,7 @@
             if (!error && partidas && partidas.length > 0) {
                 let p = partidas[0];
                 if (p.created_at) {
-                    let dC = new Date(p.created_at);
+                    let dC = parseCustomDate(p.created_at);
                     let diffMs = Date.now() - dC.getTime();
                     
                     if (diffMs <= 518400000 || !p.caixa_fechado || (p.fila_json && p.fila_json.length > 0)) { 
@@ -1344,10 +1365,9 @@
                         window.caixaFechado = p.caixa_fechado || false;
                         
                         if (p.data_sorteio) {
-                            window.dataPartidaAtual = p.data_sorteio.split('T')[0];
+                            window.dataPartidaAtual = p.data_sorteio;
                         }
                         
-                        // LER O STATUS EXPLÍCITO DE PARTIDA SALVA
                         window.partidaSalva = (p.artilheiros_json && p.artilheiros_json._is_finalizado === true);
                         if (window.partidaSalva === undefined || window.partidaSalva === false) {
                              window.partidaSalva = (window.filaEquipes.length === 0 && window.jogosDaRodada.length > 0);
@@ -1613,7 +1633,7 @@
             let modo = document.getElementById('modo-sorteio').value; let priorizarOrdem = document.getElementById('priorizar-ordem').checked;
             let incluiGoleiros = (modo === '14' || modo === 'todos'); 
             
-            window.dataPartidaAtual = calcularProximaDataBaba(); // YYYY-MM-DD STRICT
+            window.dataPartidaAtual = calcularProximaDataBaba(); 
 
             let jogadoresValidos = presentes; let reservas = [];
             if (!incluiGoleiros) { reservas.push(...presentes.filter(j => j.posicao === 'Goleiro')); jogadoresValidos = presentes.filter(j => j.posicao !== 'Goleiro'); }
@@ -1703,7 +1723,7 @@
                         data_sorteio: window.dataPartidaAtual,
                         valor_por_convidado: valorConv,
                         valor_por_mensalista: valorMens,
-                        artilheiros_json: {} // GARANTE STATUS NÃO FINALIZADO NA NUVEM
+                        artilheiros_json: {} 
                     }).eq('id', window.partidaAtualId);
                 } else {
                     const { data: pData, error: errP } = await db.from('partidas').insert([{ 
@@ -1712,7 +1732,7 @@
                         valor_por_convidado: valorConv,
                         valor_por_mensalista: valorMens,
                         custos_json: window.custosDaRodada,
-                        artilheiros_json: {}, // GARANTE STATUS NÃO FINALIZADO NA NUVEM
+                        artilheiros_json: {}, 
                         jogos_json: [],
                         times_json: window.timesSorteadosObjs,
                         fila_json: window.filaEquipes,
@@ -1801,8 +1821,12 @@
                                                    .eq('user_id', currentUser.id);
                 if(partidas) {
                     partidasDoMes = partidas.filter(p => {
-                        let dIso = p.data_sorteio ? p.data_sorteio.split('T')[0] : p.created_at.split('T')[0];
-                        return dIso.substring(0, 7) === mesKey;
+                        let dataRef = p.data_sorteio || p.created_at;
+                        if (!dataRef) return false;
+                        let dObj = parseCustomDate(dataRef);
+                        if (isNaN(dObj.getTime())) return false;
+                        let strMes = dObj.getFullYear() + "-" + String(dObj.getMonth() + 1).padStart(2, '0');
+                        return strMes === mesKey;
                     });
                 }
             }
@@ -1835,7 +1859,7 @@
                     let qtdConv = p.renda_convidados || 0;
                     let subConv = qtdConv * vConv;
                     totalConvidados += subConv;
-                    let dataF = p.data_sorteio ? isoParaDataBr(p.data_sorteio) : `Rodada ${idx+1}`;
+                    let dataF = p.data_sorteio ? formatarDataBr(p.data_sorteio) : `Rodada ${idx+1}`;
                     if(qtdConv > 0) {
                         html += `<tr><td>Rodada (${dataF}): ${qtdConv} convidados (R$ ${vConv} cada)</td><td style="text-align:right;">R$ ${subConv.toFixed(2)}</td></tr>`;
                     }
@@ -1863,7 +1887,7 @@
                     (p.custos_json || []).forEach(c => {
                         totalCustos += c.valor;
                         temCustosDiarios = true;
-                        let dData = p.data_sorteio ? isoParaDataBr(p.data_sorteio) : isoParaDataBr(p.created_at);
+                        let dData = p.data_sorteio ? formatarDataBr(p.data_sorteio) : formatarDataBr(p.created_at);
                         htmlCustosDiarios += `<div class="item-custo-relatorio"><span>${c.desc} <span style="color:var(--text-muted); font-size:10px;">(${dData})</span></span> <strong class="valor-negativo">R$ ${c.valor.toFixed(2)}</strong></div>`;
                     });
                 });
@@ -1874,7 +1898,7 @@
                 window.custosDaRodada.forEach(c => {
                     totalCustos += c.valor;
                     temCustosDiarios = true;
-                    let dData = window.dataPartidaAtual ? isoParaDataBr(window.dataPartidaAtual) : isoParaDataBr(getHojeIso());
+                    let dData = window.dataPartidaAtual ? formatarDataBr(window.dataPartidaAtual) : formatarDataBr(getHojeIso());
                     htmlCustosDiarios += `<div class="item-custo-relatorio"><span>${c.desc} <span style="color:var(--text-muted); font-size:10px;">(${dData} - Aberto)</span></span> <strong class="valor-negativo">R$ ${c.valor.toFixed(2)}</strong></div>`;
                 });
             }
@@ -1913,7 +1937,7 @@
             let boxCod = document.getElementById('box-codigo-gerado-sorteio');
             if (boxCod) {
                 boxCod.innerHTML = `
-                    <div style="font-size:13px; color:var(--text-muted); font-weight:700; margin-bottom:5px;">Código do jogo (${isoParaDataBr(dataBoxStr)}) para os jogadores</div>
+                    <div style="font-size:13px; color:var(--text-muted); font-weight:700; margin-bottom:5px;">Código do jogo (${formatarDataBr(dataBoxStr)}) para os jogadores</div>
                     <div style="color:var(--primary); font-size:28px; line-height:1; margin-bottom:15px;">${codigo}</div>
                     <div style="display: flex; flex-direction: column; gap: 8px;">
                         <a href="https://api.whatsapp.com/send?text=${textoWppEscalacao}" target="_blank" class="btn-whatsapp">👥 Compartilhar Escalação no WhatsApp</a>
@@ -1958,7 +1982,7 @@
 
             if(dataLabel) {
                 let dataExibicao = window.dataPartidaAtual || calcularProximaDataBaba();
-                dataLabel.innerText = `📅 Data da Rodada: ${isoParaDataBr(dataExibicao)}`;
+                dataLabel.innerText = `📅 Data da Rodada: ${formatarDataBr(dataExibicao)}`;
             }
             
             if (window.timesSorteadosObjs && window.timesSorteadosObjs.length > 0 && window.filaEquipes.length === 0 && !window.partidaSalva) {
@@ -2235,8 +2259,8 @@
 
             let tituloClass = document.getElementById('titulo-classificacao-dia');
             let tituloArts = document.getElementById('titulo-artilheiros-dia');
-            if (tituloClass) tituloClass.innerText = `🏆 Classificação do dia (${isoParaDataBr(dataExibicao)})`;
-            if (tituloArts) tituloArts.innerText = `⚽ Artilheiros do dia (${isoParaDataBr(dataExibicao)})`;
+            if (tituloClass) tituloClass.innerText = `🏆 Classificação do dia (${formatarDataBr(dataExibicao)})`;
+            if (tituloArts) tituloArts.innerText = `⚽ Artilheiros do dia (${formatarDataBr(dataExibicao)})`;
 
             const bodyClass = document.getElementById('body-classificacao');
             if(rankTimes.length === 0) { bodyClass.innerHTML = '<tr><td colspan="7" style="color:var(--text-muted);">Sem jogos hoje.</td></tr>'; } 
@@ -2281,12 +2305,12 @@
                 if (!error && partidas && partidas.length > 0) {
                     let p = partidas[0];
                     if (p.created_at) {
-                        let dC = new Date(p.created_at);
+                        let dC = parseCustomDate(p.created_at);
                         let diffMs = Date.now() - dC.getTime();
                         if (diffMs <= 518400000 || !p.caixa_fechado) {
                             window.jogosDaRodada = p.jogos_json || [];
                             if (p.data_sorteio) {
-                                window.dataPartidaAtual = p.data_sorteio.split('T')[0];
+                                window.dataPartidaAtual = p.data_sorteio;
                             }
                             renderizarPainelDoDiaComJogos(window.jogosDaRodada, window.dataPartidaAtual);
                             return;
@@ -2310,7 +2334,6 @@
             document.getElementById('label-mes-atual').innerText = dtDisplay.toLocaleString('pt-BR', { month: 'long' });
             document.getElementById('label-ano-atual').innerText = anoAtualStr;
 
-            // Puxa histórico bruto inteiro para não ter erro de fuso horário no servidor
             const { data: partidas } = await db.from('partidas')
                                                .select('id, data_sorteio, created_at, artilheiros_json')
                                                .eq('user_id', currentUser.id);
@@ -2320,8 +2343,9 @@
             
             if (partidas) {
                 partidasDoAno = partidas.filter(p => {
-                    let dIso = p.data_sorteio ? p.data_sorteio.split('T')[0] : p.created_at.split('T')[0];
-                    return dIso.substring(0, 4) === anoAtualStr;
+                    let dObj = parseCustomDate(p.data_sorteio || p.created_at);
+                    if (isNaN(dObj.getTime())) return false;
+                    return String(dObj.getFullYear()) === anoAtualStr;
                 });
                 idsPartidasDoAno = partidasDoAno.map(p => p.id);
             }
@@ -2335,14 +2359,12 @@
             let artilhariaMes = {}; 
             let rankingAnual = {};
 
-            // Pré-popular a tabela com todos os mensalistas atuais
             jogadores.filter(j => j.tipo === 'Mensalista').forEach(j => {
                 rankingAnual[j.nome] = { gols: 0, presencas: 0 };
             });
 
             let presencasSet = {}; 
             
-            // Cruzamento direto da memória (Zera as chances de falha do Supabase)
             presencas.forEach(p => {
                 let jLocal = jogadores.find(x => x.id === p.jogador_id);
                 if (jLocal && jLocal.tipo === 'Mensalista') {
@@ -2357,12 +2379,12 @@
             }
 
             partidasDoAno.forEach(p => {
-                let dIso = p.data_sorteio ? p.data_sorteio.split('T')[0] : p.created_at.split('T')[0];
-                let isEsteMes = (dIso.substring(0, 7) === mesAtualStr);
+                let dObj = parseCustomDate(p.data_sorteio || p.created_at);
+                let isEsteMes = (String(dObj.getMonth() + 1).padStart(2, '0') === mesAtualStr.split('-')[1]);
                 let arts = p.artilheiros_json || {};
 
                 for(let nome in arts) {
-                    if (nome === '_is_finalizado') continue; // IGNORA O STATUS EXPLÍCITO JSON
+                    if (nome === '_is_finalizado') continue; 
                     
                     let isMensalista = jogadores.some(j => j.nome === nome && j.tipo === 'Mensalista');
                     if(!isMensalista) continue; 
@@ -2377,11 +2399,10 @@
                 }
             });
 
-            // SOMAR A RODADA ATUAL AO VIVO (Se houver jogo e ela ainda não foi salva)
             if (window.jogosDaRodada && window.jogosDaRodada.length > 0 && !window.partidaSalva) {
-                let dIsoAt = window.dataPartidaAtual ? window.dataPartidaAtual.split('T')[0] : hojeIso;
-                let isEsteMesAt = (dIsoAt.substring(0, 7) === mesAtualStr);
-                let isEsteAnoAt = (dIsoAt.substring(0, 4) === anoAtualStr);
+                let dObjAt = window.dataPartidaAtual ? parseCustomDate(window.dataPartidaAtual) : new Date();
+                let isEsteMesAt = (String(dObjAt.getMonth() + 1).padStart(2, '0') === mesAtualStr.split('-')[1]);
+                let isEsteAnoAt = (String(dObjAt.getFullYear()) === anoAtualStr);
 
                 let artsAtuais = {};
                 window.jogosDaRodada.forEach(jogo => {
@@ -2451,7 +2472,6 @@
             
             let btnEncerrarCaixa = document.getElementById('btn-fechar-caixa-container');
             if(btnEncerrarCaixa) {
-                // O caixa só fica disponível para fechar se houver ID de partida ativa e a partida for classificada como Salva explicitamente
                 btnEncerrarCaixa.style.display = (!window.caixaFechado && window.partidaAtualId && window.partidaSalva === true) ? 'block' : 'none';
             }
             
@@ -2535,10 +2555,10 @@
                     }
                 } else {
                     let hojeIsoStr = getHojeIso();
-                    let dataCriacaoIso = window.dataPartidaAtual ? window.dataPartidaAtual.split('T')[0] : calcularProximaDataBaba();
+                    let dataCriacaoIso = window.dataPartidaAtual ? parseCustomDate(window.dataPartidaAtual).toISOString().split('T')[0] : calcularProximaDataBaba();
                     
                     if (dataCriacaoIso !== hojeIsoStr && window.partidaSalva) {
-                        if(!confirm(`Esta despesa será vinculada ao caixa do baba do dia ${isoParaDataBr(dataCriacaoIso)}.\n\nDeseja confirmar o lançamento?`)) return;
+                        if(!confirm(`Esta despesa será vinculada ao caixa do baba do dia ${formatarDataBr(dataCriacaoIso)}.\n\nDeseja confirmar o lançamento?`)) return;
                     }
                     
                     window.custosDaRodada.push({ desc: desc, valor: val, tipo: tipo });
@@ -2628,7 +2648,6 @@
             
             const btn = document.getElementById('btn-encerrar-baba'); btn.innerText = "Sincronizando Servidor..."; btn.disabled = true;
             try {
-                // A FLAG EXPLÍCITA PARA DIZER AO SISTEMA QUE TERMINOU (SEM ALTERAR O BANCO DE DADOS)
                 let artilheiros = { _is_finalizado: true };
                 
                 window.jogosDaRodada.forEach(jogo => {
@@ -2643,7 +2662,6 @@
 
                 window.filaEquipes = [];
 
-                // Atualizando os dados
                 const { error: errP } = await db.from('partidas').update({ 
                     renda_convidados: convidadosPagantes,
                     valor_por_convidado: valorConv,
@@ -2657,10 +2675,8 @@
 
                 if(errP) throw errP;
 
-                // Deletar presenças não preenchidas ou lixo anterior, por precaução
                 await db.from('presencas').delete().eq('partida_id', window.partidaAtualId);
                 
-                // Inserir Lista Fresca e Limpa
                 let listaPresencas = [];
                 window.timesSorteadosObjs.forEach((t) => { 
                     t.jogadores.forEach(j => listaPresencas.push({ partida_id: window.partidaAtualId, jogador_id: j.id, pagou: j.pagou || false, equipe: t.nome })); 
