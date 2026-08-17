@@ -631,7 +631,7 @@
                 <span>Conta</span>
             </div>
             <div class="nav-item hidden-public master-only active" onclick="mudarAba('view-admin')" id="nav-admin">
-                <div class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/><path d="M12 6v6l4 2"/></svg></div>
+                <div class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 s8-8 8 8 0 0 1-8 8z"/><path d="M12 6v6l4 2"/></svg></div>
                 <span>Master</span>
             </div>
         </nav>
@@ -1314,7 +1314,8 @@
                 let p = partidas[0];
                 if (p.created_at) {
                     let diffMs = Date.now() - new Date(p.created_at).getTime();
-                    if (diffMs <= 518400000 || !p.caixa_fechado) { 
+                    // Agora verifica se a partida ainda não foi salva (fila ativa) ou se o caixa está aberto
+                    if (diffMs <= 518400000 || !p.caixa_fechado || (p.fila_json && p.fila_json.length > 0)) { 
                         window.partidaAtualId = p.id;
                         window.codigoAcessoAtual = p.codigo_acesso;
                         window.jogosDaRodada = p.jogos_json || [];
@@ -2364,6 +2365,7 @@
             
             let btnEncerrarCaixa = document.getElementById('btn-fechar-caixa-container');
             if(btnEncerrarCaixa) {
+                // O caixa só fica disponível para fechar se houver ID de partida ativa
                 btnEncerrarCaixa.style.display = (!window.caixaFechado && window.partidaAtualId) ? 'block' : 'none';
             }
             
@@ -2532,7 +2534,7 @@
 
         async function salvarPartidaComPlacares() {
             if(!window.partidaAtualId) return alert("Nenhuma partida ativa para encerrar.");
-            if(!confirm("Deseja encerrar o baba de hoje?\nIsso vai salvar o placar, mas o Caixa continuará aberto até você fechá-lo na aba Finanças.")) return;
+            if(!confirm("Deseja encerrar o baba de hoje?\nIsso vai salvar o placar, presenças e artilharia.")) return;
             
             const btn = document.getElementById('btn-encerrar-baba'); btn.innerText = "Sincronizando Servidor..."; btn.disabled = true;
             try {
@@ -2549,6 +2551,7 @@
 
                 window.filaEquipes = [];
 
+                // ATENÇÃO: Salvamos a súmula e a renda, mas preservamos o estado do caixa para que o admin possa decidir quando fechar o financeiro.
                 const { error: errP } = await db.from('partidas').update({ 
                     renda_convidados: convidadosPagantes,
                     valor_por_convidado: valorConv,
@@ -2587,7 +2590,7 @@
                 gerarRelatorioMensal();
 
                 btn.innerText = "✅ Baba Encerrado e Salvo com Sucesso!";
-                alert("Súmula finalizada com sucesso! O caixa continua aberto na aba Finanças.");
+                alert("Súmula finalizada com sucesso! O caixa continua gerenciável na aba Finanças.");
 
             } catch(err) { alert("Erro: " + err.message); btn.innerText = "Tentar Novamente"; btn.disabled = false; }
         }
