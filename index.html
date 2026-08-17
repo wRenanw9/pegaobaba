@@ -678,15 +678,26 @@
         window.golsTempA = []; 
         window.golsTempB = [];
 
+        // FUNÇÃO DE PARSE DE DATA UNIVERSAL (Resolve conflitos DD/MM/YYYY vs YYYY-MM)
+        function parseCustomDate(dateStr) {
+            if (!dateStr) return new Date();
+            if (dateStr.includes('T')) return new Date(dateStr);
+            if (dateStr.includes('/')) {
+                let parts = dateStr.split(' ')[0].split('/');
+                if (parts.length >= 3) return new Date(parts[2], parts[1] - 1, parts[0]);
+            }
+            return new Date(dateStr);
+        }
+
         // FUNÇÃO DE FORMATAÇÃO DE DATA BRASILEIRA PARA EXIBIÇÃO
         function formatarDataBr(dataStr) {
             if(!dataStr) return '';
-            if(dataStr.includes('/')) return dataStr; // Se já estiver no formato brasileiro, ignora
+            if(dataStr.includes('/')) return dataStr; 
             if(dataStr.includes('-')) {
                 let p = dataStr.split('T')[0].split('-');
-                if(p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`; // Converte YYYY-MM-DD para DD/MM/YYYY
+                if(p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`; 
             }
-            return new Date(dataStr).toLocaleDateString('pt-BR'); // Fallback de emergência
+            return new Date(dataStr).toLocaleDateString('pt-BR'); 
         }
 
         window.onload = async function() {
@@ -725,17 +736,17 @@
                 }, payload => {
                     const novaPartida = payload.new;
                     if (novaPartida) {
-                        if (novaPartida.jogos_json) window.jogosDaRodada = novaPartida.jogos_json;
-                        if (novaPartida.times_json) {
-                            window.timesSorteadosObjs = novaPartida.times_json;
-                        }
-                        if (novaPartida.artilheiros_json) window.artilheirosPub = novaPartida.artilheiros_json;
+                        if (novaPartida.jogos_json !== null) window.jogosDaRodada = novaPartida.jogos_json;
+                        if (novaPartida.times_json !== null) window.timesSorteadosObjs = novaPartida.times_json;
+                        if (novaPartida.artilheiros_json !== null) window.artilheirosPub = novaPartida.artilheiros_json;
+                        if (novaPartida.fila_json !== null) window.filaEquipes = novaPartida.fila_json;
                         
-                        window.filaEquipes = novaPartida.fila_json || [];
+                        let hasJogos = (window.jogosDaRodada && window.jogosDaRodada.length > 0);
+                        let hasTimes = (window.timesSorteadosObjs && window.timesSorteadosObjs.length > 0);
+                        let hasFila = (window.filaEquipes && window.filaEquipes.length > 0);
                         
-                        let hasJogos = (novaPartida.jogos_json && novaPartida.jogos_json.length > 0);
-                        let hasTimes = (novaPartida.times_json && novaPartida.times_json.length > 0);
-                        let hasFila = (novaPartida.fila_json && novaPartida.fila_json.length > 0);
+                        // DESTRAVAMENTO AUTOMÁTICO: Mantém os botões de edição de placar visíveis 
+                        // se a rodada não foi totalmente finalizada.
                         window.partidaSalva = (!hasTimes || (hasJogos && !hasFila));
                         
                         window.caixaFechado = novaPartida.caixa_fechado || false;
@@ -828,7 +839,7 @@
             return false;
         }
         
-        // CORREÇÃO: Agora retorna SEMPRE no formato YYYY-MM-DD exigido pelo banco de dados
+        // Retorna sempre no formato YYYY-MM-DD exigido pelo banco de dados
         function calcularProximaDataBaba() {
             if (window.dataPartidaAtual && !window.partidaSalva) return window.dataPartidaAtual; 
             
@@ -840,7 +851,6 @@
             let dataAlvo = new Date(hoje);
             dataAlvo.setDate(hoje.getDate() + diasAteAlvo);
             
-            // Retorna formato ISO limpo "YYYY-MM-DD"
             return dataAlvo.toISOString().split('T')[0];
         }
 
@@ -1207,7 +1217,7 @@
             }
 
             if (partida.created_at) {
-                let dObj = new Date(partida.created_at);
+                let dObj = parseCustomDate(partida.created_at);
                 let diffMs = Date.now() - dObj.getTime();
                 if (diffMs > 518400000) {
                     alert("⚠️ A visualização desta rodada já expirou (mais de 6 dias). Aguarde o próximo baba!");
@@ -1234,11 +1244,14 @@
             document.getElementById('status-db').innerText = `Visualizando: ${codigo}`;
             window.custosDaRodada = partida.custos_json || [];
             window.caixaFechado = partida.caixa_fechado || false;
+            window.timesSorteadosObjs = partida.times_json || []; // Garante a renderização pública na hora
             
             if(partida.data_sorteio) {
-                window.dataPartidaAtual = partida.data_sorteio;
+                let d = parseCustomDate(partida.data_sorteio);
+                window.dataPartidaAtual = !isNaN(d.getTime()) ? d.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}) : partida.data_sorteio;
             } else if(partida.created_at) {
-                window.dataPartidaAtual = partida.created_at.split('T')[0];
+                let d = parseCustomDate(partida.created_at);
+                window.dataPartidaAtual = !isNaN(d.getTime()) ? d.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}) : null;
             }
 
             if(partida.valor_por_convidado) document.getElementById('valor-convidado').value = partida.valor_por_convidado;
@@ -1264,11 +1277,14 @@
 
             if (partida.fila_json && partida.fila_json.length > 0) {
                 window.filaEquipes = partida.fila_json;
-                window.partidaSalva = false;
             } else {
                 window.filaEquipes = [];
-                window.partidaSalva = (!window.timesSorteadosObjs || window.timesSorteadosObjs.length === 0) ? true : (window.jogosDaRodada.length > 0);
             }
+
+            let hasJogosPub = window.jogosDaRodada.length > 0;
+            let hasTimesPub = (window.timesSorteadosObjs && window.timesSorteadosObjs.length > 0);
+            let hasFilaPub = window.filaEquipes.length > 0;
+            window.partidaSalva = (!hasTimesPub || (hasJogosPub && !hasFilaPub));
             
             atualizarListaJogosDaRodada();
             mudarAba('view-placares'); 
@@ -1320,26 +1336,28 @@
             if (!error && partidas && partidas.length > 0) {
                 let p = partidas[0];
                 if (p.created_at) {
-                    let dObj = new Date(p.created_at);
+                    let dObj = parseCustomDate(p.created_at);
                     let diffMs = Date.now() - dObj.getTime();
                     
-                    let hasJogos = (p.jogos_json && p.jogos_json.length > 0);
-                    let hasTimes = (p.times_json && p.times_json.length > 0);
-                    let hasFila = (p.fila_json && p.fila_json.length > 0);
+                    window.jogosDaRodada = p.jogos_json || [];
+                    window.custosDaRodada = p.custos_json || [];
+                    window.timesSorteadosObjs = p.times_json || [];
+                    window.filaEquipes = p.fila_json || [];
+                    
+                    let hasJogos = window.jogosDaRodada.length > 0;
+                    let hasTimes = window.timesSorteadosObjs.length > 0;
+                    let hasFila = window.filaEquipes.length > 0;
                     let calculoPartidaSalva = (!hasTimes || (hasJogos && !hasFila));
 
                     if (diffMs <= 518400000 || !p.caixa_fechado || !calculoPartidaSalva) { 
                         window.partidaAtualId = p.id;
                         window.codigoAcessoAtual = p.codigo_acesso;
-                        window.jogosDaRodada = p.jogos_json || [];
-                        window.custosDaRodada = p.custos_json || [];
-                        window.timesSorteadosObjs = p.times_json || [];
-                        window.filaEquipes = p.fila_json || [];
                         window.caixaFechado = p.caixa_fechado || false;
                         window.partidaSalva = calculoPartidaSalva;
                         
                         if (p.data_sorteio) {
-                            window.dataPartidaAtual = p.data_sorteio;
+                            let d = parseCustomDate(p.data_sorteio);
+                            window.dataPartidaAtual = !isNaN(d.getTime()) ? d.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}) : p.data_sorteio;
                         }
 
                         if (window.timesSorteadosObjs.length > 0 && !window.partidaSalva) {
@@ -1658,14 +1676,18 @@
                 window.timesSorteadosObjs.push({ id: idx, corBase: cor, nome: cor, jogadores: timeArr });
             });
 
-            window.reservasSorteados = reservas; window.partidaSalva = false;
-            window.jogosDaRodada = []; window.filaEquipes = window.timesSorteadosObjs.map(t => t.id); window.golsTempA = []; window.golsTempB = [];
+            // RESET EXPLICITO PARA DESTRAVAR A SÚMULA NO NOVO SORTEIO
+            window.reservasSorteados = reservas; 
+            window.partidaSalva = false;
+            window.jogosDaRodada = []; 
+            window.filaEquipes = window.timesSorteadosObjs.map(t => t.id); 
+            window.golsTempA = []; 
+            window.golsTempB = [];
             
             atualizarFinanceiro(); 
             await criarPartidaInicialNoBanco();
             salvarEstadoCompleto();
 
-            // RENDERIZAÇÃO INSTANTÂNEA NA TELA
             renderizarTimesSorteadosNaTela();
             if(window.codigoAcessoAtual) exibirBoxCodigoSorteio(window.codigoAcessoAtual);
             document.getElementById('btn-ir-placares').style.display = 'block';
@@ -1710,6 +1732,8 @@
                         quantidade_jogadores: qJogadoresEmQuadra,
                         times_json: window.timesSorteadosObjs,
                         fila_json: window.filaEquipes,
+                        jogos_json: [], // LIMPEZA PROFUNDA DE JOGOS ANTIGOS DA RODADA
+                        artilheiros_json: {}, // LIMPEZA DE ARTILHARIA ANTIGA DA RODADA
                         data_sorteio: window.dataPartidaAtual,
                         valor_por_convidado: valorConv,
                         valor_por_mensalista: valorMens
@@ -1815,7 +1839,10 @@
                     partidasDoMes = partidas.filter(p => {
                         let dataRef = p.data_sorteio || p.created_at;
                         if (!dataRef) return false;
-                        return dataRef.substring(0, 7) === mesKey;
+                        let dObj = parseCustomDate(dataRef);
+                        if (isNaN(dObj.getTime())) return false;
+                        let strMes = dObj.getFullYear() + "-" + String(dObj.getMonth() + 1).padStart(2, '0');
+                        return strMes === mesKey;
                     });
                 }
             }
@@ -2242,7 +2269,14 @@
             });
 
             let dataExibicao = window.dataPartidaAtual || calcularProximaDataBaba();
-            if (dataStr) { dataExibicao = dataStr; }
+            if (dataStr) {
+                let d = parseCustomDate(dataStr);
+                if (!isNaN(d.getTime())) {
+                    dataExibicao = d.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
+                } else {
+                    dataExibicao = dataStr;
+                }
+            }
 
             let tituloClass = document.getElementById('titulo-classificacao-dia');
             let tituloArts = document.getElementById('titulo-artilheiros-dia');
