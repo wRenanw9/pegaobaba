@@ -83,18 +83,25 @@
         .btn-limpar { background-color: var(--light); color: var(--text-muted); border: 1px solid var(--border); margin-bottom: 15px; }
         .btn-small { width: auto; padding: 6px 8px; font-size: 11px; border-radius: 6px; }
 
-        /* LISTAS E JOGADORES */
+        /* LISTAS E JOGADORES - GRADE FIXA PARA ALINHAMENTO PERFEITO */
         .busca-container { position: relative; margin-bottom: 15px; }
         
-        .linha-jogador { display: grid; grid-template-columns: 1fr auto auto auto; align-items: center; padding: 12px 10px; border-bottom: 1px solid var(--border); background: white; border-radius: 8px; margin-bottom: 8px; font-size: 13px; gap: 8px;}
+        .linha-jogador { display: grid; grid-template-columns: 1fr 80px 75px 65px; align-items: center; padding: 12px 10px; border-bottom: 1px solid var(--border); background: white; border-radius: 8px; margin-bottom: 8px; font-size: 13px; gap: 8px;}
         .linha-jogador:hover { background: var(--light); }
         .col-nome { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 5px;}
-        .col-status { text-align: right; }
-        .col-pos { color: var(--text-muted); font-size: 12px; text-align: right;}
-        .col-acoes { display: flex; gap: 5px; justify-content: flex-end; }
         
-        .grid-aguardando { grid-template-columns: 1fr auto auto auto; }
-        .grid-prontos { grid-template-columns: 1fr auto auto; }
+        .grid-aguardando { grid-template-columns: 1fr 80px 75px 65px; }
+        .grid-prontos { grid-template-columns: 1fr 80px 65px; }
+
+        .col-status { display: flex; justify-content: center; width: 100%; }
+        .col-status .btn-small { width: 100%; text-align: center; padding: 6px 4px; }
+        .col-status span { font-size: 10px; color: var(--text-muted); text-align: center; width: 100%;}
+        
+        .col-pos { display: flex; justify-content: center; width: 100%; }
+        .col-pos .badge { min-width: 50px; text-align: center; }
+        
+        .col-acoes { display: flex; gap: 5px; justify-content: flex-end; }
+        .col-acoes .btn-small { width: auto; padding: 6px 8px; }
 
         .badge { background-color: var(--dark); color: white; padding: 3px 6px; border-radius: 12px; font-size: 10px; font-weight: 600;}
         .badge-convidado { background-color: var(--purple); }
@@ -1384,7 +1391,7 @@
                 if(listaElenco) {
                     let btnEdicao = `<button class="btn-small btn-acao-outline" onclick="prepararEdicao(${indexArray})">✏️</button>`;
                     let btnExcluir = `<button class="btn-small btn-acao-outline" style="color:var(--danger); border-color:var(--danger);" onclick="removerJogador('${j.id}', ${indexArray})">X</button>`;
-                    let btnMensal = j.tipo === 'Mensalista' ? (j.pagamentos_json && j.pagamentos_json[mesKey] === true ? `<button class="btn-small btn-pagou" onclick="alternarMensalidade('${j.id}', ${indexArray})">Pago</button>` : `<button class="btn-small btn-devendo" onclick="alternarMensalidade('${j.id}', ${indexArray})">Pendente</button>`) : `<span style="font-size:10px; color:var(--text-muted);">Diária local</span>`;
+                    let btnMensal = j.tipo === 'Mensalista' ? (j.pagamentos_json && j.pagamentos_json[mesKey] === true ? `<button class="btn-small btn-pagou" onclick="alternarMensalidade('${j.id}', ${indexArray})">Pago</button>` : `<button class="btn-small btn-devendo" onclick="alternarMensalidade('${j.id}', ${indexArray})">Pendente</button>`) : `<span>Diária local</span>`;
                     
                     listaElenco.innerHTML += `
                     <div class="linha-jogador" data-nome="${j.nome}">
@@ -1611,21 +1618,56 @@
             let valMens = parseFloat(document.getElementById('valor-mensalista').value) || 70;
             
             let partidasDoMes = [];
+            let saldoAnterior = 0; // Para calcular o histórico do cofre
+            
             if(currentUser) {
                 const { data: partidas } = await db.from('partidas').select('*').eq('user_id', currentUser.id);
                 if(partidas) {
-                    partidasDoMes = partidas.filter(p => {
+                    partidas.forEach(p => {
                         let dataRef = p.data_sorteio || p.created_at;
-                        if (!dataRef) return false;
-                        return dataRef.substring(0, 7) === mesKey;
+                        if (!dataRef) return;
+                        
+                        let pMes = dataRef.substring(0, 7);
+                        if(pMes === mesKey) {
+                            partidasDoMes.push(p);
+                        } else if (pMes < mesKey) {
+                            // Soma Renda de Convidados Passados
+                            let vConv = p.valor_por_convidado || parseFloat(document.getElementById('valor-convidado').value) || 25;
+                            let qtdConv = p.renda_convidados || 0;
+                            saldoAnterior += (qtdConv * vConv);
+                            
+                            // Subtrai Custos Antigos
+                            (p.custos_json || []).forEach(c => {
+                                saldoAnterior -= c.valor;
+                            });
+                        }
                     });
                 }
             }
 
+            // Calcula Mensalidades de meses passados
+            let mensalistas = jogadores.filter(j => j.tipo === 'Mensalista');
+            mensalistas.forEach(j => {
+                if(j.pagamentos_json) {
+                    for(let mKey in j.pagamentos_json) {
+                        if(mKey < mesKey && j.pagamentos_json[mKey] === true) {
+                            saldoAnterior += valMens; 
+                        }
+                    }
+                }
+            });
+
+            // Calcula Despesas Livro Caixa de meses passados
+            (window.despesasMensaisGlobais || []).forEach(c => {
+                let cMes = c.data ? c.data.substring(0, 7) : "";
+                if(cMes && cMes < mesKey) {
+                    saldoAnterior -= c.valor;
+                }
+            });
+
             let html = `<table class="relatorio-tabela">`;
             
             html += `<tr><th colspan="2">👥 Mensalidades Pagas no Mês</th></tr>`;
-            let mensalistas = jogadores.filter(j => j.tipo === 'Mensalista');
             let totalMensalidades = 0;
             if(mensalistas.length === 0) {
                 html += `<tr><td colspan="2" style="color:var(--text-muted);">Nenhum mensalista cadastrado.</td></tr>`;
@@ -1665,7 +1707,7 @@
             let htmlCustosDiarios = `<div class="grid-relatorio-custos">`;
             let temCustos = false;
 
-            // 1. LER DESPESAS DO NOVO LIVRO CAIXA UNIFICADO
+            // LER DESPESAS DO LIVRO CAIXA UNIFICADO DO MÊS
             (window.despesasMensaisGlobais || []).forEach((c, indexReal) => {
                 let dIso = c.data || "";
                 if (dIso.substring(0, 7) === mesKey) {
@@ -1679,7 +1721,7 @@
                 }
             });
 
-            // 2. LER DESPESAS ANTIGAS (LEGADO)
+            // LER DESPESAS ANTIGAS (LEGADO) DO MÊS
             if(partidasDoMes.length > 0) {
                 partidasDoMes.forEach(p => {
                     (p.custos_json || []).forEach(c => {
@@ -1704,11 +1746,19 @@
 
             let receitaTotal = totalMensalidades + totalConvidados;
             let saldoMensal = receitaTotal - totalCustos;
+            let saldoTotalCaixa = saldoAnterior + saldoMensal;
 
-            html += `<tr><th colspan="2" style="padding-top:15px; background:var(--dark); color:white; text-align:center;">💰 BALANÇO FINANCEIRO (${mesKey})</th></tr>`;
-            html += `<tr><td>Receita Total (Mensalidades + Convidados):</td><td style="text-align:right; font-weight:bold; color:var(--supabase);">R$ ${receitaTotal.toFixed(2)}</td></tr>`;
-            html += `<tr><td>Despesas Totais:</td><td style="text-align:right; font-weight:bold; color:var(--danger);">R$ ${totalCustos.toFixed(2)}</td></tr>`;
-            html += `<tr><td><strong style="font-size:13px;">SALDO LÍQUIDO DO MÊS:</strong></td><td style="text-align:right; font-weight:bold; font-size:14px; color:var(--primary);">R$ ${saldoMensal.toFixed(2)}</td></tr>`;
+            html += `<tr><th colspan="2" style="padding-top:15px; background:var(--dark); color:white; text-align:center;">💰 BALANÇO FINANCEIRO DO MÊS</th></tr>`;
+            
+            // Nova linha de saldo anterior
+            html += `<tr><td style="color:var(--text-muted);">Saldo Acumulado (Meses Anteriores):</td><td style="text-align:right; font-weight:bold; color:${saldoAnterior >= 0 ? 'var(--supabase)' : 'var(--danger)'};">R$ ${saldoAnterior.toFixed(2)}</td></tr>`;
+            
+            html += `<tr><td>Receitas (Mensalidades + Convidados):</td><td style="text-align:right; font-weight:bold; color:var(--supabase);">+ R$ ${receitaTotal.toFixed(2)}</td></tr>`;
+            html += `<tr><td>Despesas:</td><td style="text-align:right; font-weight:bold; color:var(--danger);">- R$ ${totalCustos.toFixed(2)}</td></tr>`;
+            html += `<tr><td style="padding-bottom: 10px; border-bottom: 2px dashed var(--border);"><strong style="font-size:12px;">SALDO (SÓ DESTE MÊS):</strong></td><td style="padding-bottom: 10px; border-bottom: 2px dashed var(--border); text-align:right; font-weight:bold; font-size:13px; color:${saldoMensal >= 0 ? 'var(--primary)' : 'var(--danger)'};">R$ ${saldoMensal.toFixed(2)}</td></tr>`;
+            
+            // Resumo Total Atual
+            html += `<tr><td style="padding-top:15px;"><strong style="font-size:14px;">🏦 CAIXA ATUAL TOTAL:</strong></td><td style="text-align:right; padding-top:15px; font-weight:900; font-size:16px; color:${saldoTotalCaixa >= 0 ? 'var(--supabase)' : 'var(--danger)'};">R$ ${saldoTotalCaixa.toFixed(2)}</td></tr>`;
 
             html += `</table>`;
             
