@@ -83,22 +83,24 @@
         .btn-limpar { background-color: var(--light); color: var(--text-muted); border: 1px solid var(--border); margin-bottom: 15px; }
         .btn-small { width: auto; padding: 6px 8px; font-size: 11px; border-radius: 6px; }
 
-        /* LISTAS E JOGADORES - GRADE FIXA PARA ALINHAMENTO PERFEITO */
+        /* LISTAS E JOGADORES - GRADE HÍBRIDA PARA MÁXIMO ESPAÇO NO NOME */
         .busca-container { position: relative; margin-bottom: 15px; }
         
-        .linha-jogador { display: grid; grid-template-columns: 1fr 80px 75px 65px; align-items: center; padding: 12px 10px; border-bottom: 1px solid var(--border); background: white; border-radius: 8px; margin-bottom: 8px; font-size: 13px; gap: 8px;}
+        .linha-jogador { display: grid; align-items: center; padding: 12px 10px; border-bottom: 1px solid var(--border); background: white; border-radius: 8px; margin-bottom: 8px; font-size: 13px; gap: 8px;}
         .linha-jogador:hover { background: var(--light); }
         .col-nome { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 5px;}
         
-        .grid-aguardando { grid-template-columns: 1fr 80px 75px 65px; }
-        .grid-prontos { grid-template-columns: 1fr 80px 65px; }
+        /* 1fr usa o espaço restante. As outras são compactas e fixas para alinhamento tipo tabela */
+        .grid-elenco { grid-template-columns: 1fr 70px 65px; } 
+        .grid-aguardando { grid-template-columns: 1fr 70px 60px 65px; } 
+        .grid-prontos { grid-template-columns: 1fr 70px 65px; } 
 
         .col-status { display: flex; justify-content: center; width: 100%; }
-        .col-status .btn-small { width: 100%; text-align: center; padding: 6px 4px; }
+        .col-status .btn-small { width: 100%; text-align: center; padding: 6px 4px; font-size: 11px; }
         .col-status span { font-size: 10px; color: var(--text-muted); text-align: center; width: 100%;}
         
         .col-pos { display: flex; justify-content: center; width: 100%; }
-        .col-pos .badge { min-width: 50px; text-align: center; }
+        .col-pos .badge { text-align: center; padding: 4px 6px; width: 100%; box-sizing: border-box; }
         
         .col-acoes { display: flex; gap: 5px; justify-content: flex-end; }
         .col-acoes .btn-small { width: auto; padding: 6px 8px; }
@@ -1393,11 +1395,11 @@
                     let btnExcluir = `<button class="btn-small btn-acao-outline" style="color:var(--danger); border-color:var(--danger);" onclick="removerJogador('${j.id}', ${indexArray})">X</button>`;
                     let btnMensal = j.tipo === 'Mensalista' ? (j.pagamentos_json && j.pagamentos_json[mesKey] === true ? `<button class="btn-small btn-pagou" onclick="alternarMensalidade('${j.id}', ${indexArray})">Pago</button>` : `<button class="btn-small btn-devendo" onclick="alternarMensalidade('${j.id}', ${indexArray})">Pendente</button>`) : `<span>Diária local</span>`;
                     
+                    /* Tabela Elenco agora não renderiza a Posição */
                     listaElenco.innerHTML += `
-                    <div class="linha-jogador" data-nome="${j.nome}">
+                    <div class="linha-jogador grid-elenco" data-nome="${j.nome}">
                         <div class="col-nome">${tagConvidado} ${j.nome}</div>
                         <div class="col-status">${btnMensal}</div>
-                        <div class="col-pos">${tagPosicao}</div>
                         <div class="col-acoes">${btnEdicao} ${btnExcluir}</div>
                     </div>`;
                 }
