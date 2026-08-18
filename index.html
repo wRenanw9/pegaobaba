@@ -158,6 +158,10 @@
         .grid-mensalistas { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px 15px; padding: 8px 5px; }
         .item-mensalista { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed var(--border); padding: 4px 0; font-size: 12px; }
 
+        /* DUAS COLUNAS PARA CUSTOS LONGOS */
+        .grid-relatorio-custos { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; margin-top: 5px; }
+        .item-custo-relatorio { background: var(--light); padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); font-size: 11px; display: flex; justify-content: space-between; align-items: center; }
+
         /* MODO PÚBLICO E IMPRESSÃO / PDF */
         .hidden-public { display: block; }
         .public-mode .hidden-public { display: none !important; }
@@ -179,6 +183,7 @@
             .relatorio-tabela th, .relatorio-tabela td { padding: 4px; }
             .header-secao-stats { padding: 6px 0 !important; background: transparent !important; color: black !important; border-bottom: 2px solid black !important; }
             .header-secao-stats span { font-size: 14px !important; }
+            .header-secao-stats div { display: none !important; } 
             .grid-mensalistas { grid-template-columns: repeat(3, 1fr) !important; gap: 4px 15px; padding: 4px 0; }
             .item-mensalista { font-size: 10px; padding: 2px 0; border-bottom: 1px solid #eee; }
         }
@@ -417,39 +422,31 @@
                 </div>
             </div>
 
-            <div class="card-secao-stats no-print" style="margin-bottom: 15px;">
-                <div class="header-secao-stats" style="background: var(--dark); color: white; padding: 8px 15px;"><span>⚽ Caixa da Rodada (Hoje)</span></div>
-                <div style="padding: 12px;">
-                    <div class="dash-grid" style="gap: 10px; margin-bottom: 12px;">
-                        <div class="dash-card" style="padding: 10px;"><div class="dash-titulo">Diárias Hoje</div><div class="dash-valor valor-positivo" id="fin-receita-hoje">R$ 0.00</div></div>
-                        <div class="dash-card" style="padding: 10px;"><div class="dash-titulo">Custos Diários</div><div class="dash-valor valor-negativo" id="fin-custos-hoje">R$ 0.00</div></div>
-                    </div>
-                    <div class="card hidden-public" style="margin-bottom:0; padding: 12px;">
-                        <h3 style="font-size: 13px; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:6px; margin-bottom: 8px;">Lançar Despesa</h3>
-                        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                            <input type="text" id="desc-custo" placeholder="Ex: Juiz, Água, Campo" style="flex:2; margin:0; padding:8px; font-size:12px;">
-                            <input type="number" id="valor-custo" placeholder="R$" style="flex:1; margin:0; padding:8px; font-size:12px;">
-                            <select id="tipo-custo" style="flex:1.2; margin:0; padding:8px; font-size:12px;">
-                                <option value="diario">Diário (Rodada)</option>
-                                <option value="mensal">Mensal (Fixo)</option>
-                            </select>
-                        </div>
-                        <button onclick="adicionarCusto()" style="background: var(--dark); padding: 10px; font-size:13px;">Lançar Despesa</button>
-                    </div>
-                    <div id="lista-custos" style="margin-top:12px;"></div>
+            <div class="card hidden-public no-print" style="margin-bottom:15px; padding: 15px;">
+                <h3 style="font-size: 14px; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom: 12px;">💸 Lançar Nova Despesa</h3>
+                <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                    <input type="text" id="desc-custo" placeholder="Ex: Juiz, Água, Bola" style="flex:2; margin:0; padding:10px; font-size:13px;">
+                    <input type="number" id="valor-custo" placeholder="R$" style="flex:1; margin:0; padding:10px; font-size:13px;">
                 </div>
-            </div>
-
-            <div class="card-secao-stats no-print hidden-public" style="margin-bottom: 15px;">
-                <div class="header-secao-stats" style="background: #fef3c7; color: #d97706; padding: 8px 15px;"><span>📅 Despesas Fixas (Este Mês)</span></div>
-                <div style="padding: 12px;" id="lista-custos-mensais">
-                    <p style="color:var(--text-muted); font-size:12px; text-align:center; padding:8px;">Nenhuma despesa mensal/fixa lançada.</p>
+                <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                    <select id="tipo-custo" style="flex:1.2; margin:0; padding:10px; font-size:13px;">
+                        <option value="diario">Avulso / Diária</option>
+                        <option value="mensal">Mensal (Fixo)</option>
+                    </select>
+                    <input type="date" id="data-custo" style="flex:1; margin:0; padding:10px; font-size:13px;">
                 </div>
+                <button onclick="adicionarCusto()" style="background: var(--dark); padding: 12px; font-size:14px;">Registrar Saída</button>
             </div>
 
             <div class="card-secao-stats hidden-public" id="card-relatorio-mensal">
-                <div class="header-secao-stats" style="background: var(--primary); color: white;">
-                    <span>📄 Relatório Mensal Detalhado (<span id="label-mes-relatorio">Atual</span>)</span>
+                <div class="header-secao-stats" style="background: var(--primary); color: white; flex-direction: column; align-items: stretch; gap: 10px; padding: 15px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size: 15px;">📄 Relatório Mensal Detalhado</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:10px; background: rgba(255,255,255,0.1); padding: 8px; border-radius: 8px;">
+                        <label style="font-size: 12px; font-weight:600; color: white;">Ver Histórico do Mês:</label>
+                        <input type="month" id="filtro-mes-relatorio" style="margin:0; padding:8px; color:black; font-size:14px; border-radius:6px; border:none; max-width: 160px; font-family: inherit; font-weight:bold;" onchange="gerarRelatorioMensal()">
+                    </div>
                 </div>
                 <div style="padding: 15px;" id="conteudo-relatorio-mensal">
                     <p style="text-align: center; color: var(--text-muted); font-size: 13px;">Carregando resumo do mês...</p>
@@ -656,10 +653,6 @@
                             window.partidaSalva = false;
                         }
                         atualizarFilaUI();
-                        if (novaPartida.custos_json) {
-                            window.custosDaRodada = novaPartida.custos_json;
-                            atualizarFinanceiro();
-                        }
 
                         if (document.getElementById('view-placares').classList.contains('active')) {
                             renderizarSumula();
@@ -1113,17 +1106,6 @@
                 window.timesSorteadosObjs = partida.times_json;
             }
 
-            const { data: presencas } = await db.from('presencas').select('pagou, jogadores(tipo)').eq('partida_id', partida.id);
-            if(presencas) {
-                let receitaPub = 0;
-                let vConv = partida.valor_por_convidado || 0;
-                let qtdConvidadosPagos = presencas.filter(p => p.pagou && p.jogadores && p.jogadores.tipo === 'Convidado').length;
-                receitaPub += (qtdConvidadosPagos * vConv);
-                let totCustosPubDiarios = window.custosDaRodada.filter(c => c.tipo !== 'mensal').reduce((acc, c) => acc + c.valor, 0);
-                document.getElementById('fin-receita-hoje').innerText = `R$ ${receitaPub.toFixed(2)}`;
-                document.getElementById('fin-custos-hoje').innerText = `R$ ${totCustosPubDiarios.toFixed(2)}`;
-            }
-            renderizarListaCustos();
             if (partida.jogos_json && partida.jogos_json.length > 0) {
                 window.jogosDaRodada = partida.jogos_json;
             } else {
@@ -1188,7 +1170,7 @@
                 let p = partidas[0];
                 if (p.created_at) {
                     let diffMs = Date.now() - new Date(p.created_at).getTime();
-                    if (diffMs <= 518400000 && !window.partidaSalvaManual) { 
+                    if (diffMs <= 518400000) { 
                         window.partidaAtualId = p.id;
                         window.codigoAcessoAtual = p.codigo_acesso;
                         window.jogosDaRodada = p.jogos_json || [];
@@ -1503,12 +1485,7 @@
                 window.timesSorteadosObjs.push({ id: idx, corBase: cor, nome: cor, jogadores: timeArr });
             });
             window.reservasSorteados = reservas; window.partidaSalva = false;
-            window.partidaSalvaManual = false; // Garante que é uma nova partida limpa
             window.jogosDaRodada = []; window.filaEquipes = window.timesSorteadosObjs.map(t => t.id); window.golsTempA = []; window.golsTempB = [];
-            
-            window.partidaAtualId = null; // Força a criação de um NOVO ID limpo no banco
-            window.codigoAcessoAtual = null;
-
             atualizarFinanceiro(); 
             await criarPartidaInicialNoBanco();
             salvarEstadoCompleto();
@@ -1526,27 +1503,34 @@
                 let qJogadoresEmQuadra = 0;
                 window.timesSorteadosObjs.forEach(t => qJogadoresEmQuadra += t.jogadores.length);
                 if (window.reservasSorteados) qJogadoresEmQuadra += window.reservasSorteados.length;
-                
-                const { data: pData, error: errP } = await db.from('partidas').insert([{ 
-                    quantidade_jogadores: qJogadoresEmQuadra, 
-                    renda_convidados: 0,
-                    valor_por_convidado: valorConv,
-                    valor_por_mensalista: valorMens,
-                    custos_json: window.custosDaRodada,
-                    artilheiros_json: {},
-                    jogos_json: [],
-                    times_json: window.timesSorteadosObjs,
-                    fila_json: window.filaEquipes,
-                    codigo_acesso: codigoAleatorio,
-                    nome_baba: currentProfile ? currentProfile.nome_baba : "",
-                    escudo_url: currentProfile ? currentProfile.escudo_url : "",
-                    user_id: currentUser.id
-                }]).select();
-
-                if (errP) throw errP;
-                window.partidaAtualId = pData[0].id;
-                window.codigoAcessoAtual = codigoAleatorio;
-                iniciarOuvinteRealtime(window.partidaAtualId);
+                if (window.partidaAtualId) {
+                    await db.from('partidas').update({
+                        quantidade_jogadores: qJogadoresEmQuadra,
+                        times_json: window.timesSorteadosObjs,
+                        fila_json: window.filaEquipes,
+                        data_sorteio: new Date().toISOString()
+                    }).eq('id', window.partidaAtualId);
+                } else {
+                    const { data: pData, error: errP } = await db.from('partidas').insert([{ 
+                        quantidade_jogadores: qJogadoresEmQuadra, 
+                        renda_convidados: 0,
+                        valor_por_convidado: valorConv,
+                        valor_por_mensalista: valorMens,
+                        custos_json: window.custosDaRodada,
+                        artilheiros_json: {},
+                        jogos_json: [],
+                        times_json: window.timesSorteadosObjs,
+                        fila_json: window.filaEquipes,
+                        codigo_acesso: codigoAleatorio,
+                        nome_baba: currentProfile ? currentProfile.nome_baba : "",
+                        escudo_url: currentProfile ? currentProfile.escudo_url : "",
+                        user_id: currentUser.id
+                    }]).select();
+                    if (errP) throw errP;
+                    window.partidaAtualId = pData[0].id;
+                    window.codigoAcessoAtual = codigoAleatorio;
+                    iniciarOuvinteRealtime(window.partidaAtualId);
+                }
 
                 await db.from('presencas').delete().eq('partida_id', window.partidaAtualId);
                 let presencas = [];
@@ -1587,16 +1571,30 @@
         }
 
         async function gerarRelatorioMensal() {
-            let hoje = new Date();
-            let mesKey = hoje.toISOString().substring(0, 7);
-            let nomeMes = hoje.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
-            document.getElementById('label-mes-relatorio').innerText = nomeMes;
+            let filtroInput = document.getElementById('filtro-mes-relatorio');
+            let mesKey = filtroInput ? filtroInput.value : "";
+            
+            if (!mesKey) {
+                let tzoffset = (new Date()).getTimezoneOffset() * 60000;
+                mesKey = (new Date(Date.now() - tzoffset)).toISOString().substring(0, 7);
+                if(filtroInput) filtroInput.value = mesKey;
+            }
+
+            let partes = mesKey.split('-');
+            let d = new Date(partes[0], parseInt(partes[1]) - 1, 1);
+            let nomeMes = d.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
             let valMens = parseFloat(document.getElementById('valor-mensalista').value) || 70;
-            const { data: partidas } = await db.from('partidas').select('*').like('data_sorteio', `%${hoje.getFullYear()}%`);
             
             let partidasDoMes = [];
-            if(partidas) {
-                partidasDoMes = partidas.filter(p => p.data_sorteio && p.data_sorteio.substring(0, 7) === mesKey);
+            if(currentUser) {
+                const { data: partidas } = await db.from('partidas').select('*').eq('user_id', currentUser.id);
+                if(partidas) {
+                    partidasDoMes = partidas.filter(p => {
+                        let dataRef = p.data_sorteio || p.created_at;
+                        if (!dataRef) return false;
+                        return dataRef.substring(0, 7) === mesKey;
+                    });
+                }
             }
 
             let html = `<table class="relatorio-tabela">`;
@@ -1621,57 +1619,72 @@
             let totalConvidados = 0;
             if(partidasDoMes.length > 0) {
                 partidasDoMes.forEach((p, idx) => {
-                    let vConv = p.valor_por_convidado || 25;
+                    let vConv = p.valor_por_convidado || parseFloat(document.getElementById('valor-convidado').value) || 25;
                     let qtdConv = p.renda_convidados || 0;
                     let subConv = qtdConv * vConv;
                     totalConvidados += subConv;
-                    let dataF = p.data_sorteio ? new Date(p.data_sorteio).toLocaleDateString('pt-BR') : `Rodada ${idx+1}`;
+                    let dataF = p.data_sorteio ? p.data_sorteio.split('T')[0].split('-').reverse().join('/') : `Rodada ${idx+1}`;
                     if(qtdConv > 0) {
                         html += `<tr><td>Rodada (${dataF}): ${qtdConv} convidados</td><td style="text-align:right;">R$ ${subConv.toFixed(2)}</td></tr>`;
                     }
                 });
             } else {
-                html += `<tr><td colspan="2" style="color:var(--text-muted);">Nenhuma rodada finalizada registrada neste mês.</td></tr>`;
+                html += `<tr><td colspan="2" style="color:var(--text-muted);">Nenhuma rodada finalizada neste mês.</td></tr>`;
             }
             html += `<tr><td><strong>Subtotal Convidados:</strong></td><td style="text-align:right; font-weight:bold; color:var(--supabase);">R$ ${totalConvidados.toFixed(2)}</td></tr>`;
             
             html += `<tr><th colspan="2" style="padding-top:12px;">📉 Detalhamento de Despesas (Custos)</th></tr>`;
             let totalCustos = 0;
-            let custosMensaisMes = (window.despesasMensaisGlobais || []).filter(c => c.data === mesKey);
-            custosMensaisMes.forEach(c => {
-                totalCustos += c.valor;
-                html += `<tr><td>${c.desc} <span style="font-size:10px; color:var(--text-muted);">(Fixo Mensal)</span></td><td style="text-align:right;">R$ ${c.valor.toFixed(2)}</td></tr>`;
+            let htmlCustosDiarios = `<div class="grid-relatorio-custos">`;
+            let temCustos = false;
+
+            // 1. LER DESPESAS DO NOVO LIVRO CAIXA UNIFICADO
+            (window.despesasMensaisGlobais || []).forEach((c, indexReal) => {
+                let dIso = c.data || "";
+                if (dIso.substring(0, 7) === mesKey) {
+                    totalCustos += c.valor;
+                    temCustos = true;
+                    let tipoLabel = c.tipo === 'mensal' ? 'Fixo' : 'Avulso';
+                    let dataBr = (c.data && c.tipo !== 'mensal') ? c.data.split('-').reverse().join('/') : '';
+                    let dStr = dataBr ? ` <span style="color:var(--text-muted); font-size:10px;">(${dataBr})</span>` : '';
+                    let idUnico = c.id || indexReal;
+                    
+                    htmlCustosDiarios += `<div class="item-custo-relatorio"><span>${c.desc}${dStr} <span style="color:var(--text-muted); font-size:10px;">(${tipoLabel})</span></span> <span><strong class="valor-negativo">R$ ${c.valor.toFixed(2)}</strong> <button class="btn-excluir-mini no-print" style="margin-left:8px;" onclick="removerCusto(${idUnico}, ${indexReal})">X</button></span></div>`;
+                }
             });
+
+            // 2. LER DESPESAS ANTIGAS (LEGADO)
             if(partidasDoMes.length > 0) {
                 partidasDoMes.forEach(p => {
-                    if(window.partidaAtualId && p.id === window.partidaAtualId) return; 
                     (p.custos_json || []).forEach(c => {
                         totalCustos += c.valor;
-                        html += `<tr><td>${c.desc} <span style="font-size:10px; color:var(--text-muted);">(Diário)</span></td><td style="text-align:right;">R$ ${c.valor.toFixed(2)}</td></tr>`;
+                        temCustos = true;
+                        let rawDate = p.data_sorteio || p.created_at || "";
+                        let dData = rawDate ? rawDate.split('T')[0].split('-').reverse().join('/') : "Antigo";
+                        htmlCustosDiarios += `<div class="item-custo-relatorio"><span>${c.desc} <span style="color:var(--text-muted); font-size:10px;">(${dData} - Legado)</span></span> <strong class="valor-negativo">R$ ${c.valor.toFixed(2)}</strong></div>`;
                     });
                 });
             }
 
-            if(window.custosDaRodada && window.custosDaRodada.length > 0) {
-                window.custosDaRodada.forEach(c => {
-                    totalCustos += c.valor;
-                    html += `<tr><td>${c.desc} <span style="font-size:10px; color:var(--text-muted);">(Diário - Atual)</span></td><td style="text-align:right;">R$ ${c.valor.toFixed(2)}</td></tr>`;
-                });
+            htmlCustosDiarios += `</div>`;
+
+            if(temCustos) {
+                html += `<tr><td colspan="2" style="padding: 0 0 10px 0;">${htmlCustosDiarios}</td></tr>`;
+            } else {
+                html += `<tr><td colspan="2" style="color:var(--text-muted);">Nenhuma despesa registrada no mês selecionado.</td></tr>`;
             }
 
-            if(totalCustos === 0) {
-                html += `<tr><td colspan="2" style="color:var(--text-muted);">Nenhuma despesa registrada no mês.</td></tr>`;
-            }
             html += `<tr><td><strong>Total de Despesas:</strong></td><td style="text-align:right; font-weight:bold; color:var(--danger);">R$ ${totalCustos.toFixed(2)}</td></tr>`;
             let receitaTotal = totalMensalidades + totalConvidados;
             let saldoMensal = receitaTotal - totalCustos;
-            html += `<tr><th colspan="2" style="padding-top:15px; background:var(--dark); color:white; text-align:center;">💰 BALANÇO FINANCEIRO DO MÊS</th></tr>`;
+            html += `<tr><th colspan="2" style="padding-top:15px; background:var(--dark); color:white; text-align:center;">💰 BALANÇO FINANCEIRO (${mesKey})</th></tr>`;
             html += `<tr><td>Receita Total (Mensalidades + Convidados):</td><td style="text-align:right; font-weight:bold; color:var(--supabase);">R$ ${receitaTotal.toFixed(2)}</td></tr>`;
             html += `<tr><td>Despesas Totais:</td><td style="text-align:right; font-weight:bold; color:var(--danger);">R$ ${totalCustos.toFixed(2)}</td></tr>`;
             html += `<tr><td><strong style="font-size:13px;">SALDO LÍQUIDO DO MÊS:</strong></td><td style="text-align:right; font-weight:bold; font-size:14px; color:var(--primary);">R$ ${saldoMensal.toFixed(2)}</td></tr>`;
 
             html += `</table>`;
-            document.getElementById('conteudo-relatorio-mensal').innerHTML = html;
+            let elConteudo = document.getElementById('conteudo-relatorio-mensal');
+            if(elConteudo) elConteudo.innerHTML = html;
         }
 
         function exibirBoxCodigoSorteio(codigo) {
@@ -1912,7 +1925,7 @@
         }
 
         function removerJogo(index) { 
-            if(window.partidaSalva || window.isModoPublico) return;
+            if(window.partidaSalva) return;
             window.jogosDaRodada.splice(index, 1); 
             atualizarListaJogosDaRodada(); 
             salvarEstadoCompleto();
@@ -1931,8 +1944,7 @@
             let htmlCompleto = '';
             window.jogosDaRodada.forEach((j, originalIndex) => {
                 let numJogo = originalIndex + 1;
-                // O botão de excluir (X) só aparece para o organizador e se a partida não estiver salva/finalizada
-                let btnExcluirHtml = (window.partidaSalva || window.isModoPublico) ? '' : `<button class="btn-excluir-mini" onclick="removerJogo(${originalIndex})">X</button>`;
+                let btnExcluirHtml = window.partidaSalva ? '' : `<button class="btn-excluir-mini" onclick="removerJogo(${originalIndex})">X</button>`;
                 let autoresA = formatarGolsResumo(j.gols_a);
                 let autoresB = formatarGolsResumo(j.gols_b);
                 
@@ -2058,7 +2070,7 @@
                         let dataCriacao = new Date(ultimaPartida.created_at);
                         let agora = new Date();
                         let diffMs = agora.getTime() - dataCriacao.getTime();
-                        if (diffMs <= 518400000 && !window.partidaSalvaManual) {
+                        if (diffMs <= 518400000) {
                             window.jogosDaRodada = ultimaPartida.jogos_json || [];
                             if (ultimaPartida.data_sorteio) {
                                 let d = new Date(ultimaPartida.data_sorteio);
@@ -2163,126 +2175,73 @@
 
         function atualizarFinanceiro() {
             if(window.isModoPublico) return;
-            renderizarListaCustos();
+            gerarRelatorioMensal();
             salvarEstadoCompleto();
         }
 
         async function adicionarCusto() {
-            let desc = document.getElementById('desc-custo').value;
+            let desc = document.getElementById('desc-custo').value; 
             let val = parseFloat(document.getElementById('valor-custo').value) || 0;
             let tipo = document.getElementById('tipo-custo').value;
+            let dataInput = document.getElementById('data-custo').value;
+
             if(!desc || val <= 0) return alert("Preencha descrição e valor válido.");
 
-            let hoje = new Date();
-            let mesKey = hoje.toISOString().substring(0, 7);
-            
-            if (tipo === 'mensal') {
-                window.despesasMensaisGlobais.push({ desc: desc, valor: val, data: mesKey });
-                if(currentUser) {
-                    await db.from('profiles').update({ despesas_mensais_json: window.despesasMensaisGlobais }).eq('id', currentUser.id);
-                }
-            } else {
-                window.custosDaRodada.push({ desc: desc, valor: val, tipo: tipo });
-                if (!window.partidaAtualId) {
-                    let codigoAleatorio = Math.random().toString(36).substring(2, 8).toUpperCase();
-                    let valorConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
-                    let valorMens = parseFloat(document.getElementById('valor-mensalista').value) || 0;
-                    const { data: pData, error: errP } = await db.from('partidas').insert([{ 
-                        quantidade_jogadores: 0, 
-                        renda_convidados: 0,
-                        valor_por_convidado: valorConv,
-                        valor_por_mensalista: valorMens,
-                        custos_json: window.custosDaRodada,
-                        artilheiros_json: {},
-                        jogos_json: [],
-                        times_json: [],
-                        fila_json: [],
-                        codigo_acesso: codigoAleatorio,
-                        nome_baba: currentProfile ? currentProfile.nome_baba : "",
-                        escudo_url: currentProfile ? currentProfile.escudo_url : "",
-                        user_id: currentUser.id
-                    }]).select();
-                    if (!errP && pData && pData.length > 0) {
-                        window.partidaAtualId = pData[0].id;
-                        window.codigoAcessoAtual = codigoAleatorio;
-                        iniciarOuvinteRealtime(window.partidaAtualId);
-                    }
+            if(!dataInput) {
+                let tzoffset = (new Date()).getTimezoneOffset() * 60000;
+                dataInput = (new Date(Date.now() - tzoffset)).toISOString().split('T')[0];
+            }
+
+            let novaDespesa = { 
+                id: Date.now(), 
+                desc: desc, 
+                valor: val, 
+                tipo: tipo,
+                data: tipo === 'mensal' ? dataInput.substring(0, 7) : dataInput 
+            };
+
+            window.despesasMensaisGlobais.push(novaDespesa);
+
+            if(currentUser) {
+                const btn = document.querySelector('button[onclick="adicionarCusto()"]');
+                let txtOrigin = btn.innerText;
+                btn.innerText = "Salvando..."; btn.disabled = true;
+
+                const { error } = await db.from('profiles').update({ despesas_mensais_json: window.despesasMensaisGlobais }).eq('id', currentUser.id);
+
+                btn.innerText = txtOrigin; btn.disabled = false;
+
+                if (error) {
+                    alert("Erro ao salvar despesa: " + error.message);
+                    window.despesasMensaisGlobais.pop(); 
                 } else {
-                    await db.from('partidas').update({ custos_json: window.custosDaRodada }).eq('id', window.partidaAtualId);
+                    document.getElementById('desc-custo').value = ''; 
+                    document.getElementById('valor-custo').value = '';
+                    document.getElementById('data-custo').value = '';
+                    gerarRelatorioMensal();
                 }
             }
-
-            document.getElementById('desc-custo').value = '';
-            document.getElementById('valor-custo').value = '';
-            
-            atualizarFinanceiro();
-            gerarRelatorioMensal();
         }
         
-        async function removerCusto(tipo, index) { 
-            if (tipo === 'mensal') {
-                window.despesasMensaisGlobais.splice(index, 1);
-                if(currentUser) {
-                    await db.from('profiles').update({ despesas_mensais_json: window.despesasMensaisGlobais }).eq('id', currentUser.id);
-                }
-            } else {
-                window.custosDaRodada.splice(index, 1);
-                if (window.partidaAtualId) {
-                    await db.from('partidas').update({ custos_json: window.custosDaRodada }).eq('id', window.partidaAtualId);
-                }
-            }
+        async function removerCusto(idUnico, indexArrayFallback) { 
+            if(!confirm("Deseja realmente apagar esta despesa do Livro Caixa?")) return;
+
+            let indexReal = window.despesasMensaisGlobais.findIndex(c => c.id === idUnico);
+            if (indexReal === -1) indexReal = indexArrayFallback;
             
-            atualizarFinanceiro();
-            gerarRelatorioMensal();
-        }
-        
-        function renderizarListaCustos() {
-            let listaDiarios = document.getElementById('lista-custos');
-            let listaMensais = document.getElementById('lista-custos-mensais'); 
-            if(!listaDiarios) return;
+            if (indexReal === -1 || indexReal === undefined) return alert("Erro: Despesa não encontrada.");
 
-            listaDiarios.innerHTML = '';
-            if(listaMensais) listaMensais.innerHTML = '';
+            let removido = window.despesasMensaisGlobais.splice(indexReal, 1)[0];
 
-            let custosDiarios = window.custosDaRodada || [];
-            let hoje = new Date();
-            let mesKey = hoje.toISOString().substring(0, 7);
-            let custosMensais = window.despesasMensaisGlobais || [];
-            if(custosDiarios.length === 0) { 
-                listaDiarios.innerHTML = '<p style="color:var(--text-muted); font-size:12px; text-align:center; padding:8px;">Nenhuma despesa diária lançada hoje.</p>';
-            } else {
-                custosDiarios.forEach((c, index) => {
-                    listaDiarios.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 10px; background:var(--light); border:1px solid var(--border); border-radius:6px; margin-bottom:5px; font-size:13px;">
-                        <span>${c.desc}</span>
-                        <span><strong class="valor-negativo">R$ ${c.valor.toFixed(2)}</strong> <button class="btn-excluir-mini" style="margin-left:8px;" onclick="removerCusto('diario', ${index})">X</button></span>
-                    </div>`;
-                });
-            }
-
-            if(listaMensais) {
-                let temMensalEsteMes = false;
-                custosMensais.forEach((c, index) => {
-                    if (c.data === mesKey) {
-                        temMensalEsteMes = true;
-                        listaMensais.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 10px; background:var(--light); border:1px solid var(--border); border-radius:6px; margin-bottom:5px; font-size:13px;">
-                            <span>${c.desc}</span>
-                            <span><strong class="valor-negativo">R$ ${c.valor.toFixed(2)}</strong> <button class="btn-excluir-mini" style="margin-left:8px;" onclick="removerCusto('mensal', ${index})">X</button></span>
-                        </div>`;
-                    }
-                });
-                if(!temMensalEsteMes) {
-                    listaMensais.innerHTML = '<p style="color:var(--text-muted); font-size:12px; text-align:center; padding:8px;">Nenhuma despesa fixa lançada neste mês.</p>';
+            if(currentUser) {
+                const { error } = await db.from('profiles').update({ despesas_mensais_json: window.despesasMensaisGlobais }).eq('id', currentUser.id);
+                if(error) {
+                    alert("Erro ao remover do banco: " + error.message);
+                    window.despesasMensaisGlobais.splice(indexReal, 0, removido); 
+                } else {
+                    gerarRelatorioMensal();
                 }
             }
-
-            let valConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
-            let convPagantesHoje = jogadores.filter(j => j.tipo === 'Convidado' && j.presente && j.pagou).length;
-            let recHoje = (convPagantesHoje * valConv);
-            let custHojeDiario = custosDiarios.reduce((acc, c) => acc + c.valor, 0);
-            
-            document.getElementById('fin-receita-hoje').innerText = `R$ ${recHoje.toFixed(2)}`;
-            document.getElementById('fin-custos-hoje').innerText = `R$ ${custHojeDiario.toFixed(2)}`;
-            salvarEstadoCompleto();
         }
 
         async function salvarPartidaComPlacares() {
@@ -2322,7 +2281,6 @@
 
                 await db.from('jogadores').delete().eq('tipo', 'Convidado').eq('user_id', currentUser.id);
                 window.partidaSalva = true; 
-                window.partidaSalvaManual = true; // Marca que a partida foi encerrada para limpar ao gerar nova
                 
                 jogadores.forEach(j => { 
                     j.presente = false; 
