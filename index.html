@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Pega o Baba | Gestão Esportiva</title>
     
-    <!-- ÍCONES PARA O ATALHO DO CELULAR E NAVEGADOR -->
     <link rel="icon" type="image/svg+xml" href="icone.svg">
     <link rel="apple-touch-icon" href="icone.svg">
     <meta name="theme-color" content="#0f172a">
@@ -41,8 +40,7 @@
         .bottom-nav { 
             position: fixed; bottom: 0; left: 0; right: 0; background: white; 
             display: flex; justify-content: space-around; align-items: center; 
-            height: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px)); 
-            padding-bottom: env(safe-area-inset-bottom, 0px); 
+            height: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px)); padding-bottom: env(safe-area-inset-bottom, 0px); 
             border-top: 1px solid var(--border); z-index: 1000; max-width: 600px; margin: 0 auto; 
             box-shadow: 0 -4px 6px -1px rgba(0,0,0,0.05); box-sizing: border-box;
         }
@@ -160,6 +158,10 @@
         .grid-mensalistas { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px 15px; padding: 8px 5px; }
         .item-mensalista { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed var(--border); padding: 4px 0; font-size: 12px; }
 
+        /* DUAS COLUNAS PARA CUSTOS LONGOS */
+        .grid-relatorio-custos { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; margin-top: 5px; }
+        .item-custo-relatorio { background: var(--light); padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); font-size: 11px; display: flex; justify-content: space-between; align-items: center; }
+
         /* MODO PÚBLICO E IMPRESSÃO / PDF */
         .hidden-public { display: block; }
         .public-mode .hidden-public { display: none !important; }
@@ -181,6 +183,7 @@
             .relatorio-tabela th, .relatorio-tabela td { padding: 4px; }
             .header-secao-stats { padding: 6px 0 !important; background: transparent !important; color: black !important; border-bottom: 2px solid black !important; }
             .header-secao-stats span { font-size: 14px !important; }
+            .header-secao-stats div { display: none !important; } 
             .grid-mensalistas { grid-template-columns: repeat(3, 1fr) !important; gap: 4px 15px; padding: 4px 0; }
             .item-mensalista { font-size: 10px; padding: 2px 0; border-bottom: 1px solid #eee; }
         }
@@ -190,7 +193,6 @@
 </head>
 <body id="body-app">
     
-    <!-- TELA INICIAL -->
     <div id="auth-container" style="padding: 20px;">
         <h1>Pega o Baba</h1>
         <p class="subtitle">Plataforma Profissional de Gestão</p>
@@ -211,7 +213,6 @@
             <button onclick="acessarModoPublico()" style="background: var(--dark);">Ver Súmula e Painel</button>
         </div>
 
-        <!-- Assinatura do Desenvolvedor (CTA) -->
         <div class="dev-signature">
             <p class="cta-title">Quer adicionar este sistema ao seu baba?</p>
             <p class="cta-desc">Entre em contato e profissionalize a sua resenha!</p>
@@ -222,7 +223,6 @@
         </div>
     </div>
 
-    <!-- APLICATIVO PRINCIPAL -->
     <div id="app-container" style="display: none;">
         
         <div class="top-bar">
@@ -235,7 +235,6 @@
             </div>
         </div>
 
-        <!-- ABA 1: ELENCO -->
         <div id="view-elenco" class="page-view organizer-only">
             <div class="card hidden-public" id="card-formulario">
                 <h2 id="titulo-form">Adicionar ao Elenco</h2>
@@ -266,7 +265,6 @@
             </div>
         </div>
 
-        <!-- ABA 2: SORTEIO -->
         <div id="view-sorteio" class="page-view organizer-only active">
             <div class="card hidden-public" style="border: 2px dashed var(--border); background: var(--white);">
                 <h2 style="color: var(--text-muted);">Aguardando Chegada</h2>
@@ -302,10 +300,8 @@
                 <button onclick="iniciarSorteioComSuspense()" style="background: var(--dark); margin-top: 15px; font-size:16px; padding:16px;">🎲 Gerar Equipes</button>
             </div>
 
-            <!-- RESULTADO DO SORTEIO -->
             <div id="resultado" class="team-container"></div>
             
-            <!-- CAIXA DE COMPARTILHAMENTO NA ABA SORTEIO -->
             <div id="box-codigo-gerado-sorteio" class="codigo-gerado-box hidden-public" style="display:none; margin-top: 20px;"></div>
 
             <div class="hidden-public" style="display: flex; gap: 10px; margin-top: 20px;">
@@ -313,7 +309,6 @@
             </div>
         </div>
 
-        <!-- ABA 3: SÚMULA DINÂMICA -->
         <div id="view-placares" class="page-view">
             <div class="card">
                 <h2>📝 Súmula de Jogo</h2>
@@ -328,10 +323,8 @@
 
                 <div id="container-sumula" style="display: none;">
                     
-                    <!-- DESTAQUE DA FILA / PRÓXIMA EQUIPE -->
                     <div id="container-status-fila"></div>
 
-                    <!-- PLACAR DE ARENA -->
                     <div class="placar-arena hidden-public" id="painel-placar-arena">
                         <div class="placar-header">
                             <div class="placar-time">
@@ -354,7 +347,6 @@
                     <h3 style="font-size: 15px; margin-bottom: 10px;">Jogos Registrados (<span id="qtd-jogos-reg">0</span>):</h3>
                     <div id="lista-jogos-registrados" style="margin-bottom: 25px;"></div>
 
-                    <!-- ESCALAÇÃO DOS TIMES -->
                     <h3 style="font-size: 15px; margin-bottom: 10px; border-top: 1px solid var(--border); padding-top: 20px;">🛡️ Escalação das Equipes</h3>
                     <div id="lista-escalacao-publica" class="team-container" style="margin-top: 0; margin-bottom: 25px;"></div>
 
@@ -363,7 +355,6 @@
             </div>
         </div>
 
-        <!-- ABA 4: ESTATÍSTICAS -->
         <div id="view-estatisticas" class="page-view">
             <h2 style="text-align: left; font-size:20px; margin-bottom: 20px;">Painel de Estatísticas</h2>
             
@@ -414,7 +405,6 @@
             </div>
         </div>
 
-        <!-- ABA 5: CAIXA E RELATÓRIOS -->
         <div id="view-financeiro" class="page-view">
             <h2 class="no-print" style="text-align: left; font-size:20px; margin-bottom: 20px;">Gestão de Caixa</h2>
             
@@ -432,7 +422,6 @@
                 </div>
             </div>
 
-            <!-- CAIXA DA RODADA (HOJE) -->
             <div class="card-secao-stats no-print" style="margin-bottom: 15px;">
                 <div class="header-secao-stats" style="background: var(--dark); color: white; padding: 8px 15px;"><span>⚽ Caixa da Rodada (Hoje)</span></div>
                 <div style="padding: 12px;">
@@ -441,23 +430,24 @@
                         <div class="dash-card" style="padding: 10px;"><div class="dash-titulo">Custos Diários</div><div class="dash-valor valor-negativo" id="fin-custos-hoje">R$ 0.00</div></div>
                     </div>
                     <div class="card hidden-public" style="margin-bottom:0; padding: 12px;">
-                        <h3 style="font-size: 13px; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:6px; margin-bottom: 8px;">Lançar Despesa</h3>
+                        <h3 style="font-size: 13px; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:6px; margin-bottom: 8px;">Lançar Despesa (Livro Caixa)</h3>
                         <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                            <input type="text" id="desc-custo" placeholder="Ex: Juiz, Água, Campo" style="flex:2; margin:0; padding:8px; font-size:12px;">
+                            <input type="text" id="desc-custo" placeholder="Ex: Juiz, Água, Bola" style="flex:2; margin:0; padding:8px; font-size:12px;">
                             <input type="number" id="valor-custo" placeholder="R$" style="flex:1; margin:0; padding:8px; font-size:12px;">
+                        </div>
+                        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
                             <select id="tipo-custo" style="flex:1.2; margin:0; padding:8px; font-size:12px;">
-                                <option value="diario">Diário (Rodada)</option>
+                                <option value="diario">Avulso / Diário</option>
                                 <option value="mensal">Mensal (Fixo)</option>
                             </select>
+                            <input type="date" id="data-custo" style="flex:1; margin:0; padding:8px; font-size:12px;">
                         </div>
-                        <button onclick="adicionarCusto()" style="background: var(--dark); padding: 10px; font-size:13px;">Lançar Despesa</button>
+                        <button onclick="adicionarCusto()" style="background: var(--dark); padding: 10px; font-size:13px;">Registrar no Caixa</button>
                     </div>
-                    <!-- Lista específica de Custos Diários -->
                     <div id="lista-custos" style="margin-top:12px;"></div>
                 </div>
             </div>
 
-            <!-- SEÇÃO DE DESPESAS FIXAS / MENSAIS -->
             <div class="card-secao-stats no-print hidden-public" style="margin-bottom: 15px;">
                 <div class="header-secao-stats" style="background: #fef3c7; color: #d97706; padding: 8px 15px;"><span>📅 Despesas Fixas (Este Mês)</span></div>
                 <div style="padding: 12px;" id="lista-custos-mensais">
@@ -465,7 +455,6 @@
                 </div>
             </div>
 
-            <!-- RELATÓRIO MENSAL DETALHADO -->
             <div class="card-secao-stats hidden-public" id="card-relatorio-mensal">
                 <div class="header-secao-stats" style="background: var(--primary); color: white;">
                     <span>📄 Relatório Mensal Detalhado (<span id="label-mes-relatorio">Atual</span>)</span>
@@ -475,13 +464,11 @@
                 </div>
             </div>
 
-            <!-- BOTÕES DE EXPORTAÇÃO DO RELATÓRIO -->
             <div style="display: flex; gap: 10px; margin-top: 20px;" class="no-print hidden-public">
                 <button onclick="window.print()" style="background: var(--dark); flex: 1; font-size: 14px; padding: 14px;">📄 Exportar PDF / Imprimir Relatório</button>
             </div>
         </div>
 
-        <!-- ABA: CONTA -->
         <div id="view-conta" class="page-view organizer-only">
             <h2 style="text-align: left; font-size:20px; margin-bottom: 20px;">Minha Conta</h2>
             
@@ -504,7 +491,6 @@
                 </div>
             </div>
 
-            <!-- CONFIGURAÇÃO DE JOGADORES POR TIME -->
             <div class="card" style="padding: 15px; margin-bottom: 15px;">
                 <h3 style="font-size: 14px; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom: 10px;">⚽ Tamanho das Equipes</h3>
                 <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Defina o total de jogadores por time em quadra <strong>(já incluindo o goleiro)</strong>:</p>
@@ -529,7 +515,6 @@
                 </div>
             </div>
             
-            <!-- BOTÃO ZERAR TEMPORADA -->
             <div class="card" style="border-color: var(--warning); padding: 15px; margin-bottom: 15px;">
                 <h3 style="font-size: 14px; margin-top:0; color: var(--warning); border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom: 10px;">⚠️ Nova Temporada</h3>
                 <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 10px;">Apaga todo o histórico de partidas, súmulas, estatísticas e finanças. <strong>O Elenco de jogadores será mantido.</strong></p>
@@ -541,7 +526,6 @@
                 <button onclick="fazerLogout()" style="background: var(--danger); padding: 10px; font-size: 13px;">Sair da Conta neste dispositivo</button>
             </div>
 
-            <!-- Assinatura do Desenvolvedor (CTA) -->
             <div class="dev-signature">
                 <p class="cta-title">Quer adicionar este sistema ao seu baba?</p>
                 <p class="cta-desc">Entre em contato e profissionalize a sua resenha!</p>
@@ -552,7 +536,6 @@
             </div>
         </div>
 
-        <!-- ABA: MASTER ADMIN -->
         <div id="view-admin" class="page-view master-only">
             <h2 style="text-align: left; font-size:20px; margin-bottom: 20px;">Painel Master (Gestão de Assinaturas)</h2>
             <div class="card">
@@ -561,7 +544,6 @@
             </div>
         </div>
 
-        <!-- MODAL SELEÇÃO DE GOL -->
         <div id="modal-gol" class="modal-overlay" style="display:none;">
             <div class="modal-content">
                 <h3 id="titulo-modal-gol">Quem fez o gol?</h3>
@@ -570,7 +552,6 @@
             </div>
         </div>
 
-        <!-- NAVEGAÇÃO INFERIOR -->
         <nav class="bottom-nav">
             <div class="nav-item hidden-public organizer-only" onclick="mudarAba('view-elenco')" id="nav-elenco">
                 <div class="nav-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></div>
@@ -610,10 +591,8 @@
         let currentProfile = null;
         let currentUser = null;
         let supabaseChannel = null;
-
         const coresTimes = ["Vermelho", "Azul", "Amarelo", "Verde", "Branco", "Preto", "Roxo", "Laranja"];
         const emojisTimes = ["🔴", "🔵", "🟡", "🟢", "⚪", "⚫", "🟣", "🟠"];
-
         function getCorHex(corBase) {
             const map = {
                 "Vermelho": "#ef4444",
@@ -642,11 +621,10 @@
         
         window.golsTempA = []; 
         window.golsTempB = [];
-
         window.onload = async function() {
-            if(typeof supabaseUrl === 'undefined' || typeof supabaseKey === 'undefined') { alert("Erro crítico: config.js ausente."); return; }
+            if(typeof supabaseUrl === 'undefined' || typeof supabaseKey === 'undefined') { alert("Erro crítico: config.js ausente.");
+                return; }
             db = window.supabase.createClient(supabaseUrl, supabaseKey);
-            
             const urlParams = new URLSearchParams(window.location.search);
             const code = urlParams.get('code');
             if(code) {
@@ -658,7 +636,6 @@
                 verificarSessao();
             }
         };
-
         function iniciarOuvinteRealtime(partidaId) {
             if (!partidaId) return;
             if (supabaseChannel) {
@@ -687,7 +664,6 @@
                             window.partidaSalva = false;
                         }
                         atualizarFilaUI();
-                        
                         if (novaPartida.custos_json) {
                             window.custosDaRodada = novaPartida.custos_json;
                             atualizarFinanceiro();
@@ -708,7 +684,7 @@
         }
 
         function salvarEstadoCompleto() {
-            if(window.isModoPublico) return; 
+            if(window.isModoPublico) return;
             const estado = {
                 timesSorteadosObjs: window.timesSorteadosObjs,
                 reservasSorteados: window.reservasSorteados,
@@ -754,7 +730,8 @@
         }
 
         function limparEstadoRodada() {
-            window.timesSorteadosObjs = []; window.reservasSorteados = []; window.jogosDaRodada = [];
+            window.timesSorteadosObjs = [];
+            window.reservasSorteados = []; window.jogosDaRodada = [];
             window.filaEquipes = []; window.custosDaRodada = []; window.golsTempA = []; window.golsTempB = [];
             window.dataPartidaAtual = null; window.partidaAtualId = null; window.codigoAcessoAtual = null;
             window.partidaSalva = true;
@@ -796,7 +773,7 @@
         }
 
         async function verificarSessao() { 
-            const { data: { session } } = await db.auth.getSession(); 
+            const { data: { session } } = await db.auth.getSession();
             if (session) {
                 currentUser = session.user;
                 await checarPerfilEValidade(session.user);
@@ -806,30 +783,29 @@
         }
 
         async function criarConta() { 
-            const email = document.getElementById('auth-email').value; 
+            const email = document.getElementById('auth-email').value;
             const password = document.getElementById('auth-password').value; 
             const msg = document.getElementById('auth-msg');
-            if(password.length < 6) return msg.innerText = "A senha deve ter 6+ caracteres."; 
+            if(password.length < 6) return msg.innerText = "A senha deve ter 6+ caracteres.";
             msg.innerText = "Processando...";
             const { error } = await db.auth.signUp({ email, password });
             if (error) { 
-                msg.style.color = "var(--danger)"; 
+                msg.style.color = "var(--danger)";
                 msg.innerText = error.message; 
             } else { 
-                msg.style.color = "var(--primary)"; 
-                msg.innerHTML = "✅ Conta criada! Aguarde a liberação do acesso."; 
+                msg.style.color = "var(--primary)";
+                msg.innerHTML = "✅ Conta criada! Aguarde a liberação do acesso.";
             }
         }
 
         async function fazerLogin() { 
-            const email = document.getElementById('auth-email').value; 
+            const email = document.getElementById('auth-email').value;
             const password = document.getElementById('auth-password').value; 
             const msg = document.getElementById('auth-msg');
             msg.innerText = "Conectando...";
-            
             const { data, error } = await db.auth.signInWithPassword({ email, password });
             if (error) { 
-                msg.style.color = "var(--danger)"; 
+                msg.style.color = "var(--danger)";
                 msg.innerText = "Credenciais inválidas."; 
                 return;
             }
@@ -840,12 +816,10 @@
 
         async function checarPerfilEValidade(user) {
             let { data: profile, error } = await db.from('profiles').select('*').eq('id', user.id).single();
-            
             if (error || !profile) {
                 const { data: newProfile, error: insertError } = await db.from('profiles').insert([{
                     id: user.id, email: user.email, is_authorized: false, is_admin: false, nome_baba: "", jogadores_por_time: 7, despesas_mensais_json: []
                 }]).select().single();
-
                 if (insertError || !newProfile) {
                     await db.auth.signOut();
                     alert("Erro ao carregar ou criar perfil do usuário.");
@@ -878,7 +852,7 @@
         }
 
         async function fazerLogout() { 
-            await db.auth.signOut(); 
+            await db.auth.signOut();
             currentProfile = null; currentUser = null;
             if (supabaseChannel) db.removeChannel(supabaseChannel);
             
@@ -887,7 +861,7 @@
             localStorage.removeItem('baba_last_reset');
             limparEstadoRodada();
 
-            mostrarLogin(); 
+            mostrarLogin();
         }
         
         function mostrarApp() { 
@@ -896,14 +870,12 @@
             document.getElementById('app-container').style.display = 'block'; 
             document.getElementById('app-container').classList.remove('public-mode');
             document.getElementById('btn-sair-publico').style.display = 'none';
-            
             if (currentProfile && currentProfile.is_admin) {
                 document.body.classList.add('is-master-admin');
                 document.getElementById('top-bar-title').innerText = "Painel Master";
                 mudarAba('view-admin');
             } else {
                 document.body.classList.remove('is-master-admin');
-                
                 let tituloApp = currentProfile.nome_baba ? currentProfile.nome_baba : "Pega o Baba";
                 document.getElementById('top-bar-title').innerText = tituloApp;
                 if(currentProfile.nome_baba) document.getElementById('nome-baba-input').value = currentProfile.nome_baba;
@@ -920,7 +892,6 @@
                 }
 
                 document.getElementById('organizer-email-label').innerText = currentUser.email;
-
                 carregarElencoDaNuvem();
                 mudarAba('view-sorteio');
             }
@@ -950,7 +921,6 @@
             if (!currentUser) return;
             let qtd = parseInt(document.getElementById('jogadores-por-time-input').value) || 7;
             if (qtd < 3 || qtd > 15) return alert("Insira um número válido entre 3 e 15.");
-
             const { error } = await db.from('profiles').update({ jogadores_por_time: qtd }).eq('id', currentUser.id);
             if (error) {
                 alert("Erro ao salvar tamanho das equipes: " + error.message);
@@ -965,10 +935,8 @@
             const fileInput = document.getElementById('input-escudo-baba');
             const file = fileInput.files[0];
             if(!file) return alert("Por favor, selecione uma imagem no seu celular/computador.");
-            
             const btn = document.getElementById('btn-salvar-escudo');
             btn.innerText = "Enviando... Aguarde"; btn.disabled = true;
-            
             if (currentProfile && currentProfile.escudo_url) {
                 try {
                     let urlAntiga = currentProfile.escudo_url;
@@ -986,7 +954,6 @@
             const fileName = `${currentUser.id}_${Date.now()}.${fileExt}`;
             
             const { data, error } = await db.storage.from('escudos').upload(fileName, file, { upsert: true });
-            
             if (error) {
                 alert("Erro ao enviar imagem. Verifique se criou a pasta 'escudos' no Supabase: " + error.message);
                 btn.innerText = "Fazer Upload da Imagem"; btn.disabled = false;
@@ -997,7 +964,6 @@
             const escudoUrl = pubData.publicUrl;
             
             const { error: errP } = await db.from('profiles').update({ escudo_url: escudoUrl }).eq('id', currentUser.id);
-            
             if (errP) {
                 alert("Erro ao vincular escudo: " + errP.message);
             } else {
@@ -1009,28 +975,26 @@
                 document.getElementById('preview-escudo').style.display = 'block';
             }
             
-            btn.innerText = "Fazer Upload da Imagem"; btn.disabled = false;
+            btn.innerText = "Fazer Upload da Imagem";
+            btn.disabled = false;
             fileInput.value = ""; 
         }
 
         async function alterarSenhaOrganizador() {
             const novaSenha = document.getElementById('nova-senha-organizador').value;
             if(!novaSenha || novaSenha.length < 6) return alert("A senha deve ter pelo menos 6 caracteres.");
-
             const { error } = await db.auth.updateUser({ password: novaSenha });
             if(error) alert("Erro ao alterar senha: " + error.message);
-            else { alert("✅ Senha alterada com sucesso!"); document.getElementById('nova-senha-organizador').value = ''; }
+            else { alert("✅ Senha alterada com sucesso!"); document.getElementById('nova-senha-organizador').value = '';
+            }
         }
 
         async function zerarHistoricoAdmin() {
             if(!currentUser) return;
-            
             if(!confirm("⚠️ ATENÇÃO: Isso vai apagar TODAS as partidas, súmulas, caixa e estatísticas.\n\nO seu Elenco de jogadores ficará salvo.\n\nDeseja continuar?")) return;
             if(!confirm("Tem certeza absoluta? Essa ação NÃO pode ser desfeita e vai zerar o seu painel.")) return;
-
             try {
                 document.getElementById('status-db').innerText = "Limpando...";
-                
                 const { data: partidas } = await db.from('partidas').select('id').eq('user_id', currentUser.id);
                 
                 if (partidas && partidas.length > 0) {
@@ -1051,7 +1015,6 @@
                 
                 alert("✅ Histórico zerado com sucesso! Iniciando uma nova temporada.");
                 window.location.reload();
-                
             } catch (err) {
                 alert("Erro ao limpar histórico: " + err.message);
                 document.getElementById('status-db').innerText = "Online";
@@ -1064,19 +1027,24 @@
             container.innerHTML = "Carregando usuários...";
 
             const { data: users, error } = await db.from('profiles').select('*').order('email');
-            if (error) { container.innerHTML = "Erro ao carregar usuários."; return; }
-            if (!users || users.length === 0) { container.innerHTML = "Nenhum usuário cadastrado."; return; }
+            if (error) { container.innerHTML = "Erro ao carregar usuários."; return;
+            }
+            if (!users || users.length === 0) { container.innerHTML = "Nenhum usuário cadastrado.";
+            return; }
 
             container.innerHTML = "";
             users.forEach(u => {
                 let expDate = u.subscription_expires_at || '';
                 container.innerHTML += `
                     <div style="background: var(--light); padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 10px; font-size: 13px;">
-                        <div style="font-weight: 700; margin-bottom: 5px;">${u.email} ${u.is_admin ? '(Master Admin)' : ''}</div>
+                        <div 
+style="font-weight: 700; margin-bottom: 5px;">${u.email} ${u.is_admin ? '(Master Admin)' : ''}</div>
                         <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                             <label style="font-size: 11px;">Autorizado: <input type="checkbox" id="auth-${u.id}" ${u.is_authorized ? 'checked' : ''} onchange="atualizarAdminUser('${u.id}')"></label>
-                            <label style="font-size: 11px;">Vencimento: <input type="date" id="date-${u.id}" value="${expDate}" style="width: auto; padding: 6px; margin: 0;" onchange="atualizarAdminUser('${u.id}')"></label>
-                            <span id="msg-${u.id}" style="font-size: 11px; color: var(--supabase); font-weight: bold;"></span>
+                    
+        <label style="font-size: 11px;">Vencimento: <input type="date" id="date-${u.id}" value="${expDate}" style="width: auto; padding: 6px; margin: 0;" onchange="atualizarAdminUser('${u.id}')"></label>
+                            <span id="msg-${u.id}" style="font-size: 11px;
+color: var(--supabase); font-weight: bold;"></span>
                         </div>
                     </div>
                 `;
@@ -1084,13 +1052,15 @@
         }
 
         async function atualizarAdminUser(uid) {
+      
             let isAuth = document.getElementById(`auth-${uid}`).checked;
             let expDate = document.getElementById(`date-${uid}`).value || null;
             let msgSpan = document.getElementById(`msg-${uid}`);
 
             const { error } = await db.from('profiles').update({ is_authorized: isAuth, subscription_expires_at: expDate }).eq('id', uid);
             if (error) alert("Erro ao atualizar: " + error.message);
-            else { msgSpan.innerText = "Salvo!"; setTimeout(() => { msgSpan.innerText = ""; }, 2000); }
+            else { msgSpan.innerText = 
+"Salvo!"; setTimeout(() => { msgSpan.innerText = ""; }, 2000); }
         }
 
         async function acessarModoPublico() {
@@ -1104,9 +1074,7 @@
             window.isModoPublico = true;
             
             document.getElementById('status-db').innerText = "Buscando Baba...";
-            
             const { data: partida, error } = await db.from('partidas').select('*').eq('codigo_acesso', codigo).single();
-            
             if(error || !partida) {
                 alert("Baba não encontrado ou código inválido.");
                 sairModoPublico();
@@ -1148,7 +1116,6 @@
             window.custosDaRodada = partida.custos_json || [];
             if(partida.valor_por_convidado) document.getElementById('valor-convidado').value = partida.valor_por_convidado;
             if(partida.valor_por_mensalista) document.getElementById('valor-mensalista').value = partida.valor_por_mensalista;
-            
             if(partida.data_sorteio) {
                 let d = new Date(partida.data_sorteio);
                 if (!isNaN(d.getTime())) {
@@ -1173,7 +1140,6 @@
                 document.getElementById('fin-custos-hoje').innerText = `R$ ${totCustosPubDiarios.toFixed(2)}`;
             }
             renderizarListaCustos();
-            
             if (partida.jogos_json && partida.jogos_json.length > 0) {
                 window.jogosDaRodada = partida.jogos_json;
             } else {
@@ -1207,16 +1173,19 @@
             if (!currentUser) return;
             document.getElementById('status-db').innerText = "Sincronizando..."; document.getElementById('status-db').style.backgroundColor = "var(--warning)";
             
-            const { data, error } = await db.from('jogadores').select('*').eq('user_id', currentUser.id).order('nome', { ascending: true }); 
-            if (error) { document.getElementById('status-db').innerText = "Off-line"; document.getElementById('status-db').style.backgroundColor = "var(--danger)"; return; }
+            const { data, error } = await db.from('jogadores').select('*').eq('user_id', currentUser.id).order('nome', { ascending: true });
+            if (error) { document.getElementById('status-db').innerText = "Off-line"; document.getElementById('status-db').style.backgroundColor = "var(--danger)"; return;
+            }
             
-            let estadoLocal = JSON.parse(localStorage.getItem('baba_presencas_temp')) || {};
+            let estadoLocal = JSON.parse(localStorage.getItem('baba_presencas_temp')) ||
+            {};
             jogadores = data.map(j => ({ 
                 ...j, 
                 presente: estadoLocal[j.id]?.presente || false, 
                 ordemChegada: estadoLocal[j.id]?.ordemChegada || 0, 
                 pagou: estadoLocal[j.id]?.pagou || false,
-                pagamentos_json: j.pagamentos_json || {}
+                pagamentos_json: j.pagamentos_json 
+                || {}
             }));
             
             document.getElementById('status-db').innerText = "Online"; document.getElementById('status-db').style.backgroundColor = "var(--supabase)";
@@ -1234,7 +1203,6 @@
                 .eq('user_id', currentUser.id)
                 .order('created_at', { ascending: false })
                 .limit(1);
-
             if (!error && partidas && partidas.length > 0) {
                 let p = partidas[0];
                 if (p.created_at) {
@@ -1247,7 +1215,6 @@
                         window.timesSorteadosObjs = p.times_json || [];
                         window.filaEquipes = p.fila_json || [];
                         window.partidaSalva = (window.filaEquipes.length === 0 && window.jogosDaRodada.length > 0);
-                        
                         if (p.data_sorteio) {
                             let d = new Date(p.data_sorteio);
                             window.dataPartidaAtual = !isNaN(d.getTime()) ? d.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}) : p.data_sorteio;
@@ -1264,12 +1231,14 @@
         }
 
         function prepararEdicao(indexArray) {
-            const j = jogadores[indexArray]; document.getElementById('nome').value = j.nome; document.getElementById('tipo').value = j.tipo; document.getElementById('posicao').value = j.posicao; document.getElementById('nivel').value = j.nivel;
+            const j = jogadores[indexArray];
+            document.getElementById('nome').value = j.nome; document.getElementById('tipo').value = j.tipo; document.getElementById('posicao').value = j.posicao; document.getElementById('nivel').value = j.nivel;
             jogadorEdicaoId = j.id; document.getElementById('titulo-form').innerText = "Editando Jogador"; document.getElementById('card-formulario').classList.add("editando");
             document.getElementById('btn-adicionar').innerText = "Salvar Alterações"; document.getElementById('btn-cancelar-edicao').style.display = "block"; window.scrollTo({ top: 0, behavior: 'smooth' });
         }
         function cancelarEdicao() {
-            jogadorEdicaoId = null; document.getElementById('nome').value = ""; document.getElementById('tipo').value = "Mensalista"; document.getElementById('posicao').value = "Meia"; document.getElementById('nivel').value = "3";
+            jogadorEdicaoId = null;
+            document.getElementById('nome').value = ""; document.getElementById('tipo').value = "Mensalista"; document.getElementById('posicao').value = "Meia"; document.getElementById('nivel').value = "3";
             document.getElementById('titulo-form').innerText = "Adicionar ao Elenco"; document.getElementById('card-formulario').classList.remove("editando");
             document.getElementById('btn-adicionar').innerText = "Incluir Jogador"; document.getElementById('btn-cancelar-edicao').style.display = "none";
         }
@@ -1280,43 +1249,40 @@
             const tipo = document.getElementById('tipo').value;
             const posicao = document.getElementById('posicao').value; 
             const nivel = parseInt(document.getElementById('nivel').value); 
-            
             const nome = nomeInput.value.trim().replace(/\s+/g, ' ');
             if (nome === "") return alert("Preencha o nome.");
-
             const nomeExiste = jogadores.some(j => {
                 let nomeCadastrado = (j.nome || "").trim().toLowerCase();
                 return nomeCadastrado === nome.toLowerCase() && j.id !== jogadorEdicaoId;
             });
-
             if (nomeExiste) return alert("⚠️ Já existe um jogador cadastrado com este nome!");
 
             const btn = document.getElementById('btn-adicionar'); 
-            btn.innerText = "Processando..."; 
+            btn.innerText = "Processando...";
             btn.disabled = true;
 
             if (jogadorEdicaoId) {
                 const { error } = await db.from('jogadores').update({ nome, tipo, posicao, nivel }).eq('id', jogadorEdicaoId);
                 if (!error) { 
-                    let jIndex = jogadores.findIndex(j => j.id === jogadorEdicaoId); 
+                    let jIndex = jogadores.findIndex(j => j.id === jogadorEdicaoId);
                     if (jIndex !== -1) { 
-                        jogadores[jIndex].nome = nome; 
+                        jogadores[jIndex].nome = nome;
                         jogadores[jIndex].tipo = tipo; 
                         jogadores[jIndex].posicao = posicao; 
                         jogadores[jIndex].nivel = nivel; 
                     } 
-                    cancelarEdicao(); 
+                    cancelarEdicao();
                     atualizarListas(); 
                 } else {
                     alert("Erro: " + error.message);
                 }
             } else {
-                const { data, error } = await db.from('jogadores').insert([{ nome, tipo, posicao, nivel, pagamentos_json: {}, user_id: currentUser.id }]).select(); 
+                const { data, error } = await db.from('jogadores').insert([{ nome, tipo, posicao, nivel, pagamentos_json: {}, user_id: currentUser.id }]).select();
                 if (!error) { 
-                    nomeInput.value = ""; 
+                    nomeInput.value = "";
                     nomeInput.focus(); 
                     jogadores.push({ ...data[0], presente: false, ordemChegada: 0, pagou: false }); 
-                    atualizarListas(); 
+                    atualizarListas();
                 } else {
                     alert("Erro: " + error.message);
                 }
@@ -1328,9 +1294,9 @@
         async function removerJogador(idNuvem, indexArray) { 
             const nomeJogador = jogadores[indexArray].nome;
             if(confirm(`Tem certeza que deseja remover o jogador(a) "${nomeJogador}" do elenco permanentemente?`)) { 
-                const { error } = await db.from('jogadores').delete().eq('id', idNuvem); 
+                const { error } = await db.from('jogadores').delete().eq('id', idNuvem);
                 if (!error) { 
-                    jogadores.splice(indexArray, 1); 
+                    jogadores.splice(indexArray, 1);
                     salvarEstadoLocal(); 
                     atualizarListas(); 
                     atualizarFinanceiro(); 
@@ -1340,7 +1306,9 @@
             } 
         }
 
-        function salvarEstadoLocal() { let estado = {}; jogadores.forEach(j => { if (j.presente || j.pagou) estado[j.id] = { presente: j.presente, ordemChegada: j.ordemChegada, pagou: j.pagou }; }); localStorage.setItem('baba_presencas_temp', JSON.stringify(estado)); }
+        function salvarEstadoLocal() { let estado = {};
+            jogadores.forEach(j => { if (j.presente || j.pagou) estado[j.id] = { presente: j.presente, ordemChegada: j.ordemChegada, pagou: j.pagou }; }); localStorage.setItem('baba_presencas_temp', JSON.stringify(estado));
+        }
         
         function marcarPresenca(indexArray) { 
             if (jogadores[indexArray].tipo === 'Convidado' && !jogadores[indexArray].pagou) {
@@ -1349,12 +1317,13 @@
             }
             jogadores[indexArray].presente = true; 
             jogadores[indexArray].ordemChegada = Date.now(); 
-            salvarEstadoLocal(); 
+            salvarEstadoLocal();
             atualizarListas(); 
         }
         
         function desmarcarPresenca(indexArray) { 
-            jogadores[indexArray].presente = false; jogadores[indexArray].ordemChegada = 0; jogadores[indexArray].pagou = false; 
+            jogadores[indexArray].presente = false;
+            jogadores[indexArray].ordemChegada = 0; jogadores[indexArray].pagou = false; 
             salvarEstadoLocal(); atualizarListas(); atualizarFinanceiro(); 
         }
 
@@ -1369,24 +1338,25 @@
         }
         
         function alternarPagamentoDiaria(indexArray) { 
-            jogadores[indexArray].pagou = !jogadores[indexArray].pagou; 
+            jogadores[indexArray].pagou = !jogadores[indexArray].pagou;
             if (jogadores[indexArray].tipo === 'Convidado' && !jogadores[indexArray].pagou && jogadores[indexArray].presente) {
                 jogadores[indexArray].presente = false;
                 jogadores[indexArray].ordemChegada = 0;
             }
             salvarEstadoLocal(); 
             atualizarListas(); 
-            atualizarFinanceiro(); 
+            atualizarFinanceiro();
         }
         
         function zerarPresencas() { 
             if(confirm("Encerrar o Baba de hoje?\n\nIsso vai retirar todos da quadra e ZERAR as DIÁRIAS dos convidados.")) { 
-                jogadores.forEach(j => { j.presente = false; j.ordemChegada = 0; j.pagou = false; }); 
+                jogadores.forEach(j => { j.presente = false; j.ordemChegada = 0; j.pagou = false; });
                 salvarEstadoLocal(); limparEstadoRodada(); atualizarListas(); atualizarFinanceiro(); 
                 document.getElementById('resultado').innerHTML = ""; 
                 document.getElementById('btn-ir-placares').style.display = 'none'; 
                 let boxSorteio = document.getElementById('box-codigo-gerado-sorteio');
-                if(boxSorteio) { boxSorteio.style.display = 'none'; boxSorteio.innerHTML = ''; }
+                if(boxSorteio) { boxSorteio.style.display = 'none';
+                boxSorteio.innerHTML = ''; }
             } 
         }
 
@@ -1407,18 +1377,16 @@
         }
 
         function atualizarListas() {
-            const listaElenco = document.getElementById('lista-elenco-admin'); 
+            const listaElenco = document.getElementById('lista-elenco-admin');
             const listaAguardando = document.getElementById('lista-aguardando'); 
             const listaPresentes = document.getElementById('lista-presentes');
             
             if(listaElenco) listaElenco.innerHTML = ""; 
             if(listaAguardando) listaAguardando.innerHTML = ""; 
-            if(listaPresentes) listaPresentes.innerHTML = ""; 
-            
+            if(listaPresentes) listaPresentes.innerHTML = "";
             let presentes = [];
             const mesKey = new Date().toISOString().substring(0, 7);
             let todosOrdenados = [...jogadores].sort((a, b) => a.nome.localeCompare(b.nome));
-            
             todosOrdenados.forEach((j) => {
                 let indexArray = jogadores.findIndex(jog => jog.id === j.id);
                 let tagConvidado = j.tipo === 'Convidado' ? '<span class="badge badge-convidado">C</span>' : '';
@@ -1427,7 +1395,9 @@
                 if(listaElenco) {
                     let btnEdicao = `<button class="btn-small btn-acao-outline" onclick="prepararEdicao(${indexArray})">✏️</button>`;
                     let btnExcluir = `<button class="btn-small btn-acao-outline" style="color:var(--danger); border-color:var(--danger);" onclick="removerJogador('${j.id}', ${indexArray})">X</button>`;
-                    let btnMensal = j.tipo === 'Mensalista' ? (j.pagamentos_json && j.pagamentos_json[mesKey] === true ? `<button class="btn-small btn-pagou" onclick="alternarMensalidade('${j.id}', ${indexArray})">Pago</button>` : `<button class="btn-small btn-devendo" onclick="alternarMensalidade('${j.id}', ${indexArray})">Pendente</button>`) : `<span style="font-size:10px; color:var(--text-muted);">Diária local</span>`;
+                    let btnMensal = j.tipo === 'Mensalista' ? (j.pagamentos_json && 
+                    j.pagamentos_json[mesKey] === true ? `<button class="btn-small btn-pagou" onclick="alternarMensalidade('${j.id}', ${indexArray})">Pago</button>` : `<button class="btn-small btn-devendo" onclick="alternarMensalidade('${j.id}', ${indexArray})">Pendente</button>`) : `<span style="font-size:10px;
+                    color:var(--text-muted);">Diária local</span>`;
                     
                     listaElenco.innerHTML += `
                     <div class="linha-jogador" data-nome="${j.nome}">
@@ -1456,9 +1426,7 @@
                     }
                 }
             });
-
             presentes.sort((a, b) => { if (a.tipo === 'Mensalista' && b.tipo !== 'Mensalista') return -1; if (a.tipo !== 'Mensalista' && b.tipo === 'Mensalista') return 1; return a.ordemChegada - b.ordemChegada; });
-
             presentes.forEach((j, pos) => {
                 let tagConvidado = j.tipo === 'Convidado' ? '<span class="badge badge-convidado">C</span>' : '';
                 
@@ -1472,9 +1440,11 @@
                 if(listaPresentes) {
                     listaPresentes.innerHTML += `
                     <div class="linha-jogador grid-prontos">
-                        <div class="col-nome"><span class="badge" style="background:var(--dark); color:white;">${pos + 1}º</span> ${tagConvidado} ${j.nome}</div>
+                        <div class="col-nome"><span class="badge" style="background:var(--dark);
+                    color:white;">${pos + 1}º</span> ${tagConvidado} ${j.nome}</div>
                         <div class="col-status">${controleFinanceiro}</div>
-                        <div class="col-acoes"><button class="btn-small btn-acao-outline hidden-public" style="color:var(--danger); border-color:var(--danger);" onclick="desmarcarPresenca(${j.indexArray})">Retirar</button></div>
+                        <div class="col-acoes"><button class="btn-small btn-acao-outline hidden-public" style="color:var(--danger);
+                    border-color:var(--danger);" onclick="desmarcarPresenca(${j.indexArray})">Retirar</button></div>
                     </div>`;
                 }
             });
@@ -1489,12 +1459,15 @@
         function embaralhar(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } return array; }
 
         function iniciarSorteioComSuspense() {
-            let presentes = jogadores.filter(j => j.presente).sort((a, b) => { if (a.tipo === 'Mensalista' && b.tipo !== 'Mensalista') return -1; if (a.tipo !== 'Mensalista' && b.tipo === 'Mensalista') return 1; return a.ordemChegada - b.ordemChegada; });
+            let presentes = jogadores.filter(j => 
+            j.presente).sort((a, b) => { if (a.tipo === 'Mensalista' && b.tipo !== 'Mensalista') return -1;
+            if (a.tipo !== 'Mensalista' && b.tipo === 'Mensalista') return 1; return a.ordemChegada - b.ordemChegada; });
             if (presentes.length < 2) return alert("Adicione pelo menos 2 atletas na lista de Prontos.");
             
             document.getElementById('btn-ir-placares').style.display = 'none';
             let boxSorteio = document.getElementById('box-codigo-gerado-sorteio');
-            if(boxSorteio) { boxSorteio.style.display = 'none'; boxSorteio.innerHTML = ''; }
+            if(boxSorteio) { boxSorteio.style.display = 'none'; boxSorteio.innerHTML = '';
+            }
 
             const resultado = document.getElementById('resultado');
             resultado.innerHTML = `<div style="text-align:center; padding:40px; font-weight:bold; color:var(--primary);">Processando Algoritmo...</div>`;
@@ -1502,22 +1475,24 @@
         }
 
         async function sortearTimes(presentesBrutos) {
-            let presentes = presentesBrutos; 
+            let presentes = presentesBrutos;
             let modo = document.getElementById('modo-sorteio').value; let priorizarOrdem = document.getElementById('priorizar-ordem').checked;
-            let incluiGoleiros = (modo === '14' || modo === 'todos'); 
-            
+            let incluiGoleiros = (modo === '14' || modo === 'todos');
             window.dataPartidaAtual = new Date().toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
 
             let jogadoresValidos = presentes; let reservas = [];
-            if (!incluiGoleiros) { reservas.push(...presentes.filter(j => j.posicao === 'Goleiro')); jogadoresValidos = presentes.filter(j => j.posicao !== 'Goleiro'); }
+            if (!incluiGoleiros) { reservas.push(...presentes.filter(j => j.posicao === 'Goleiro')); jogadoresValidos = presentes.filter(j => j.posicao !== 'Goleiro');
+            }
 
-            let tamanhoIdeal = currentProfile && currentProfile.jogadores_por_time ? parseInt(currentProfile.jogadores_por_time) : 7;
+            let tamanhoIdeal = currentProfile && currentProfile.jogadores_por_time ?
+            parseInt(currentProfile.jogadores_por_time) : 7;
             let maxTitulares = jogadoresValidos.length;
-            if (modo === '12') maxTitulares = 12; 
+            if (modo === '12') maxTitulares = 12;
             else if (modo === '14') maxTitulares = 14;
 
             let titulares = jogadoresValidos.slice(0, maxTitulares); reservas.push(...jogadoresValidos.slice(maxTitulares));
-            let times = []; let tamanhoPartida = tamanhoIdeal * 2; 
+            let times = [];
+            let tamanhoPartida = tamanhoIdeal * 2; 
 
             if (!priorizarOrdem && (modo === 'todos' || modo === 'todos_sem_goleiro')) {
                 let qtdTimesGlobais = Math.ceil(titulares.length / tamanhoIdeal);
@@ -1525,29 +1500,29 @@
                 if (qtdTimesGlobais > 0) tamanhoPartida = titulares.length;
             }
 
-            const getSomaNotas = (time) => time.reduce((acc, j) => acc + (Number(j.nivel) || 3), 0); 
+            const getSomaNotas = (time) => time.reduce((acc, j) => acc + (Number(j.nivel) || 3), 0);
             const getQtdPosicao = (time, pos) => time.filter(j => j.posicao === pos).length;
-
             for (let i = 0; i < titulares.length; i += tamanhoPartida) {
-                let chunk = titulares.slice(i, i + tamanhoPartida); let numTimesNoChunk;
-                if (modo === '12' || modo === '14') numTimesNoChunk = 2; 
-                else { if (!priorizarOrdem) { numTimesNoChunk = Math.ceil(titulares.length / tamanhoIdeal); if (numTimesNoChunk < 2) numTimesNoChunk = 2; } else numTimesNoChunk = Math.ceil(chunk.length / tamanhoIdeal); }
+                let chunk = titulares.slice(i, i + tamanhoPartida);
+                let numTimesNoChunk;
+                if (modo === '12' || modo === '14') numTimesNoChunk = 2;
+                else { if (!priorizarOrdem) { numTimesNoChunk = Math.ceil(titulares.length / tamanhoIdeal); if (numTimesNoChunk < 2) numTimesNoChunk = 2;
+                } else numTimesNoChunk = Math.ceil(chunk.length / tamanhoIdeal); }
                 if (numTimesNoChunk === 0) continue;
-
                 let goleirosChunk = embaralhar(chunk.filter(j => j.posicao === 'Goleiro')); let linhaChunk = embaralhar(chunk.filter(j => j.posicao !== 'Goleiro'));
                 let timesLocais = Array.from({ length: numTimesNoChunk }, () => []);
+                if (incluiGoleiros) { for (let t = 0; t < numTimesNoChunk; t++) { if (goleirosChunk.length > 0) timesLocais[t].push(goleirosChunk.shift()); } reservas.push(...goleirosChunk);
+                }
 
-                if (incluiGoleiros) { for (let t = 0; t < numTimesNoChunk; t++) { if (goleirosChunk.length > 0) timesLocais[t].push(goleirosChunk.shift()); } reservas.push(...goleirosChunk); }
-
-                const posicoes = ["Zagueiro", "Lateral", "Meia", "Atacante", "Linha"]; const grupos = {}; posicoes.forEach(p => grupos[p] = []);
+                const posicoes = ["Zagueiro", "Lateral", "Meia", "Atacante", "Linha"];
+                const grupos = {}; posicoes.forEach(p => grupos[p] = []);
                 linhaChunk.forEach(j => { if (grupos[j.posicao]) grupos[j.posicao].push(j); else grupos["Linha"].push(j); });
-                
                 posicoes.forEach(p => grupos[p].sort((a, b) => (Number(b.nivel) || 3) - (Number(a.nivel) || 3)));
-                
                 posicoes.forEach(pos => {
                     grupos[pos].forEach(jogador => {
                         let minTam = Math.min(...timesLocais.map(t => t.length)); let elegiveis = timesLocais.filter(t => t.length === minTam);
-                        let minPos = Math.min(...elegiveis.map(t => getQtdPosicao(t, pos))); let menosPos = elegiveis.filter(t => getQtdPosicao(t, pos) === minPos);
+                        let minPos = Math.min(...elegiveis.map(t => getQtdPosicao(t, pos))); let menosPos = elegiveis.filter(t => getQtdPosicao(t, pos) === 
+                        minPos);
                         menosPos.sort((a, b) => getSomaNotas(a) - getSomaNotas(b)); menosPos[0].push(jogador);
                     });
                 });
@@ -1559,10 +1534,8 @@
                 let cor = coresTimes[idx % coresTimes.length];
                 window.timesSorteadosObjs.push({ id: idx, corBase: cor, nome: cor, jogadores: timeArr });
             });
-
             window.reservasSorteados = reservas; window.partidaSalva = false;
             window.jogosDaRodada = []; window.filaEquipes = window.timesSorteadosObjs.map(t => t.id); window.golsTempA = []; window.golsTempB = [];
-            
             atualizarFinanceiro(); 
             await criarPartidaInicialNoBanco();
             salvarEstadoCompleto();
@@ -1573,14 +1546,14 @@
 
         async function criarPartidaInicialNoBanco() {
             try {
-                let codigoAleatorio = window.codigoAcessoAtual || Math.random().toString(36).substring(2, 8).toUpperCase();
+                let codigoAleatorio = window.codigoAcessoAtual ||
+                Math.random().toString(36).substring(2, 8).toUpperCase();
                 let valorConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
                 let valorMens = parseFloat(document.getElementById('valor-mensalista').value) || 0;
                 
                 let qJogadoresEmQuadra = 0;
                 window.timesSorteadosObjs.forEach(t => qJogadoresEmQuadra += t.jogadores.length);
                 if (window.reservasSorteados) qJogadoresEmQuadra += window.reservasSorteados.length;
-
                 if (window.partidaAtualId) {
                     await db.from('partidas').update({
                         quantidade_jogadores: qJogadoresEmQuadra,
@@ -1604,7 +1577,6 @@
                         escudo_url: currentProfile ? currentProfile.escudo_url : "",
                         user_id: currentUser.id
                     }]).select();
-
                     if (errP) throw errP;
                     window.partidaAtualId = pData[0].id;
                     window.codigoAcessoAtual = codigoAleatorio;
@@ -1612,7 +1584,6 @@
                 }
 
                 await db.from('presencas').delete().eq('partida_id', window.partidaAtualId);
-
                 let presencas = [];
                 window.timesSorteadosObjs.forEach((t) => { 
                     t.jogadores.forEach(j => presencas.push({ partida_id: window.partidaAtualId, jogador_id: j.id, pagou: j.pagou || false, equipe: t.nome })); 
@@ -1621,7 +1592,6 @@
                     window.reservasSorteados.forEach(j => presencas.push({ partida_id: window.partidaAtualId, jogador_id: j.id, pagou: j.pagou || false, equipe: "Reserva" }));
                 }
                 if(presencas.length > 0) await db.from('presencas').insert(presencas);
-
                 exibirBoxCodigoSorteio(window.codigoAcessoAtual);
             } catch(err) {
                 console.error("Erro ao gerar partida automática:", err.message);
@@ -1635,6 +1605,7 @@
                 t.jogadores.forEach(j => {
                     texto += `• ${j.nome} ${j.posicao !== 'Linha' ? '('+j.posicao+')' : ''}\n`;
                 });
+                
                 texto += "\n";
             });
             if (window.reservasSorteados && window.reservasSorteados.length > 0) {
@@ -1656,7 +1627,6 @@
             let mesKey = hoje.toISOString().substring(0, 7);
             let nomeMes = hoje.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
             document.getElementById('label-mes-relatorio').innerText = nomeMes;
-
             let valMens = parseFloat(document.getElementById('valor-mensalista').value) || 70;
             const { data: partidas } = await db.from('partidas').select('*').like('data_sorteio', `%${hoje.getFullYear()}%`);
             
@@ -1666,7 +1636,6 @@
             }
 
             let html = `<table class="relatorio-tabela">`;
-            
             html += `<tr><th colspan="2">👥 Mensalidades Pagas no Mês</th></tr>`;
             let mensalistas = jogadores.filter(j => j.tipo === 'Mensalista');
             let totalMensalidades = 0;
@@ -1678,13 +1647,13 @@
                     let pago = j.pagamentos_json && j.pagamentos_json[mesKey] === true;
                     if(pago) totalMensalidades += valMens;
                     let statusText = pago ? `<span style="color:var(--supabase); font-weight:bold;">✅ Pago</span>` : `<span style="color:var(--danger); font-weight:bold;">❌ Pendente</span>`;
+               
                     htmlMensalistas += `<div class="item-mensalista"><span>${j.nome}</span> <span>${statusText}</span></div>`;
                 });
                 htmlMensalistas += `</div>`;
                 html += `<tr><td colspan="2" style="padding: 0;">${htmlMensalistas}</td></tr>`;
             }
             html += `<tr><td><strong>Subtotal Mensalidades:</strong></td><td style="text-align:right; font-weight:bold; color:var(--supabase);">R$ ${totalMensalidades.toFixed(2)}</td></tr>`;
-
             html += `<tr><th colspan="2" style="padding-top:12px;">🎟️ Arrecadação de Convidados (Por Rodada)</th></tr>`;
             let totalConvidados = 0;
             if(partidasDoMes.length > 0) {
@@ -1692,51 +1661,65 @@
                     let vConv = p.valor_por_convidado || 25;
                     let qtdConv = p.renda_convidados || 0;
                     let subConv = qtdConv * vConv;
+   
                     totalConvidados += subConv;
                     let dataF = p.data_sorteio ? new Date(p.data_sorteio).toLocaleDateString('pt-BR') : `Rodada ${idx+1}`;
                     if(qtdConv > 0) {
-                        html += `<tr><td>Rodada (${dataF}): ${qtdConv} convidados</td><td style="text-align:right;">R$ ${subConv.toFixed(2)}</td></tr>`;
+                        html += `<tr><td>Rodada (${dataF}): ${qtdConv} 
+convidados</td><td style="text-align:right;">R$ ${subConv.toFixed(2)}</td></tr>`;
                     }
                 });
             } else {
                 html += `<tr><td colspan="2" style="color:var(--text-muted);">Nenhuma rodada finalizada registrada neste mês.</td></tr>`;
             }
             html += `<tr><td><strong>Subtotal Convidados:</strong></td><td style="text-align:right; font-weight:bold; color:var(--supabase);">R$ ${totalConvidados.toFixed(2)}</td></tr>`;
-
+            
             html += `<tr><th colspan="2" style="padding-top:12px;">📉 Detalhamento de Despesas (Custos)</th></tr>`;
             let totalCustos = 0;
 
-            let custosMensaisMes = (window.despesasMensaisGlobais || []).filter(c => c.data === mesKey);
-            custosMensaisMes.forEach(c => {
-                totalCustos += c.valor;
-                html += `<tr><td>${c.desc} <span style="font-size:10px; color:var(--text-muted);">(Fixo Mensal)</span></td><td style="text-align:right;">R$ ${c.valor.toFixed(2)}</td></tr>`;
+            let htmlCustosDiarios = `<div class="grid-relatorio-custos">`;
+            let temCustos = false;
+
+            // LER DESPESAS DO NOVO LIVRO CAIXA UNIFICADO
+            let despesasDoMes = (window.despesasMensaisGlobais || []).filter(c => {
+                let dIso = c.data || "";
+                return dIso.substring(0, 7) === mesKey;
             });
 
+            despesasDoMes.forEach(c => {
+                totalCustos += c.valor;
+                temCustos = true;
+                let tipoLabel = c.tipo === 'mensal' ? 'Fixo' : 'Avulso';
+                let dataBr = (c.data && c.tipo !== 'mensal') ? c.data.split('-').reverse().join('/') : '';
+                let dStr = dataBr ? ` <span style="color:var(--text-muted); font-size:10px;">(${dataBr})</span>` : '';
+                
+                htmlCustosDiarios += `<div class="item-custo-relatorio"><span>${c.desc}${dStr} <span style="color:var(--text-muted); font-size:10px;">(${tipoLabel})</span></span> <strong class="valor-negativo">R$ ${c.valor.toFixed(2)}</strong></div>`;
+            });
+
+            // LER DESPESAS ANTIGAS (LEGADO - PRESAS NAS PARTIDAS VELHAS)
             if(partidasDoMes.length > 0) {
                 partidasDoMes.forEach(p => {
-                    if(window.partidaAtualId && p.id === window.partidaAtualId) return; 
                     (p.custos_json || []).forEach(c => {
                         totalCustos += c.valor;
-                        html += `<tr><td>${c.desc} <span style="font-size:10px; color:var(--text-muted);">(Diário)</span></td><td style="text-align:right;">R$ ${c.valor.toFixed(2)}</td></tr>`;
+                        temCustos = true;
+                        let rawDate = p.data_sorteio || p.created_at || "";
+                        let dData = rawDate ? rawDate.split('T')[0].split('-').reverse().join('/') : "Antigo";
+                        htmlCustosDiarios += `<div class="item-custo-relatorio"><span>${c.desc} <span style="color:var(--text-muted); font-size:10px;">(${dData} - Legado)</span></span> <strong class="valor-negativo">R$ ${c.valor.toFixed(2)}</strong></div>`;
                     });
                 });
             }
 
-            if(window.custosDaRodada && window.custosDaRodada.length > 0) {
-                window.custosDaRodada.forEach(c => {
-                    totalCustos += c.valor;
-                    html += `<tr><td>${c.desc} <span style="font-size:10px; color:var(--text-muted);">(Diário - Atual)</span></td><td style="text-align:right;">R$ ${c.valor.toFixed(2)}</td></tr>`;
-                });
+            htmlCustosDiarios += `</div>`;
+
+            if(temCustos) {
+                html += `<tr><td colspan="2" style="padding: 0 0 10px 0;">${htmlCustosDiarios}</td></tr>`;
+            } else {
+                html += `<tr><td colspan="2" style="color:var(--text-muted);">Nenhuma despesa registrada no mês selecionado.</td></tr>`;
             }
 
-            if(totalCustos === 0) {
-                html += `<tr><td colspan="2" style="color:var(--text-muted);">Nenhuma despesa registrada no mês.</td></tr>`;
-            }
             html += `<tr><td><strong>Total de Despesas:</strong></td><td style="text-align:right; font-weight:bold; color:var(--danger);">R$ ${totalCustos.toFixed(2)}</td></tr>`;
-
             let receitaTotal = totalMensalidades + totalConvidados;
             let saldoMensal = receitaTotal - totalCustos;
-
             html += `<tr><th colspan="2" style="padding-top:15px; background:var(--dark); color:white; text-align:center;">💰 BALANÇO FINANCEIRO DO MÊS</th></tr>`;
             html += `<tr><td>Receita Total (Mensalidades + Convidados):</td><td style="text-align:right; font-weight:bold; color:var(--supabase);">R$ ${receitaTotal.toFixed(2)}</td></tr>`;
             html += `<tr><td>Despesas Totais:</td><td style="text-align:right; font-weight:bold; color:var(--danger);">R$ ${totalCustos.toFixed(2)}</td></tr>`;
@@ -1752,16 +1735,17 @@
             let textoWppEscalacao = gerarTextoWhatsAppEscalacao();
 
             let dataBoxStr = window.dataPartidaAtual || new Date().toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
-
             let boxCod = document.getElementById('box-codigo-gerado-sorteio');
             if (boxCod) {
                 boxCod.innerHTML = `
                     <div style="font-size:13px; color:var(--text-muted); font-weight:700; margin-bottom:5px;">Código do jogo (${dataBoxStr}) para os jogadores</div>
                     <div style="color:var(--primary); font-size:28px; line-height:1; margin-bottom:15px;">${codigo}</div>
-                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <div style="display: 
+flex; flex-direction: column; gap: 8px;">
                         <a href="https://api.whatsapp.com/send?text=${textoWppEscalacao}" target="_blank" class="btn-whatsapp">👥 Compartilhar Escalação no WhatsApp</a>
                         <a href="https://api.whatsapp.com/send?text=${textoWpp}" target="_blank" style="display:inline-block; background:var(--dark); color:white; padding:12px 20px; border-radius:8px; text-decoration:none; font-size:14px; font-weight:bold; width:100%; box-sizing:border-box;">📱 Compartilhar Link Geral</a>
                     </div>
+     
                 `;
                 boxCod.style.display = 'block';
             }
@@ -1781,18 +1765,18 @@
         }
 
         function renderizarSumula() {
-            const container = document.getElementById('container-sumula'); 
+            const container = document.getElementById('container-sumula');
             const aviso = document.getElementById('aviso-sem-sorteio');
             const dataLabel = document.getElementById('data-rodada-label');
 
             if((!window.timesSorteadosObjs || window.timesSorteadosObjs.length === 0) && window.jogosDaRodada.length === 0) {
-                container.style.display = 'none'; 
+                container.style.display = 'none';
                 aviso.style.display = 'block'; 
                 if(dataLabel) dataLabel.innerText = "";
                 return;
             }
 
-            aviso.style.display = 'none'; 
+            aviso.style.display = 'none';
             container.style.display = 'block';
 
             if(window.codigoAcessoAtual) {
@@ -1800,12 +1784,13 @@
             }
 
             if(dataLabel) {
-                let dataExibicao = window.dataPartidaAtual || new Date().toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
+                let dataExibicao = window.dataPartidaAtual ||
+                new Date().toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
                 dataLabel.innerText = `📅 Data da Rodada: ${dataExibicao}`;
             }
             
             if (window.timesSorteadosObjs && window.timesSorteadosObjs.length > 0 && window.filaEquipes.length === 0 && !window.partidaSalva) {
-                window.filaEquipes = window.timesSorteadosObjs.map(t => t.id); 
+                window.filaEquipes = window.timesSorteadosObjs.map(t => t.id);
             }
             
             if (window.timesSorteadosObjs && window.timesSorteadosObjs.length > 0) {
@@ -1830,9 +1815,7 @@
             let timeB = window.timesSorteadosObjs.find(t => t.id === window.filaEquipes[1]);
             let proximoTime = window.timesSorteadosObjs.find(t => t.id === window.filaEquipes[2]);
             let restantesFila = window.filaEquipes.slice(3).map(id => window.timesSorteadosObjs.find(t => t.id === id)?.nome).filter(Boolean);
-
             let html = `<div style="background: white; border: 1px solid var(--border); border-radius: 12px; padding: 15px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">`;
-            
             if (timeA && timeB) {
                 html += `<div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px; display: flex; align-items: center; gap: 5px;">⚡ Em Quadra Agora</div>`;
                 html += `<div style="font-size: 15px; font-weight: 800; color: var(--dark); margin-bottom: 12px; background: var(--light); padding: 10px; border-radius: 8px; text-align: center;">${timeA.nome} vs ${timeB.nome}</div>`;
@@ -1863,14 +1846,15 @@
                 let corHex = getCorHex(t.corBase);
                 let html = `<div class="team" style="border-top-color: ${corHex};">
                     <div style="display:flex; align-items:center; gap:5px; margin-bottom:10px;">
-                        <span style="font-size:18px;">${emoji}</span>
+       
+                         <span style="font-size:18px;">${emoji}</span>
                         <input type="text" value="${t.nome}" onchange="atualizarNomeTime(${t.id}, this.value)" class="input-nome-time" placeholder="Nome do Time" style="color: ${corHex};" ${window.isModoPublico ? 'disabled' : ''}>
                     </div>
                     <ul>`;
+   
                 t.jogadores.forEach(j => { html += `<li><strong>${j.nome}</strong> ${j.posicao!=='Linha'?`<span class="badge badge-posicao">${j.posicao}</span>`:''}</li>`; });
                 containerEscalacao.innerHTML += html + `</ul></div>`;
             });
-
             if (window.reservasSorteados && window.reservasSorteados.length > 0) {
                 let html = `<div class="team team-reservas"><h3 style="padding:5px; font-size:15px;">Reservas</h3><ul>`;
                 window.reservasSorteados.forEach(j => html += `<li><strong>${j.nome}</strong></li>`);
@@ -1882,17 +1866,19 @@
             let options = '';
             window.timesSorteadosObjs.forEach((t) => { options += `<option value="${t.id}">${t.nome}</option>`; });
             const selA = document.getElementById('sumula_equipe_a'); const selB = document.getElementById('sumula_equipe_b');
-            selA.innerHTML = options; selB.innerHTML = options;
+            selA.innerHTML = options;
+            selB.innerHTML = options;
             
             if (window.filaEquipes.length >= 2) { 
-                selA.value = window.filaEquipes[0]; 
+                selA.value = window.filaEquipes[0];
                 selB.value = window.filaEquipes[1]; 
             }
             atualizarFilaUI();
         }
 
         function limparGolsTemp(lado) {
-            if(lado === 'A') window.golsTempA = []; else window.golsTempB = [];
+            if(lado === 'A') window.golsTempA = [];
+            else window.golsTempB = [];
             atualizarPlacarTempUI(); salvarEstadoCompleto();
         }
 
@@ -1903,24 +1889,27 @@
             const containerJogadores = document.getElementById('lista-jogadores-gol');
             containerJogadores.innerHTML = '';
             document.getElementById('titulo-modal-gol').innerText = `Gol do(a) ${timeObj.nome}`;
-
             if(timeObj) {
                 let jogadoresTime = [...timeObj.jogadores].sort((a,b) => a.nome.localeCompare(b.nome));
                 jogadoresTime.forEach(j => { containerJogadores.innerHTML += `<button class="btn-jogador-gol" onclick="registrarGol('${lado}', '${j.nome}')">⚽ ${j.nome}</button>`; });
             }
-            containerJogadores.innerHTML += `<button class="btn-jogador-gol" style="background:#fee2e2; color:var(--danger); border-color:var(--danger);" onclick="registrarGol('${lado}', 'Gol Contra')">⚠️ Gol Contra</button>`;
+            containerJogadores.innerHTML += `<button class="btn-jogador-gol" style="background:#fee2e2; color:var(--danger); border-color:var(--danger);"
+onclick="registrarGol('${lado}', 'Gol Contra')">⚠️ Gol Contra</button>`;
             document.getElementById('modal-gol').style.display = 'flex';
         }
 
-        function fecharModalGol() { document.getElementById('modal-gol').style.display = 'none'; }
+        function fecharModalGol() { document.getElementById('modal-gol').style.display = 'none';
+        }
 
         function registrarGol(lado, nomeJogador) {
-            if(lado === 'A') window.golsTempA.push(nomeJogador); else window.golsTempB.push(nomeJogador);
+            if(lado === 'A') window.golsTempA.push(nomeJogador);
+            else window.golsTempB.push(nomeJogador);
             fecharModalGol(); atualizarPlacarTempUI(); salvarEstadoCompleto();
         }
 
         function removerGolTemp(lado, index) {
-            if(lado === 'A') window.golsTempA.splice(index, 1); else window.golsTempB.splice(index, 1);
+            if(lado === 'A') window.golsTempA.splice(index, 1);
+            else window.golsTempB.splice(index, 1);
             atualizarPlacarTempUI(); salvarEstadoCompleto();
         }
 
@@ -1931,7 +1920,8 @@
             let htmlA = ''; window.golsTempA.forEach((nome, i) => htmlA += `<div class="item-gol-arena">${nome} <span class="remover-gol-btn-arena" onclick="removerGolTemp('A', ${i})">x</span></div>`);
             document.getElementById('lista-gols-a').innerHTML = htmlA || '<span style="opacity:0.5;">Nenhum gol</span>';
             
-            let htmlB = ''; window.golsTempB.forEach((nome, i) => htmlB += `<div class="item-gol-arena">${nome} <span class="remover-gol-btn-arena" onclick="removerGolTemp('B', ${i})">x</span></div>`);
+            let htmlB = '';
+            window.golsTempB.forEach((nome, i) => htmlB += `<div class="item-gol-arena">${nome} <span class="remover-gol-btn-arena" onclick="removerGolTemp('B', ${i})">x</span></div>`);
             document.getElementById('lista-gols-b').innerHTML = htmlB || '<span style="opacity:0.5;">Nenhum gol</span>';
         }
 
@@ -1943,30 +1933,32 @@
         }
 
         async function adicionarJogoNaSumula() {
-            let idA = parseInt(document.getElementById('sumula_equipe_a').value); 
+            let idA = parseInt(document.getElementById('sumula_equipe_a').value);
             let idB = parseInt(document.getElementById('sumula_equipe_b').value);
             if(idA === idB) return alert("As equipes devem ser diferentes!");
 
-            let gaList = [...window.golsTempA]; let gbList = [...window.golsTempB];
+            let gaList = [...window.golsTempA];
+            let gbList = [...window.golsTempB];
             let ga = gaList.length; let gb = gbList.length;
 
             let nomeA = window.timesSorteadosObjs.find(t=>t.id === idA).nome;
             let nomeB = window.timesSorteadosObjs.find(t=>t.id === idB).nome;
 
             window.jogosDaRodada.push({ equipe_a_id: idA, equipe_a_nome: nomeA, gols_a: gaList, equipe_b_id: idB, equipe_b_nome: nomeB, gols_b: gbList });
-            
             let artilheiros = {};
             window.jogosDaRodada.forEach(jogo => {
                 jogo.gols_a.forEach(nome => { if(nome !== 'Gol Contra') artilheiros[nome] = (artilheiros[nome] || 0) + 1; });
                 jogo.gols_b.forEach(nome => { if(nome !== 'Gol Contra') artilheiros[nome] = (artilheiros[nome] || 0) + 1; });
             });
-
             window.filaEquipes = window.filaEquipes.filter(id => id !== idA && id !== idB);
 
-            if (ga > gb) { window.filaEquipes.unshift(idA); window.filaEquipes.push(idB); } 
-            else if (gb > ga) { window.filaEquipes.unshift(idB); window.filaEquipes.push(idA); } 
+            if (ga > gb) { window.filaEquipes.unshift(idA); window.filaEquipes.push(idB);
+            } 
+            else if (gb > ga) { window.filaEquipes.unshift(idB);
+            window.filaEquipes.push(idA); } 
             else {
-                let caraOuCoroa = Math.random() > 0.5; let pFim = caraOuCoroa ? idA : idB; let sFim = caraOuCoroa ? idB : idA;
+                let caraOuCoroa = Math.random() > 0.5;
+                let pFim = caraOuCoroa ? idA : idB; let sFim = caraOuCoroa ? idB : idA;
                 window.filaEquipes.push(pFim, sFim);
                 let nomePfim = window.timesSorteadosObjs.find(t=>t.id === pFim).nome; let nomeSfim = window.timesSorteadosObjs.find(t=>t.id === sFim).nome;
                 alert(`⚖️ EMPATE! As duas equipes saem da quadra.\nSorteio da fila: ${nomePfim} volta antes de ${nomeSfim}.`);
@@ -1977,7 +1969,8 @@
                     jogos_json: window.jogosDaRodada,
                     artilheiros_json: artilheiros,
                     fila_json: window.filaEquipes
-                }).eq('id', window.partidaAtualId);
+       
+                 }).eq('id', window.partidaAtualId);
             }
 
             limparGolsTemp('A'); limparGolsTemp('B'); atualizarSelectsEquipes(); atualizarFilaUI(); atualizarListaJogosDaRodada(); salvarEstadoCompleto();
@@ -1991,29 +1984,31 @@
         }
 
         function atualizarListaJogosDaRodada() {
-            const lista = document.getElementById('lista-jogos-registrados'); 
+            const lista = document.getElementById('lista-jogos-registrados');
             lista.innerHTML = '';
             document.getElementById('qtd-jogos-reg').innerText = window.jogosDaRodada.length;
             
             if(window.jogosDaRodada.length === 0) { 
-                lista.innerHTML = '<p style="color:var(--text-muted); font-size:13px; text-align:center;">Nenhum jogo confirmado</p>'; 
+                lista.innerHTML = '<p style="color:var(--text-muted); font-size:13px; text-align:center;">Nenhum jogo confirmado</p>';
                 return; 
             }
             
             let htmlCompleto = '';
-            
             window.jogosDaRodada.forEach((j, originalIndex) => {
                 let numJogo = originalIndex + 1;
                 let btnExcluirHtml = window.partidaSalva ? '' : `<button class="btn-excluir-mini" onclick="removerJogo(${originalIndex})">X</button>`;
                 let autoresA = formatarGolsResumo(j.gols_a);
                 let autoresB = formatarGolsResumo(j.gols_b);
+             
                 
                 let detalhesGolsHtml = '';
                 if (autoresA || autoresB) {
                     detalhesGolsHtml = `
-                        <div style="font-size: 11px; color: var(--text-muted); display: flex; justify-content: space-between; margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border);">
+                        <div style="font-size: 11px; color: var(--text-muted); display: flex; justify-content: space-between; margin-top: 6px; padding-top: 
+6px; border-top: 1px dashed var(--border);">
                             <span style="flex: 1; text-align: right; padding-right: 10px;">${autoresA ? '⚽ ' + autoresA : ''}</span>
                             <span style="flex: 1; text-align: left; padding-left: 10px;">${autoresB ? '⚽ ' + autoresB : ''}</span>
+              
                         </div>
                     `;
                 }
@@ -2021,57 +2016,65 @@
                 let cardHtml = `
                     <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 8px;">
                         <div style="font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 8px; display: flex; justify-content: space-between;">
-                            <span>Partida ${numJogo}</span>
+           
+                           <span>Partida ${numJogo}</span>
                             ${btnExcluirHtml}
                         </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 600;">
+                        <div style="display: flex; justify-content: space-between; align-items: 
+center; font-size: 14px; font-weight: 600;">
                             <div style="flex:1; text-align:right;">${j.equipe_a_nome}</div>
                             <div class="placar-box" style="margin: 0 10px;">${j.gols_a.length} x ${j.gols_b.length}</div>
                             <div style="flex:1; text-align:left;">${j.equipe_b_nome}</div>
+  
                         </div>
                         ${detalhesGolsHtml}
                     </div>`;
-                
                 htmlCompleto = cardHtml + htmlCompleto;
             });
             
             lista.innerHTML = htmlCompleto;
 
             const painelArena = document.getElementById('painel-placar-arena');
-            if(painelArena) painelArena.style.display = window.partidaSalva ? 'none' : 'block';
+            if(painelArena) painelArena.style.display = window.partidaSalva ?
+            'none' : 'block';
 
             const btnEncerrar = document.getElementById('btn-encerrar-baba');
             if(btnEncerrar) btnEncerrar.style.display = window.partidaSalva ? 'none' : 'block';
         }
 
         function renderizarPainelDoDiaComJogos(jogosArr, dataStr) {
-            let timesStats = {}; let artilheiros = {};
+            let timesStats = {};
+            let artilheiros = {};
 
             jogosArr.forEach(j => {
                 if(!timesStats[j.equipe_a_nome]) timesStats[j.equipe_a_nome] = { j:0, v:0, e:0, d:0, gp:0, gc:0, pts:0 };
                 if(!timesStats[j.equipe_b_nome]) timesStats[j.equipe_b_nome] = { j:0, v:0, e:0, d:0, gp:0, gc:0, pts:0 };
                 
                 let ga = j.gols_a.length; let gb = j.gols_b.length;
-                let a = timesStats[j.equipe_a_nome]; let b = timesStats[j.equipe_b_nome];
+ 
+               let a = timesStats[j.equipe_a_nome]; let b = timesStats[j.equipe_b_nome];
                 
                 a.j++; b.j++; a.gp += ga; a.gc += gb; b.gp += gb; b.gc += ga;
                 
-                if(ga > gb) { a.v++; a.pts+=3; b.d++; }
+                if(ga 
+> gb) { a.v++; a.pts+=3; b.d++; }
                 else if(gb > ga) { b.v++; b.pts+=3; a.d++; }
                 else { a.e++; b.e++; a.pts+=1; b.pts+=1; }
 
                 j.gols_a.forEach(nome => { if(nome !== 'Gol Contra') artilheiros[nome] = (artilheiros[nome] || 0) + 1; });
-                j.gols_b.forEach(nome => { if(nome !== 'Gol Contra') artilheiros[nome] = (artilheiros[nome] || 0) + 1; });
+                j.gols_b.forEach(nome => 
+{ if(nome !== 'Gol Contra') artilheiros[nome] = (artilheiros[nome] || 0) + 1; });
             });
-
             let rankTimes = Object.entries(timesStats).sort((a, b) => {
                 if(b[1].pts !== a[1].pts) return b[1].pts - a[1].pts; 
                 let sgA = a[1].gp - a[1].gc; let sgB = b[1].gp - b[1].gc;
                 if(sgA !== sgB) return sgB - sgA; 
                 return b[1].gp - a[1].gp; 
-            });
+ 
+             });
 
-            let dataExibicao = window.dataPartidaAtual || new Date().toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
+            let dataExibicao = window.dataPartidaAtual ||
+            new Date().toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
             if (dataStr) {
                 let d = new Date(dataStr);
                 if (!isNaN(d.getTime())) {
@@ -2087,14 +2090,16 @@
             if (tituloArts) tituloArts.innerText = `⚽ Artilheiros do dia (${dataExibicao})`;
 
             const bodyClass = document.getElementById('body-classificacao');
-            if(rankTimes.length === 0) { bodyClass.innerHTML = '<tr><td colspan="7" style="color:var(--text-muted);">Sem jogos hoje.</td></tr>'; } 
+            if(rankTimes.length === 0) { bodyClass.innerHTML = '<tr><td colspan="7" style="color:var(--text-muted);">Sem jogos hoje.</td></tr>';
+            } 
             else {
                 bodyClass.innerHTML = '';
                 rankTimes.forEach((r, i) => {
                     let t = r[1]; let sg = t.gp - t.gc;
                     let ic = i===0?'🏆 ':'';
                     bodyClass.innerHTML += `<tr>
-                        <td style="font-weight:700;">${ic}${r[0]}</td>
+                      
+  <td style="font-weight:700;">${ic}${r[0]}</td>
                         <td style="font-weight:700; color:var(--primary);">${t.pts}</td>
                         <td>${t.j}</td><td>${t.v}</td><td>${t.e}</td><td>${t.d}</td><td>${sg > 0 ? '+'+sg : sg}</td>
                     </tr>`;
@@ -2103,7 +2108,8 @@
 
             const bodyArts = document.getElementById('body-artilheiros-painel');
             let arts = Object.entries(artilheiros).sort((a,b) => b[1] - a[1]);
-            if(arts.length === 0) { bodyArts.innerHTML = '<tr><td colspan="2" style="color:var(--text-muted);">Nenhum gol lançado.</td></tr>'; }
+            if(arts.length === 0) { bodyArts.innerHTML = '<tr><td colspan="2" style="color:var(--text-muted);">Nenhum gol lançado.</td></tr>';
+            }
             else {
                 bodyArts.innerHTML = '';
                 arts.forEach((a, i) => {
@@ -2123,18 +2129,18 @@
                 const { data: partidas, error } = await db.from('partidas')
                     .select('*')
                     .eq('user_id', currentUser.id)
+                  
                     .order('created_at', { ascending: false })
                     .limit(1);
-
                 if (!error && partidas && partidas.length > 0) {
                     let ultimaPartida = partidas[0];
-                    
                     if (ultimaPartida.created_at) {
                         let dataCriacao = new Date(ultimaPartida.created_at);
                         let agora = new Date();
                         let diffMs = agora.getTime() - dataCriacao.getTime();
                         if (diffMs <= 518400000) {
-                            window.jogosDaRodada = ultimaPartida.jogos_json || [];
+                            window.jogosDaRodada = ultimaPartida.jogos_json ||
+                            [];
                             if (ultimaPartida.data_sorteio) {
                                 let d = new Date(ultimaPartida.data_sorteio);
                                 if (!isNaN(d.getTime())) {
@@ -2154,7 +2160,7 @@
         }
 
         async function carregarEstatisticasGerais() {
-            await renderizarPainelDoDia(); 
+            await renderizarPainelDoDia();
             if(window.isModoPublico) return;
 
             let hoje = new Date(); let mesAtual = hoje.getMonth(); let anoAtual = hoje.getFullYear();
@@ -2162,7 +2168,6 @@
 
             document.getElementById('label-mes-atual').innerText = hoje.toLocaleString('pt-BR', { month: 'long' });
             document.getElementById('label-ano-atual').innerText = anoAtual;
-
             const { data: partidas } = await db.from('partidas').select('id, data_sorteio, artilheiros_json').gte('data_sorteio', startOfYear).eq('user_id', currentUser.id);
             const { data: presencas } = await db.from('presencas').select('partida_id, jogadores(nome, tipo, user_id)');
 
@@ -2172,24 +2177,27 @@
                     if (p.jogadores && p.jogadores.user_id === currentUser.id) {
                         let partidaId = p.partida_id;
                         let jogador = p.jogadores;
+ 
                         if(jogador.tipo === 'Mensalista') {
                             if(!mensalistasPorPartida[partidaId]) mensalistasPorPartida[partidaId] = new Set();
                             mensalistasPorPartida[partidaId].add(jogador.nome);
+              
                         }
                     }
                 });
             }
 
             let artilhariaMes = {}; let rankingAnual = {};
-
             if(presencas && partidas) {
                 presencas.forEach(p => {
                     if (p.jogadores && p.jogadores.user_id === currentUser.id) {
                         let nome = p.jogadores.nome;
-                        let tipo = p.jogadores.tipo;
+                        let tipo 
+= p.jogadores.tipo;
                         if(tipo !== 'Mensalista') return;
                         if(!rankingAnual[nome]) rankingAnual[nome] = { gols: 0, presencas: 0 };
                         let pt = partidas.find(x => x.id === p.partida_id);
+         
                         if(pt) rankingAnual[nome].presencas++;
                     }
                 });
@@ -2199,15 +2207,18 @@
                 partidas.forEach(p => {
                     let dataP = new Date(p.data_sorteio);
                     let isEsteMes = dataP.getMonth() === mesAtual;
+                    
                     let arts = p.artilheiros_json || {};
                     let mensalistasNesta = mensalistasPorPartida[p.id] || new Set();
 
                     for(let nome in arts) {
                         let isMensalista = mensalistasNesta.has(nome) || jogadores.some(j => j.nome === nome && j.tipo === 'Mensalista');
+        
                         if(!isMensalista) continue; 
 
                         let gols = arts[nome];
                         if(!rankingAnual[nome]) rankingAnual[nome] = { gols: 0, presencas: 0 };
+                       
                         rankingAnual[nome].gols += gols;
                         if(isEsteMes) artilhariaMes[nome] = (artilhariaMes[nome] || 0) + gols;
                     }
@@ -2227,7 +2238,6 @@
                 if(b[1].gols !== a[1].gols) return b[1].gols - a[1].gols;
                 return b[1].presencas - a[1].presencas;
             });
-            
             if(rankArr.length === 0) bodyRanking.innerHTML = '<tr><td colspan="3" style="color:var(--text-muted);">Sem histórico no ano.</td></tr>';
             else {
                 bodyRanking.innerHTML = '';
@@ -2239,7 +2249,7 @@
         }
 
         function atualizarFinanceiro() {
-            if(window.isModoPublico) return; 
+            if(window.isModoPublico) return;
             renderizarListaCustos();
             salvarEstadoCompleto();
         }
@@ -2248,72 +2258,70 @@
             let desc = document.getElementById('desc-custo').value; 
             let val = parseFloat(document.getElementById('valor-custo').value) || 0;
             let tipo = document.getElementById('tipo-custo').value;
+            let dataInput = document.getElementById('data-custo').value;
+
             if(!desc || val <= 0) return alert("Preencha descrição e valor válido.");
 
-            let hoje = new Date();
-            let mesKey = hoje.toISOString().substring(0, 7);
-            
-            if (tipo === 'mensal') {
-                window.despesasMensaisGlobais.push({ desc: desc, valor: val, data: mesKey });
-                if(currentUser) {
-                    await db.from('profiles').update({ despesas_mensais_json: window.despesasMensaisGlobais }).eq('id', currentUser.id);
-                }
-            } else {
-                window.custosDaRodada.push({ desc: desc, valor: val, tipo: tipo });
-                
-                if (!window.partidaAtualId) {
-                    let codigoAleatorio = Math.random().toString(36).substring(2, 8).toUpperCase();
-                    let valorConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
-                    let valorMens = parseFloat(document.getElementById('valor-mensalista').value) || 0;
-                    
-                    const { data: pData, error: errP } = await db.from('partidas').insert([{ 
-                        quantidade_jogadores: 0, 
-                        renda_convidados: 0,
-                        valor_por_convidado: valorConv,
-                        valor_por_mensalista: valorMens,
-                        custos_json: window.custosDaRodada,
-                        artilheiros_json: {},
-                        jogos_json: [],
-                        times_json: [],
-                        fila_json: [],
-                        codigo_acesso: codigoAleatorio,
-                        nome_baba: currentProfile ? currentProfile.nome_baba : "",
-                        escudo_url: currentProfile ? currentProfile.escudo_url : "",
-                        user_id: currentUser.id
-                    }]).select();
-
-                    if (!errP && pData && pData.length > 0) {
-                        window.partidaAtualId = pData[0].id;
-                        window.codigoAcessoAtual = codigoAleatorio;
-                        iniciarOuvinteRealtime(window.partidaAtualId);
-                    }
-                } else {
-                    await db.from('partidas').update({ custos_json: window.custosDaRodada }).eq('id', window.partidaAtualId);
-                }
+            // Se o usuário não selecionar a data, pega a de hoje automaticamente
+            if(!dataInput) {
+                let tzoffset = (new Date()).getTimezoneOffset() * 60000;
+                dataInput = (new Date(Date.now() - tzoffset)).toISOString().split('T')[0];
             }
 
-            document.getElementById('desc-custo').value = ''; 
-            document.getElementById('valor-custo').value = '';
-            
-            atualizarFinanceiro();
-            gerarRelatorioMensal();
+            // Unificando tudo no Livro Caixa (despesasMensaisGlobais)
+            let novaDespesa = { 
+                id: Date.now(), // ID único para facilitar a exclusão
+                desc: desc, 
+                valor: val, 
+                tipo: tipo,
+                data: tipo === 'mensal' ? dataInput.substring(0, 7) : dataInput 
+            };
+
+            window.despesasMensaisGlobais.push(novaDespesa);
+
+            if(currentUser) {
+                const btn = document.querySelector('button[onclick="adicionarCusto()"]');
+                let txtOrigin = btn.innerText;
+                btn.innerText = "Salvando..."; btn.disabled = true;
+
+                const { error } = await db.from('profiles').update({ despesas_mensais_json: window.despesasMensaisGlobais }).eq('id', currentUser.id);
+
+                btn.innerText = txtOrigin; btn.disabled = false;
+
+                if (error) {
+                    alert("Erro ao salvar despesa no Livro Caixa: " + error.message);
+                    window.despesasMensaisGlobais.pop(); // Reverte em caso de erro
+                } else {
+                    document.getElementById('desc-custo').value = ''; 
+                    document.getElementById('valor-custo').value = '';
+                    document.getElementById('data-custo').value = '';
+                    atualizarFinanceiro();
+                    gerarRelatorioMensal();
+                }
+            }
         }
         
-        async function removerCusto(tipo, index) { 
-            if (tipo === 'mensal') {
-                window.despesasMensaisGlobais.splice(index, 1);
-                if(currentUser) {
-                    await db.from('profiles').update({ despesas_mensais_json: window.despesasMensaisGlobais }).eq('id', currentUser.id);
-                }
-            } else {
-                window.custosDaRodada.splice(index, 1); 
-                if (window.partidaAtualId) {
-                    await db.from('partidas').update({ custos_json: window.custosDaRodada }).eq('id', window.partidaAtualId);
+        async function removerCusto(idUnico, indexArrayFallback) { 
+            if(!confirm("Deseja realmente apagar esta despesa do Livro Caixa?")) return;
+
+            // Busca pelo ID único (novo formato) ou cai pro index original (legado antigo)
+            let indexReal = window.despesasMensaisGlobais.findIndex(c => c.id === idUnico);
+            if (indexReal === -1) indexReal = indexArrayFallback;
+            
+            if (indexReal === -1 || indexReal === undefined) return alert("Erro: Despesa não encontrada.");
+
+            let removido = window.despesasMensaisGlobais.splice(indexReal, 1)[0];
+
+            if(currentUser) {
+                const { error } = await db.from('profiles').update({ despesas_mensais_json: window.despesasMensaisGlobais }).eq('id', currentUser.id);
+                if(error) {
+                    alert("Erro ao remover do banco: " + error.message);
+                    window.despesasMensaisGlobais.splice(indexReal, 0, removido); // Reverte
+                } else {
+                    atualizarFinanceiro(); 
+                    gerarRelatorioMensal();
                 }
             }
-            
-            atualizarFinanceiro(); 
-            gerarRelatorioMensal();
         }
         
         function renderizarListaCustos() {
@@ -2324,111 +2332,52 @@
             listaDiarios.innerHTML = '';
             if(listaMensais) listaMensais.innerHTML = '';
 
-            let custosDiarios = window.custosDaRodada || [];
+            let filtroInput = document.getElementById('filtro-mes-relatorio');
             
-            let hoje = new Date();
-            let mesKey = hoje.toISOString().substring(0, 7);
-            let custosMensais = window.despesasMensaisGlobais || [];
+            let tzoffset = (new Date()).getTimezoneOffset() * 60000;
+            let hojeIsoStr = (new Date(Date.now() - tzoffset)).toISOString().split('T')[0];
+            let mesKey = filtroInput ? filtroInput.value : hojeIsoStr.substring(0, 7);
 
-            if(custosDiarios.length === 0) { 
-                listaDiarios.innerHTML = '<p style="color:var(--text-muted); font-size:12px; text-align:center; padding:8px;">Nenhuma despesa diária lançada hoje.</p>'; 
-            } else {
-                custosDiarios.forEach((c, index) => {
-                    listaDiarios.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 10px; background:var(--light); border:1px solid var(--border); border-radius:6px; margin-bottom:5px; font-size:13px;">
-                        <span>${c.desc}</span>
-                        <span><strong class="valor-negativo">R$ ${c.valor.toFixed(2)}</strong> <button class="btn-excluir-mini" style="margin-left:8px;" onclick="removerCusto('diario', ${index})">X</button></span>
-                    </div>`;
-                });
-            }
+            let todasDespesas = window.despesasMensaisGlobais || [];
 
-            if(listaMensais) {
-                let temMensalEsteMes = false;
-                custosMensais.forEach((c, index) => {
+            let custHojeDiario = 0;
+            let temMensalEsteMes = false;
+            let temAvulsaEsteMes = false;
+
+            todasDespesas.forEach((c, indexReal) => {
+                let idUnico = c.id || indexReal; // Para compatibilidade
+                
+                // Despesas Avulsas (Diárias)
+                if (c.tipo !== 'mensal') {
+                    let dCusto = c.data || hojeIsoStr;
+                    
+                    // Soma no painel principal apenas se a data for hoje
+                    if (dCusto === hojeIsoStr) custHojeDiario += c.valor;
+
+                    // Lista no painel apenas se for do mês que está selecionado no filtro
+                    if (dCusto.substring(0, 7) === mesKey) {
+                        temAvulsaEsteMes = true;
+                        let dDataBr = dCusto.split('-').reverse().join('/');
+                        listaDiarios.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 10px; background:var(--light); border:1px solid var(--border); border-radius:6px; margin-bottom:5px; font-size:13px;">
+                            <span>${c.desc} <span style="color:var(--text-muted); font-size:10px;">(${dDataBr})</span></span>
+                            <span><strong class="valor-negativo">R$ ${c.valor.toFixed(2)}</strong> <button class="btn-excluir-mini" style="margin-left:8px;" onclick="removerCusto(${idUnico}, ${indexReal})">X</button></span>
+                        </div>`;
+                    }
+                } 
+                // Despesas Fixas (Mensais)
+                else {
                     if (c.data === mesKey) {
                         temMensalEsteMes = true;
                         listaMensais.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 10px; background:var(--light); border:1px solid var(--border); border-radius:6px; margin-bottom:5px; font-size:13px;">
                             <span>${c.desc}</span>
-                            <span><strong class="valor-negativo">R$ ${c.valor.toFixed(2)}</strong> <button class="btn-excluir-mini" style="margin-left:8px;" onclick="removerCusto('mensal', ${index})">X</button></span>
+                            <span><strong class="valor-negativo">R$ ${c.valor.toFixed(2)}</strong> <button class="btn-excluir-mini" style="margin-left:8px;" onclick="removerCusto(${idUnico}, ${indexReal})">X</button></span>
                         </div>`;
                     }
-                });
-
-                if(!temMensalEsteMes) {
-                    listaMensais.innerHTML = '<p style="color:var(--text-muted); font-size:12px; text-align:center; padding:8px;">Nenhuma despesa fixa lançada neste mês.</p>';
                 }
+            });
+
+            if(!temAvulsaEsteMes) { 
+                listaDiarios.innerHTML = '<p style="color:var(--text-muted); font-size:12px; text-align:center; padding:8px;">Nenhuma despesa avulsa lançada neste mês.</p>'; 
             }
-
-            let valConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
-            let convPagantesHoje = jogadores.filter(j => j.tipo === 'Convidado' && j.presente && j.pagou).length;
-            let recHoje = (convPagantesHoje * valConv); 
-            let custHojeDiario = custosDiarios.reduce((acc, c) => acc + c.valor, 0);
-            
-            document.getElementById('fin-receita-hoje').innerText = `R$ ${recHoje.toFixed(2)}`;
-            document.getElementById('fin-custos-hoje').innerText = `R$ ${custHojeDiario.toFixed(2)}`;
-            salvarEstadoCompleto();
-        }
-
-        async function salvarPartidaComPlacares() {
-            if(!window.partidaAtualId) return alert("Nenhuma partida ativa para encerrar.");
-            if(!confirm("Deseja encerrar o baba de hoje?")) return;
-            
-            const btn = document.getElementById('btn-encerrar-baba'); btn.innerText = "Sincronizando Servidor..."; btn.disabled = true;
-            try {
-                let artilheiros = {};
-                window.jogosDaRodada.forEach(jogo => {
-                    jogo.gols_a.forEach(nome => { if(nome !== 'Gol Contra') artilheiros[nome] = (artilheiros[nome] || 0) + 1; });
-                    jogo.gols_b.forEach(nome => { if(nome !== 'Gol Contra') artilheiros[nome] = (artilheiros[nome] || 0) + 1; });
-                });
-
-                let presentesPagantes = jogadores.filter(j => j.presente && j.pagou && j.tipo === 'Convidado');
-                let convidadosPagantes = presentesPagantes.length;
-                let valorConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
-                let valorMens = parseFloat(document.getElementById('valor-mensalista').value) || 0;
-
-                window.filaEquipes = [];
-
-                const { error: errP } = await db.from('partidas').update({ 
-                    renda_convidados: convidadosPagantes,
-                    valor_por_convidado: valorConv,
-                    valor_por_mensalista: valorMens,
-                    custos_json: window.custosDaRodada,
-                    artilheiros_json: artilheiros,
-                    jogos_json: window.jogosDaRodada,
-                    times_json: window.timesSorteadosObjs,
-                    fila_json: window.filaEquipes
-                }).eq('id', window.partidaAtualId);
-
-                if(errP) throw errP;
-
-                for(let j of jogadores) {
-                    if(j.presente) {
-                        await db.from('presencas').update({ pagou: j.pagou || false }).eq('partida_id', window.partidaAtualId).eq('jogador_id', j.id);
-                    }
-                }
-
-                await db.from('jogadores').delete().eq('tipo', 'Convidado').eq('user_id', currentUser.id);
-
-                window.partidaSalva = true; 
-                
-                jogadores.forEach(j => { 
-                    j.presente = false; 
-                    j.ordemChegada = 0; 
-                    j.pagou = false; 
-                });
-                
-                salvarEstadoLocal();
-                atualizarListas();
-                atualizarFilaUI();
-                atualizarListaJogosDaRodada();
-                salvarEstadoCompleto();
-                carregarElencoDaNuvem();
-                gerarRelatorioMensal();
-
-                btn.innerText = "✅ Baba Encerrado e Salvo com Sucesso!";
-                alert("Baba finalizado com sucesso!");
-
-            } catch(err) { alert("Erro: " + err.message); btn.innerText = "Tentar Novamente"; btn.disabled = false; }
-        }
-    </script>
-</body>
-</html>
+            if(!temMensalEsteMes && listaMensais) {
+                listaMensais.innerHTML = '<p style="color:var(--text-muted); font-size:12px; text-align:center; padding:8px;">Nenhuma despesa fixa
