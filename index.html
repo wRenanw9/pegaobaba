@@ -185,7 +185,7 @@
 
         @media print {
             body { background: white; color: black; padding: 0; margin: 0; max-width: 100%; font-size: 11px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .top-bar, .bottom-nav, .no-print, button, input, select, .card-secao-stats:not(#card-relatorio-mensal) { display: none !important; }
+            .top-bar, .bottom-nav, .no-print, button, input, select, .card-secao-stats:not(#card-relatorio-mensal), .dev-signature { display: none !important; }
             #card-relatorio-mensal { display: block !important; border: none !important; box-shadow: none !important; margin: 0 !important; padding: 0 !important; }
             #view-financeiro { display: block !important; padding: 0 !important; margin: 0 !important; }
             
@@ -224,7 +224,7 @@
             <button onclick="acessarModoPublico()" style="background: var(--dark);">Ver Súmula e Painel</button>
         </div>
 
-        <!-- Assinatura do Desenvolvedor (CTA) -->
+        <!-- Assinatura do Desenvolvedor (CTA) na Tela Inicial -->
         <div class="dev-signature">
             <p class="cta-title">Quer adicionar este sistema ao seu baba?</p>
             <p class="cta-desc">Entre em contato e profissionalize a sua resenha!</p>
@@ -328,7 +328,7 @@
 
         <!-- ABA 3: SÚMULA DINÂMICA -->
         <div id="view-placares" class="page-view">
-            <div class="card">
+            <div class="card" style="margin-bottom: 20px;">
                 <h2>📝 Súmula de Jogo</h2>
                 <div id="data-rodada-label" style="font-size: 13px; color: var(--text-muted); text-align: center; margin-top: -10px; margin-bottom: 15px; font-weight: 600;"></div>
                 <p class="hidden-public" style="font-size: 13px; color: var(--text-muted); margin-top: -10px; margin-bottom: 20px; text-align:center;">
@@ -373,6 +373,16 @@
 
                     <button class="btn-salvar hidden-public" id="btn-encerrar-baba" onclick="salvarPartidaComPlacares()">✅ Finalizar Baba e Salvar Dados</button>
                 </div>
+            </div>
+
+            <!-- Assinatura do Desenvolvedor (Vitrine Pública) na Súmula -->
+            <div class="dev-signature card" style="border: 1px solid var(--border); box-shadow: none; padding: 20px;">
+                <p class="cta-title">Quer ter este sistema no seu baba?</p>
+                <p class="cta-desc">Entre em contato e profissionalize a sua resenha!</p>
+                Desenvolvido por <strong>Renan Barbosa</strong><br>
+                <a href="https://api.whatsapp.com/send?phone=5571996212118&text=Olá%20Renan!%20Gostaria%20de%20adicionar%20o%20sistema%20ao%20meu%20baba." target="_blank" class="btn-dev-whatsapp">
+                    📱 Chamar no WhatsApp
+                </a>
             </div>
         </div>
 
@@ -424,6 +434,16 @@
                         <tbody id="body-ranking-anual"><tr><td colspan="3" style="color:var(--text-muted);">Carregando...</td></tr></tbody>
                     </table>
                 </div>
+            </div>
+
+            <!-- Assinatura do Desenvolvedor (Vitrine Pública) nas Estatísticas -->
+            <div class="dev-signature card" style="border: 1px solid var(--border); box-shadow: none; padding: 20px; margin-top: 20px;">
+                <p class="cta-title">Quer ter este sistema no seu baba?</p>
+                <p class="cta-desc">Entre em contato e profissionalize a sua resenha!</p>
+                Desenvolvido por <strong>Renan Barbosa</strong><br>
+                <a href="https://api.whatsapp.com/send?phone=5571996212118&text=Olá%20Renan!%20Gostaria%20de%20adicionar%20o%20sistema%20ao%20meu%20baba." target="_blank" class="btn-dev-whatsapp">
+                    📱 Chamar no WhatsApp
+                </a>
             </div>
         </div>
 
@@ -550,14 +570,9 @@
                 <button onclick="fazerLogout()" style="background: var(--danger); padding: 10px; font-size: 13px;">Sair da Conta neste dispositivo</button>
             </div>
 
-            <!-- Assinatura do Desenvolvedor (CTA) -->
-            <div class="dev-signature">
-                <p class="cta-title">Quer adicionar este sistema ao seu baba?</p>
-                <p class="cta-desc">Entre em contato e profissionalize a sua resenha!</p>
-                Desenvolvido por <strong>Renan Barbosa</strong><br>
-                <a href="https://api.whatsapp.com/send?phone=5571996212118&text=Olá%20Renan!%20Gostaria%20de%20adicionar%20o%20sistema%20ao%20meu%20baba." target="_blank" class="btn-dev-whatsapp">
-                    📱 Chamar no WhatsApp
-                </a>
+            <!-- Assinatura Simples para a aba do Organizador -->
+            <div class="dev-signature" style="border-top: none; padding-top: 0;">
+                Desenvolvido por <strong>Renan Barbosa</strong>
             </div>
         </div>
 
