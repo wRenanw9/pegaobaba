@@ -422,42 +422,31 @@
                 </div>
             </div>
 
-            <div class="card-secao-stats no-print" style="margin-bottom: 15px;">
-                <div class="header-secao-stats" style="background: var(--dark); color: white; padding: 8px 15px;"><span>⚽ Caixa da Rodada (Hoje)</span></div>
-                <div style="padding: 12px;">
-                    <div class="dash-grid" style="gap: 10px; margin-bottom: 12px;">
-                        <div class="dash-card" style="padding: 10px;"><div class="dash-titulo">Diárias Hoje</div><div class="dash-valor valor-positivo" id="fin-receita-hoje">R$ 0.00</div></div>
-                        <div class="dash-card" style="padding: 10px;"><div class="dash-titulo">Custos Diários</div><div class="dash-valor valor-negativo" id="fin-custos-hoje">R$ 0.00</div></div>
-                    </div>
-                    <div class="card hidden-public" style="margin-bottom:0; padding: 12px;">
-                        <h3 style="font-size: 13px; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:6px; margin-bottom: 8px;">Lançar Despesa (Livro Caixa)</h3>
-                        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                            <input type="text" id="desc-custo" placeholder="Ex: Juiz, Água, Bola" style="flex:2; margin:0; padding:8px; font-size:12px;">
-                            <input type="number" id="valor-custo" placeholder="R$" style="flex:1; margin:0; padding:8px; font-size:12px;">
-                        </div>
-                        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                            <select id="tipo-custo" style="flex:1.2; margin:0; padding:8px; font-size:12px;">
-                                <option value="diario">Avulso / Diário</option>
-                                <option value="mensal">Mensal (Fixo)</option>
-                            </select>
-                            <input type="date" id="data-custo" style="flex:1; margin:0; padding:8px; font-size:12px;">
-                        </div>
-                        <button onclick="adicionarCusto()" style="background: var(--dark); padding: 10px; font-size:13px;">Registrar no Caixa</button>
-                    </div>
-                    <div id="lista-custos" style="margin-top:12px;"></div>
+            <div class="card hidden-public no-print" style="margin-bottom:15px; padding: 15px;">
+                <h3 style="font-size: 14px; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom: 12px;">💸 Lançar Nova Despesa</h3>
+                <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                    <input type="text" id="desc-custo" placeholder="Ex: Juiz, Água, Bola" style="flex:2; margin:0; padding:10px; font-size:13px;">
+                    <input type="number" id="valor-custo" placeholder="R$" style="flex:1; margin:0; padding:10px; font-size:13px;">
                 </div>
-            </div>
-
-            <div class="card-secao-stats no-print hidden-public" style="margin-bottom: 15px;">
-                <div class="header-secao-stats" style="background: #fef3c7; color: #d97706; padding: 8px 15px;"><span>📅 Despesas Fixas (Este Mês)</span></div>
-                <div style="padding: 12px;" id="lista-custos-mensais">
-                    <p style="color:var(--text-muted); font-size:12px; text-align:center; padding:8px;">Nenhuma despesa mensal/fixa lançada.</p>
+                <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                    <select id="tipo-custo" style="flex:1.2; margin:0; padding:10px; font-size:13px;">
+                        <option value="diario">Avulso / Diária</option>
+                        <option value="mensal">Mensal (Fixo)</option>
+                    </select>
+                    <input type="date" id="data-custo" style="flex:1; margin:0; padding:10px; font-size:13px;">
                 </div>
+                <button onclick="adicionarCusto()" style="background: var(--dark); padding: 12px; font-size:14px;">Registrar Saída</button>
             </div>
 
             <div class="card-secao-stats hidden-public" id="card-relatorio-mensal">
-                <div class="header-secao-stats" style="background: var(--primary); color: white;">
-                    <span>📄 Relatório Mensal Detalhado (<span id="label-mes-relatorio">Atual</span>)</span>
+                <div class="header-secao-stats" style="background: var(--primary); color: white; flex-direction: column; align-items: stretch; gap: 10px; padding: 15px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size: 15px;">📄 Relatório Mensal Detalhado</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:10px; background: rgba(255,255,255,0.1); padding: 8px; border-radius: 8px;">
+                        <label style="font-size: 12px; font-weight:600; color: white;">Ver Histórico do Mês:</label>
+                        <input type="month" id="filtro-mes-relatorio" style="margin:0; padding:8px; color:black; font-size:14px; border-radius:6px; border:none; max-width: 160px; font-family: inherit; font-weight:bold;" onchange="gerarRelatorioMensal()">
+                    </div>
                 </div>
                 <div style="padding: 15px;" id="conteudo-relatorio-mensal">
                     <p style="text-align: center; color: var(--text-muted); font-size: 13px;">Carregando resumo do mês...</p>
@@ -569,7 +558,7 @@
                 <div class="nav-icon"><svg viewBox="0 0 24 24"><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/><line x1="2" x2="22" y1="20" y2="20"/></svg></div>
                 <span>Painel</span>
             </div>
-            <div class="nav-item organizer-only" onclick="mudarAba('view-financeiro')" id="nav-financeiro">
+            <div class="nav-item hidden-public organizer-only" onclick="mudarAba('view-financeiro')" id="nav-financeiro">
                 <div class="nav-icon"><svg viewBox="0 0 24 24"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2v-8h-2z"/></svg></div>
                 <span>Caixa</span>
             </div>
@@ -622,8 +611,7 @@
         window.golsTempA = []; 
         window.golsTempB = [];
         window.onload = async function() {
-            if(typeof supabaseUrl === 'undefined' || typeof supabaseKey === 'undefined') { alert("Erro crítico: config.js ausente.");
-                return; }
+            if(typeof supabaseUrl === 'undefined' || typeof supabaseKey === 'undefined') { alert("Erro crítico: config.js ausente."); return; }
             db = window.supabase.createClient(supabaseUrl, supabaseKey);
             const urlParams = new URLSearchParams(window.location.search);
             const code = urlParams.get('code');
@@ -636,6 +624,7 @@
                 verificarSessao();
             }
         };
+
         function iniciarOuvinteRealtime(partidaId) {
             if (!partidaId) return;
             if (supabaseChannel) {
@@ -664,10 +653,6 @@
                             window.partidaSalva = false;
                         }
                         atualizarFilaUI();
-                        if (novaPartida.custos_json) {
-                            window.custosDaRodada = novaPartida.custos_json;
-                            atualizarFinanceiro();
-                        }
 
                         if (document.getElementById('view-placares').classList.contains('active')) {
                             renderizarSumula();
@@ -985,8 +970,7 @@
             if(!novaSenha || novaSenha.length < 6) return alert("A senha deve ter pelo menos 6 caracteres.");
             const { error } = await db.auth.updateUser({ password: novaSenha });
             if(error) alert("Erro ao alterar senha: " + error.message);
-            else { alert("✅ Senha alterada com sucesso!"); document.getElementById('nova-senha-organizador').value = '';
-            }
+            else { alert("✅ Senha alterada com sucesso!"); document.getElementById('nova-senha-organizador').value = ''; }
         }
 
         async function zerarHistoricoAdmin() {
@@ -1027,24 +1011,19 @@
             container.innerHTML = "Carregando usuários...";
 
             const { data: users, error } = await db.from('profiles').select('*').order('email');
-            if (error) { container.innerHTML = "Erro ao carregar usuários."; return;
-            }
-            if (!users || users.length === 0) { container.innerHTML = "Nenhum usuário cadastrado.";
-            return; }
+            if (error) { container.innerHTML = "Erro ao carregar usuários."; return; }
+            if (!users || users.length === 0) { container.innerHTML = "Nenhum usuário cadastrado."; return; }
 
             container.innerHTML = "";
             users.forEach(u => {
                 let expDate = u.subscription_expires_at || '';
                 container.innerHTML += `
                     <div style="background: var(--light); padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 10px; font-size: 13px;">
-                        <div 
-style="font-weight: 700; margin-bottom: 5px;">${u.email} ${u.is_admin ? '(Master Admin)' : ''}</div>
+                        <div style="font-weight: 700; margin-bottom: 5px;">${u.email} ${u.is_admin ? '(Master Admin)' : ''}</div>
                         <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                             <label style="font-size: 11px;">Autorizado: <input type="checkbox" id="auth-${u.id}" ${u.is_authorized ? 'checked' : ''} onchange="atualizarAdminUser('${u.id}')"></label>
-                    
-        <label style="font-size: 11px;">Vencimento: <input type="date" id="date-${u.id}" value="${expDate}" style="width: auto; padding: 6px; margin: 0;" onchange="atualizarAdminUser('${u.id}')"></label>
-                            <span id="msg-${u.id}" style="font-size: 11px;
-color: var(--supabase); font-weight: bold;"></span>
+                            <label style="font-size: 11px;">Vencimento: <input type="date" id="date-${u.id}" value="${expDate}" style="width: auto; padding: 6px; margin: 0;" onchange="atualizarAdminUser('${u.id}')"></label>
+                            <span id="msg-${u.id}" style="font-size: 11px; color: var(--supabase); font-weight: bold;"></span>
                         </div>
                     </div>
                 `;
@@ -1052,15 +1031,13 @@ color: var(--supabase); font-weight: bold;"></span>
         }
 
         async function atualizarAdminUser(uid) {
-      
             let isAuth = document.getElementById(`auth-${uid}`).checked;
             let expDate = document.getElementById(`date-${uid}`).value || null;
             let msgSpan = document.getElementById(`msg-${uid}`);
 
             const { error } = await db.from('profiles').update({ is_authorized: isAuth, subscription_expires_at: expDate }).eq('id', uid);
             if (error) alert("Erro ao atualizar: " + error.message);
-            else { msgSpan.innerText = 
-"Salvo!"; setTimeout(() => { msgSpan.innerText = ""; }, 2000); }
+            else { msgSpan.innerText = "Salvo!"; setTimeout(() => { msgSpan.innerText = ""; }, 2000); }
         }
 
         async function acessarModoPublico() {
@@ -1129,17 +1106,6 @@ color: var(--supabase); font-weight: bold;"></span>
                 window.timesSorteadosObjs = partida.times_json;
             }
 
-            const { data: presencas } = await db.from('presencas').select('pagou, jogadores(tipo)').eq('partida_id', partida.id);
-            if(presencas) {
-                let receitaPub = 0;
-                let vConv = partida.valor_por_convidado || 0;
-                let qtdConvidadosPagos = presencas.filter(p => p.pagou && p.jogadores && p.jogadores.tipo === 'Convidado').length;
-                receitaPub += (qtdConvidadosPagos * vConv);
-                let totCustosPubDiarios = window.custosDaRodada.filter(c => c.tipo !== 'mensal').reduce((acc, c) => acc + c.valor, 0);
-                document.getElementById('fin-receita-hoje').innerText = `R$ ${receitaPub.toFixed(2)}`;
-                document.getElementById('fin-custos-hoje').innerText = `R$ ${totCustosPubDiarios.toFixed(2)}`;
-            }
-            renderizarListaCustos();
             if (partida.jogos_json && partida.jogos_json.length > 0) {
                 window.jogosDaRodada = partida.jogos_json;
             } else {
@@ -1174,18 +1140,15 @@ color: var(--supabase); font-weight: bold;"></span>
             document.getElementById('status-db').innerText = "Sincronizando..."; document.getElementById('status-db').style.backgroundColor = "var(--warning)";
             
             const { data, error } = await db.from('jogadores').select('*').eq('user_id', currentUser.id).order('nome', { ascending: true });
-            if (error) { document.getElementById('status-db').innerText = "Off-line"; document.getElementById('status-db').style.backgroundColor = "var(--danger)"; return;
-            }
+            if (error) { document.getElementById('status-db').innerText = "Off-line"; document.getElementById('status-db').style.backgroundColor = "var(--danger)"; return; }
             
-            let estadoLocal = JSON.parse(localStorage.getItem('baba_presencas_temp')) ||
-            {};
+            let estadoLocal = JSON.parse(localStorage.getItem('baba_presencas_temp')) || {};
             jogadores = data.map(j => ({ 
                 ...j, 
                 presente: estadoLocal[j.id]?.presente || false, 
                 ordemChegada: estadoLocal[j.id]?.ordemChegada || 0, 
                 pagou: estadoLocal[j.id]?.pagou || false,
-                pagamentos_json: j.pagamentos_json 
-                || {}
+                pagamentos_json: j.pagamentos_json || {}
             }));
             
             document.getElementById('status-db').innerText = "Online"; document.getElementById('status-db').style.backgroundColor = "var(--supabase)";
@@ -1355,8 +1318,7 @@ color: var(--supabase); font-weight: bold;"></span>
                 document.getElementById('resultado').innerHTML = ""; 
                 document.getElementById('btn-ir-placares').style.display = 'none'; 
                 let boxSorteio = document.getElementById('box-codigo-gerado-sorteio');
-                if(boxSorteio) { boxSorteio.style.display = 'none';
-                boxSorteio.innerHTML = ''; }
+                if(boxSorteio) { boxSorteio.style.display = 'none'; boxSorteio.innerHTML = ''; }
             } 
         }
 
@@ -1395,9 +1357,7 @@ color: var(--supabase); font-weight: bold;"></span>
                 if(listaElenco) {
                     let btnEdicao = `<button class="btn-small btn-acao-outline" onclick="prepararEdicao(${indexArray})">✏️</button>`;
                     let btnExcluir = `<button class="btn-small btn-acao-outline" style="color:var(--danger); border-color:var(--danger);" onclick="removerJogador('${j.id}', ${indexArray})">X</button>`;
-                    let btnMensal = j.tipo === 'Mensalista' ? (j.pagamentos_json && 
-                    j.pagamentos_json[mesKey] === true ? `<button class="btn-small btn-pagou" onclick="alternarMensalidade('${j.id}', ${indexArray})">Pago</button>` : `<button class="btn-small btn-devendo" onclick="alternarMensalidade('${j.id}', ${indexArray})">Pendente</button>`) : `<span style="font-size:10px;
-                    color:var(--text-muted);">Diária local</span>`;
+                    let btnMensal = j.tipo === 'Mensalista' ? (j.pagamentos_json && j.pagamentos_json[mesKey] === true ? `<button class="btn-small btn-pagou" onclick="alternarMensalidade('${j.id}', ${indexArray})">Pago</button>` : `<button class="btn-small btn-devendo" onclick="alternarMensalidade('${j.id}', ${indexArray})">Pendente</button>`) : `<span style="font-size:10px; color:var(--text-muted);">Diária local</span>`;
                     
                     listaElenco.innerHTML += `
                     <div class="linha-jogador" data-nome="${j.nome}">
@@ -1440,11 +1400,9 @@ color: var(--supabase); font-weight: bold;"></span>
                 if(listaPresentes) {
                     listaPresentes.innerHTML += `
                     <div class="linha-jogador grid-prontos">
-                        <div class="col-nome"><span class="badge" style="background:var(--dark);
-                    color:white;">${pos + 1}º</span> ${tagConvidado} ${j.nome}</div>
+                        <div class="col-nome"><span class="badge" style="background:var(--dark); color:white;">${pos + 1}º</span> ${tagConvidado} ${j.nome}</div>
                         <div class="col-status">${controleFinanceiro}</div>
-                        <div class="col-acoes"><button class="btn-small btn-acao-outline hidden-public" style="color:var(--danger);
-                    border-color:var(--danger);" onclick="desmarcarPresenca(${j.indexArray})">Retirar</button></div>
+                        <div class="col-acoes"><button class="btn-small btn-acao-outline hidden-public" style="color:var(--danger); border-color:var(--danger);" onclick="desmarcarPresenca(${j.indexArray})">Retirar</button></div>
                     </div>`;
                 }
             });
@@ -1459,15 +1417,12 @@ color: var(--supabase); font-weight: bold;"></span>
         function embaralhar(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } return array; }
 
         function iniciarSorteioComSuspense() {
-            let presentes = jogadores.filter(j => 
-            j.presente).sort((a, b) => { if (a.tipo === 'Mensalista' && b.tipo !== 'Mensalista') return -1;
-            if (a.tipo !== 'Mensalista' && b.tipo === 'Mensalista') return 1; return a.ordemChegada - b.ordemChegada; });
+            let presentes = jogadores.filter(j => j.presente).sort((a, b) => { if (a.tipo === 'Mensalista' && b.tipo !== 'Mensalista') return -1; if (a.tipo !== 'Mensalista' && b.tipo === 'Mensalista') return 1; return a.ordemChegada - b.ordemChegada; });
             if (presentes.length < 2) return alert("Adicione pelo menos 2 atletas na lista de Prontos.");
             
             document.getElementById('btn-ir-placares').style.display = 'none';
             let boxSorteio = document.getElementById('box-codigo-gerado-sorteio');
-            if(boxSorteio) { boxSorteio.style.display = 'none'; boxSorteio.innerHTML = '';
-            }
+            if(boxSorteio) { boxSorteio.style.display = 'none'; boxSorteio.innerHTML = ''; }
 
             const resultado = document.getElementById('resultado');
             resultado.innerHTML = `<div style="text-align:center; padding:40px; font-weight:bold; color:var(--primary);">Processando Algoritmo...</div>`;
@@ -1481,11 +1436,9 @@ color: var(--supabase); font-weight: bold;"></span>
             window.dataPartidaAtual = new Date().toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
 
             let jogadoresValidos = presentes; let reservas = [];
-            if (!incluiGoleiros) { reservas.push(...presentes.filter(j => j.posicao === 'Goleiro')); jogadoresValidos = presentes.filter(j => j.posicao !== 'Goleiro');
-            }
+            if (!incluiGoleiros) { reservas.push(...presentes.filter(j => j.posicao === 'Goleiro')); jogadoresValidos = presentes.filter(j => j.posicao !== 'Goleiro'); }
 
-            let tamanhoIdeal = currentProfile && currentProfile.jogadores_por_time ?
-            parseInt(currentProfile.jogadores_por_time) : 7;
+            let tamanhoIdeal = currentProfile && currentProfile.jogadores_por_time ? parseInt(currentProfile.jogadores_por_time) : 7;
             let maxTitulares = jogadoresValidos.length;
             if (modo === '12') maxTitulares = 12;
             else if (modo === '14') maxTitulares = 14;
@@ -1506,13 +1459,11 @@ color: var(--supabase); font-weight: bold;"></span>
                 let chunk = titulares.slice(i, i + tamanhoPartida);
                 let numTimesNoChunk;
                 if (modo === '12' || modo === '14') numTimesNoChunk = 2;
-                else { if (!priorizarOrdem) { numTimesNoChunk = Math.ceil(titulares.length / tamanhoIdeal); if (numTimesNoChunk < 2) numTimesNoChunk = 2;
-                } else numTimesNoChunk = Math.ceil(chunk.length / tamanhoIdeal); }
+                else { if (!priorizarOrdem) { numTimesNoChunk = Math.ceil(titulares.length / tamanhoIdeal); if (numTimesNoChunk < 2) numTimesNoChunk = 2; } else numTimesNoChunk = Math.ceil(chunk.length / tamanhoIdeal); }
                 if (numTimesNoChunk === 0) continue;
                 let goleirosChunk = embaralhar(chunk.filter(j => j.posicao === 'Goleiro')); let linhaChunk = embaralhar(chunk.filter(j => j.posicao !== 'Goleiro'));
                 let timesLocais = Array.from({ length: numTimesNoChunk }, () => []);
-                if (incluiGoleiros) { for (let t = 0; t < numTimesNoChunk; t++) { if (goleirosChunk.length > 0) timesLocais[t].push(goleirosChunk.shift()); } reservas.push(...goleirosChunk);
-                }
+                if (incluiGoleiros) { for (let t = 0; t < numTimesNoChunk; t++) { if (goleirosChunk.length > 0) timesLocais[t].push(goleirosChunk.shift()); } reservas.push(...goleirosChunk); }
 
                 const posicoes = ["Zagueiro", "Lateral", "Meia", "Atacante", "Linha"];
                 const grupos = {}; posicoes.forEach(p => grupos[p] = []);
@@ -1521,8 +1472,7 @@ color: var(--supabase); font-weight: bold;"></span>
                 posicoes.forEach(pos => {
                     grupos[pos].forEach(jogador => {
                         let minTam = Math.min(...timesLocais.map(t => t.length)); let elegiveis = timesLocais.filter(t => t.length === minTam);
-                        let minPos = Math.min(...elegiveis.map(t => getQtdPosicao(t, pos))); let menosPos = elegiveis.filter(t => getQtdPosicao(t, pos) === 
-                        minPos);
+                        let minPos = Math.min(...elegiveis.map(t => getQtdPosicao(t, pos))); let menosPos = elegiveis.filter(t => getQtdPosicao(t, pos) === minPos);
                         menosPos.sort((a, b) => getSomaNotas(a) - getSomaNotas(b)); menosPos[0].push(jogador);
                     });
                 });
@@ -1546,8 +1496,7 @@ color: var(--supabase); font-weight: bold;"></span>
 
         async function criarPartidaInicialNoBanco() {
             try {
-                let codigoAleatorio = window.codigoAcessoAtual ||
-                Math.random().toString(36).substring(2, 8).toUpperCase();
+                let codigoAleatorio = window.codigoAcessoAtual || Math.random().toString(36).substring(2, 8).toUpperCase();
                 let valorConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
                 let valorMens = parseFloat(document.getElementById('valor-mensalista').value) || 0;
                 
@@ -1605,7 +1554,6 @@ color: var(--supabase); font-weight: bold;"></span>
                 t.jogadores.forEach(j => {
                     texto += `• ${j.nome} ${j.posicao !== 'Linha' ? '('+j.posicao+')' : ''}\n`;
                 });
-                
                 texto += "\n";
             });
             if (window.reservasSorteados && window.reservasSorteados.length > 0) {
@@ -1623,16 +1571,30 @@ color: var(--supabase); font-weight: bold;"></span>
         }
 
         async function gerarRelatorioMensal() {
-            let hoje = new Date();
-            let mesKey = hoje.toISOString().substring(0, 7);
-            let nomeMes = hoje.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
-            document.getElementById('label-mes-relatorio').innerText = nomeMes;
+            let filtroInput = document.getElementById('filtro-mes-relatorio');
+            let mesKey = filtroInput ? filtroInput.value : "";
+            
+            if (!mesKey) {
+                let tzoffset = (new Date()).getTimezoneOffset() * 60000;
+                mesKey = (new Date(Date.now() - tzoffset)).toISOString().substring(0, 7);
+                if(filtroInput) filtroInput.value = mesKey;
+            }
+
+            let partes = mesKey.split('-');
+            let d = new Date(partes[0], parseInt(partes[1]) - 1, 1);
+            let nomeMes = d.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
             let valMens = parseFloat(document.getElementById('valor-mensalista').value) || 70;
-            const { data: partidas } = await db.from('partidas').select('*').like('data_sorteio', `%${hoje.getFullYear()}%`);
             
             let partidasDoMes = [];
-            if(partidas) {
-                partidasDoMes = partidas.filter(p => p.data_sorteio && p.data_sorteio.substring(0, 7) === mesKey);
+            if(currentUser) {
+                const { data: partidas } = await db.from('partidas').select('*').eq('user_id', currentUser.id);
+                if(partidas) {
+                    partidasDoMes = partidas.filter(p => {
+                        let dataRef = p.data_sorteio || p.created_at;
+                        if (!dataRef) return false;
+                        return dataRef.substring(0, 7) === mesKey;
+                    });
+                }
             }
 
             let html = `<table class="relatorio-tabela">`;
@@ -1647,7 +1609,6 @@ color: var(--supabase); font-weight: bold;"></span>
                     let pago = j.pagamentos_json && j.pagamentos_json[mesKey] === true;
                     if(pago) totalMensalidades += valMens;
                     let statusText = pago ? `<span style="color:var(--supabase); font-weight:bold;">✅ Pago</span>` : `<span style="color:var(--danger); font-weight:bold;">❌ Pendente</span>`;
-               
                     htmlMensalistas += `<div class="item-mensalista"><span>${j.nome}</span> <span>${statusText}</span></div>`;
                 });
                 htmlMensalistas += `</div>`;
@@ -1658,45 +1619,41 @@ color: var(--supabase); font-weight: bold;"></span>
             let totalConvidados = 0;
             if(partidasDoMes.length > 0) {
                 partidasDoMes.forEach((p, idx) => {
-                    let vConv = p.valor_por_convidado || 25;
+                    let vConv = p.valor_por_convidado || parseFloat(document.getElementById('valor-convidado').value) || 25;
                     let qtdConv = p.renda_convidados || 0;
                     let subConv = qtdConv * vConv;
-   
                     totalConvidados += subConv;
-                    let dataF = p.data_sorteio ? new Date(p.data_sorteio).toLocaleDateString('pt-BR') : `Rodada ${idx+1}`;
+                    let dataF = p.data_sorteio ? p.data_sorteio.split('T')[0].split('-').reverse().join('/') : `Rodada ${idx+1}`;
                     if(qtdConv > 0) {
-                        html += `<tr><td>Rodada (${dataF}): ${qtdConv} 
-convidados</td><td style="text-align:right;">R$ ${subConv.toFixed(2)}</td></tr>`;
+                        html += `<tr><td>Rodada (${dataF}): ${qtdConv} convidados</td><td style="text-align:right;">R$ ${subConv.toFixed(2)}</td></tr>`;
                     }
                 });
             } else {
-                html += `<tr><td colspan="2" style="color:var(--text-muted);">Nenhuma rodada finalizada registrada neste mês.</td></tr>`;
+                html += `<tr><td colspan="2" style="color:var(--text-muted);">Nenhuma rodada finalizada neste mês.</td></tr>`;
             }
             html += `<tr><td><strong>Subtotal Convidados:</strong></td><td style="text-align:right; font-weight:bold; color:var(--supabase);">R$ ${totalConvidados.toFixed(2)}</td></tr>`;
             
             html += `<tr><th colspan="2" style="padding-top:12px;">📉 Detalhamento de Despesas (Custos)</th></tr>`;
             let totalCustos = 0;
-
             let htmlCustosDiarios = `<div class="grid-relatorio-custos">`;
             let temCustos = false;
 
-            // LER DESPESAS DO NOVO LIVRO CAIXA UNIFICADO
-            let despesasDoMes = (window.despesasMensaisGlobais || []).filter(c => {
+            // 1. LER DESPESAS DO NOVO LIVRO CAIXA UNIFICADO
+            (window.despesasMensaisGlobais || []).forEach((c, indexReal) => {
                 let dIso = c.data || "";
-                return dIso.substring(0, 7) === mesKey;
+                if (dIso.substring(0, 7) === mesKey) {
+                    totalCustos += c.valor;
+                    temCustos = true;
+                    let tipoLabel = c.tipo === 'mensal' ? 'Fixo' : 'Avulso';
+                    let dataBr = (c.data && c.tipo !== 'mensal') ? c.data.split('-').reverse().join('/') : '';
+                    let dStr = dataBr ? ` <span style="color:var(--text-muted); font-size:10px;">(${dataBr})</span>` : '';
+                    let idUnico = c.id || indexReal;
+                    
+                    htmlCustosDiarios += `<div class="item-custo-relatorio"><span>${c.desc}${dStr} <span style="color:var(--text-muted); font-size:10px;">(${tipoLabel})</span></span> <span><strong class="valor-negativo">R$ ${c.valor.toFixed(2)}</strong> <button class="btn-excluir-mini no-print" style="margin-left:8px;" onclick="removerCusto(${idUnico}, ${indexReal})">X</button></span></div>`;
+                }
             });
 
-            despesasDoMes.forEach(c => {
-                totalCustos += c.valor;
-                temCustos = true;
-                let tipoLabel = c.tipo === 'mensal' ? 'Fixo' : 'Avulso';
-                let dataBr = (c.data && c.tipo !== 'mensal') ? c.data.split('-').reverse().join('/') : '';
-                let dStr = dataBr ? ` <span style="color:var(--text-muted); font-size:10px;">(${dataBr})</span>` : '';
-                
-                htmlCustosDiarios += `<div class="item-custo-relatorio"><span>${c.desc}${dStr} <span style="color:var(--text-muted); font-size:10px;">(${tipoLabel})</span></span> <strong class="valor-negativo">R$ ${c.valor.toFixed(2)}</strong></div>`;
-            });
-
-            // LER DESPESAS ANTIGAS (LEGADO - PRESAS NAS PARTIDAS VELHAS)
+            // 2. LER DESPESAS ANTIGAS (LEGADO)
             if(partidasDoMes.length > 0) {
                 partidasDoMes.forEach(p => {
                     (p.custos_json || []).forEach(c => {
@@ -1720,13 +1677,14 @@ convidados</td><td style="text-align:right;">R$ ${subConv.toFixed(2)}</td></tr>`
             html += `<tr><td><strong>Total de Despesas:</strong></td><td style="text-align:right; font-weight:bold; color:var(--danger);">R$ ${totalCustos.toFixed(2)}</td></tr>`;
             let receitaTotal = totalMensalidades + totalConvidados;
             let saldoMensal = receitaTotal - totalCustos;
-            html += `<tr><th colspan="2" style="padding-top:15px; background:var(--dark); color:white; text-align:center;">💰 BALANÇO FINANCEIRO DO MÊS</th></tr>`;
+            html += `<tr><th colspan="2" style="padding-top:15px; background:var(--dark); color:white; text-align:center;">💰 BALANÇO FINANCEIRO (${mesKey})</th></tr>`;
             html += `<tr><td>Receita Total (Mensalidades + Convidados):</td><td style="text-align:right; font-weight:bold; color:var(--supabase);">R$ ${receitaTotal.toFixed(2)}</td></tr>`;
             html += `<tr><td>Despesas Totais:</td><td style="text-align:right; font-weight:bold; color:var(--danger);">R$ ${totalCustos.toFixed(2)}</td></tr>`;
             html += `<tr><td><strong style="font-size:13px;">SALDO LÍQUIDO DO MÊS:</strong></td><td style="text-align:right; font-weight:bold; font-size:14px; color:var(--primary);">R$ ${saldoMensal.toFixed(2)}</td></tr>`;
 
             html += `</table>`;
-            document.getElementById('conteudo-relatorio-mensal').innerHTML = html;
+            let elConteudo = document.getElementById('conteudo-relatorio-mensal');
+            if(elConteudo) elConteudo.innerHTML = html;
         }
 
         function exibirBoxCodigoSorteio(codigo) {
@@ -1740,12 +1698,10 @@ convidados</td><td style="text-align:right;">R$ ${subConv.toFixed(2)}</td></tr>`
                 boxCod.innerHTML = `
                     <div style="font-size:13px; color:var(--text-muted); font-weight:700; margin-bottom:5px;">Código do jogo (${dataBoxStr}) para os jogadores</div>
                     <div style="color:var(--primary); font-size:28px; line-height:1; margin-bottom:15px;">${codigo}</div>
-                    <div style="display: 
-flex; flex-direction: column; gap: 8px;">
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
                         <a href="https://api.whatsapp.com/send?text=${textoWppEscalacao}" target="_blank" class="btn-whatsapp">👥 Compartilhar Escalação no WhatsApp</a>
                         <a href="https://api.whatsapp.com/send?text=${textoWpp}" target="_blank" style="display:inline-block; background:var(--dark); color:white; padding:12px 20px; border-radius:8px; text-decoration:none; font-size:14px; font-weight:bold; width:100%; box-sizing:border-box;">📱 Compartilhar Link Geral</a>
                     </div>
-     
                 `;
                 boxCod.style.display = 'block';
             }
@@ -1784,8 +1740,7 @@ flex; flex-direction: column; gap: 8px;">
             }
 
             if(dataLabel) {
-                let dataExibicao = window.dataPartidaAtual ||
-                new Date().toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
+                let dataExibicao = window.dataPartidaAtual || new Date().toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
                 dataLabel.innerText = `📅 Data da Rodada: ${dataExibicao}`;
             }
             
@@ -1846,12 +1801,10 @@ flex; flex-direction: column; gap: 8px;">
                 let corHex = getCorHex(t.corBase);
                 let html = `<div class="team" style="border-top-color: ${corHex};">
                     <div style="display:flex; align-items:center; gap:5px; margin-bottom:10px;">
-       
-                         <span style="font-size:18px;">${emoji}</span>
+                        <span style="font-size:18px;">${emoji}</span>
                         <input type="text" value="${t.nome}" onchange="atualizarNomeTime(${t.id}, this.value)" class="input-nome-time" placeholder="Nome do Time" style="color: ${corHex};" ${window.isModoPublico ? 'disabled' : ''}>
                     </div>
                     <ul>`;
-   
                 t.jogadores.forEach(j => { html += `<li><strong>${j.nome}</strong> ${j.posicao!=='Linha'?`<span class="badge badge-posicao">${j.posicao}</span>`:''}</li>`; });
                 containerEscalacao.innerHTML += html + `</ul></div>`;
             });
@@ -1893,13 +1846,11 @@ flex; flex-direction: column; gap: 8px;">
                 let jogadoresTime = [...timeObj.jogadores].sort((a,b) => a.nome.localeCompare(b.nome));
                 jogadoresTime.forEach(j => { containerJogadores.innerHTML += `<button class="btn-jogador-gol" onclick="registrarGol('${lado}', '${j.nome}')">⚽ ${j.nome}</button>`; });
             }
-            containerJogadores.innerHTML += `<button class="btn-jogador-gol" style="background:#fee2e2; color:var(--danger); border-color:var(--danger);"
-onclick="registrarGol('${lado}', 'Gol Contra')">⚠️ Gol Contra</button>`;
+            containerJogadores.innerHTML += `<button class="btn-jogador-gol" style="background:#fee2e2; color:var(--danger); border-color:var(--danger);" onclick="registrarGol('${lado}', 'Gol Contra')">⚠️ Gol Contra</button>`;
             document.getElementById('modal-gol').style.display = 'flex';
         }
 
-        function fecharModalGol() { document.getElementById('modal-gol').style.display = 'none';
-        }
+        function fecharModalGol() { document.getElementById('modal-gol').style.display = 'none'; }
 
         function registrarGol(lado, nomeJogador) {
             if(lado === 'A') window.golsTempA.push(nomeJogador);
@@ -1952,10 +1903,8 @@ onclick="registrarGol('${lado}', 'Gol Contra')">⚠️ Gol Contra</button>`;
             });
             window.filaEquipes = window.filaEquipes.filter(id => id !== idA && id !== idB);
 
-            if (ga > gb) { window.filaEquipes.unshift(idA); window.filaEquipes.push(idB);
-            } 
-            else if (gb > ga) { window.filaEquipes.unshift(idB);
-            window.filaEquipes.push(idA); } 
+            if (ga > gb) { window.filaEquipes.unshift(idA); window.filaEquipes.push(idB); } 
+            else if (gb > ga) { window.filaEquipes.unshift(idB); window.filaEquipes.push(idA); } 
             else {
                 let caraOuCoroa = Math.random() > 0.5;
                 let pFim = caraOuCoroa ? idA : idB; let sFim = caraOuCoroa ? idB : idA;
@@ -1969,8 +1918,7 @@ onclick="registrarGol('${lado}', 'Gol Contra')">⚠️ Gol Contra</button>`;
                     jogos_json: window.jogosDaRodada,
                     artilheiros_json: artilheiros,
                     fila_json: window.filaEquipes
-       
-                 }).eq('id', window.partidaAtualId);
+                }).eq('id', window.partidaAtualId);
             }
 
             limparGolsTemp('A'); limparGolsTemp('B'); atualizarSelectsEquipes(); atualizarFilaUI(); atualizarListaJogosDaRodada(); salvarEstadoCompleto();
@@ -1999,16 +1947,13 @@ onclick="registrarGol('${lado}', 'Gol Contra')">⚠️ Gol Contra</button>`;
                 let btnExcluirHtml = window.partidaSalva ? '' : `<button class="btn-excluir-mini" onclick="removerJogo(${originalIndex})">X</button>`;
                 let autoresA = formatarGolsResumo(j.gols_a);
                 let autoresB = formatarGolsResumo(j.gols_b);
-             
                 
                 let detalhesGolsHtml = '';
                 if (autoresA || autoresB) {
                     detalhesGolsHtml = `
-                        <div style="font-size: 11px; color: var(--text-muted); display: flex; justify-content: space-between; margin-top: 6px; padding-top: 
-6px; border-top: 1px dashed var(--border);">
+                        <div style="font-size: 11px; color: var(--text-muted); display: flex; justify-content: space-between; margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border);">
                             <span style="flex: 1; text-align: right; padding-right: 10px;">${autoresA ? '⚽ ' + autoresA : ''}</span>
                             <span style="flex: 1; text-align: left; padding-left: 10px;">${autoresB ? '⚽ ' + autoresB : ''}</span>
-              
                         </div>
                     `;
                 }
@@ -2016,16 +1961,13 @@ onclick="registrarGol('${lado}', 'Gol Contra')">⚠️ Gol Contra</button>`;
                 let cardHtml = `
                     <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 8px;">
                         <div style="font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 8px; display: flex; justify-content: space-between;">
-           
-                           <span>Partida ${numJogo}</span>
+                            <span>Partida ${numJogo}</span>
                             ${btnExcluirHtml}
                         </div>
-                        <div style="display: flex; justify-content: space-between; align-items: 
-center; font-size: 14px; font-weight: 600;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 600;">
                             <div style="flex:1; text-align:right;">${j.equipe_a_nome}</div>
                             <div class="placar-box" style="margin: 0 10px;">${j.gols_a.length} x ${j.gols_b.length}</div>
                             <div style="flex:1; text-align:left;">${j.equipe_b_nome}</div>
-  
                         </div>
                         ${detalhesGolsHtml}
                     </div>`;
@@ -2035,8 +1977,7 @@ center; font-size: 14px; font-weight: 600;">
             lista.innerHTML = htmlCompleto;
 
             const painelArena = document.getElementById('painel-placar-arena');
-            if(painelArena) painelArena.style.display = window.partidaSalva ?
-            'none' : 'block';
+            if(painelArena) painelArena.style.display = window.partidaSalva ? 'none' : 'block';
 
             const btnEncerrar = document.getElementById('btn-encerrar-baba');
             if(btnEncerrar) btnEncerrar.style.display = window.partidaSalva ? 'none' : 'block';
@@ -2051,30 +1992,25 @@ center; font-size: 14px; font-weight: 600;">
                 if(!timesStats[j.equipe_b_nome]) timesStats[j.equipe_b_nome] = { j:0, v:0, e:0, d:0, gp:0, gc:0, pts:0 };
                 
                 let ga = j.gols_a.length; let gb = j.gols_b.length;
- 
-               let a = timesStats[j.equipe_a_nome]; let b = timesStats[j.equipe_b_nome];
+                let a = timesStats[j.equipe_a_nome]; let b = timesStats[j.equipe_b_nome];
                 
                 a.j++; b.j++; a.gp += ga; a.gc += gb; b.gp += gb; b.gc += ga;
                 
-                if(ga 
-> gb) { a.v++; a.pts+=3; b.d++; }
+                if(ga > gb) { a.v++; a.pts+=3; b.d++; }
                 else if(gb > ga) { b.v++; b.pts+=3; a.d++; }
                 else { a.e++; b.e++; a.pts+=1; b.pts+=1; }
 
                 j.gols_a.forEach(nome => { if(nome !== 'Gol Contra') artilheiros[nome] = (artilheiros[nome] || 0) + 1; });
-                j.gols_b.forEach(nome => 
-{ if(nome !== 'Gol Contra') artilheiros[nome] = (artilheiros[nome] || 0) + 1; });
+                j.gols_b.forEach(nome => { if(nome !== 'Gol Contra') artilheiros[nome] = (artilheiros[nome] || 0) + 1; });
             });
             let rankTimes = Object.entries(timesStats).sort((a, b) => {
                 if(b[1].pts !== a[1].pts) return b[1].pts - a[1].pts; 
                 let sgA = a[1].gp - a[1].gc; let sgB = b[1].gp - b[1].gc;
                 if(sgA !== sgB) return sgB - sgA; 
                 return b[1].gp - a[1].gp; 
- 
-             });
+            });
 
-            let dataExibicao = window.dataPartidaAtual ||
-            new Date().toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
+            let dataExibicao = window.dataPartidaAtual || new Date().toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
             if (dataStr) {
                 let d = new Date(dataStr);
                 if (!isNaN(d.getTime())) {
@@ -2090,16 +2026,14 @@ center; font-size: 14px; font-weight: 600;">
             if (tituloArts) tituloArts.innerText = `⚽ Artilheiros do dia (${dataExibicao})`;
 
             const bodyClass = document.getElementById('body-classificacao');
-            if(rankTimes.length === 0) { bodyClass.innerHTML = '<tr><td colspan="7" style="color:var(--text-muted);">Sem jogos hoje.</td></tr>';
-            } 
+            if(rankTimes.length === 0) { bodyClass.innerHTML = '<tr><td colspan="7" style="color:var(--text-muted);">Sem jogos hoje.</td></tr>'; } 
             else {
                 bodyClass.innerHTML = '';
                 rankTimes.forEach((r, i) => {
                     let t = r[1]; let sg = t.gp - t.gc;
                     let ic = i===0?'🏆 ':'';
                     bodyClass.innerHTML += `<tr>
-                      
-  <td style="font-weight:700;">${ic}${r[0]}</td>
+                        <td style="font-weight:700;">${ic}${r[0]}</td>
                         <td style="font-weight:700; color:var(--primary);">${t.pts}</td>
                         <td>${t.j}</td><td>${t.v}</td><td>${t.e}</td><td>${t.d}</td><td>${sg > 0 ? '+'+sg : sg}</td>
                     </tr>`;
@@ -2108,8 +2042,7 @@ center; font-size: 14px; font-weight: 600;">
 
             const bodyArts = document.getElementById('body-artilheiros-painel');
             let arts = Object.entries(artilheiros).sort((a,b) => b[1] - a[1]);
-            if(arts.length === 0) { bodyArts.innerHTML = '<tr><td colspan="2" style="color:var(--text-muted);">Nenhum gol lançado.</td></tr>';
-            }
+            if(arts.length === 0) { bodyArts.innerHTML = '<tr><td colspan="2" style="color:var(--text-muted);">Nenhum gol lançado.</td></tr>'; }
             else {
                 bodyArts.innerHTML = '';
                 arts.forEach((a, i) => {
@@ -2129,7 +2062,6 @@ center; font-size: 14px; font-weight: 600;">
                 const { data: partidas, error } = await db.from('partidas')
                     .select('*')
                     .eq('user_id', currentUser.id)
-                  
                     .order('created_at', { ascending: false })
                     .limit(1);
                 if (!error && partidas && partidas.length > 0) {
@@ -2139,8 +2071,7 @@ center; font-size: 14px; font-weight: 600;">
                         let agora = new Date();
                         let diffMs = agora.getTime() - dataCriacao.getTime();
                         if (diffMs <= 518400000) {
-                            window.jogosDaRodada = ultimaPartida.jogos_json ||
-                            [];
+                            window.jogosDaRodada = ultimaPartida.jogos_json || [];
                             if (ultimaPartida.data_sorteio) {
                                 let d = new Date(ultimaPartida.data_sorteio);
                                 if (!isNaN(d.getTime())) {
@@ -2177,11 +2108,9 @@ center; font-size: 14px; font-weight: 600;">
                     if (p.jogadores && p.jogadores.user_id === currentUser.id) {
                         let partidaId = p.partida_id;
                         let jogador = p.jogadores;
- 
                         if(jogador.tipo === 'Mensalista') {
                             if(!mensalistasPorPartida[partidaId]) mensalistasPorPartida[partidaId] = new Set();
                             mensalistasPorPartida[partidaId].add(jogador.nome);
-              
                         }
                     }
                 });
@@ -2192,12 +2121,10 @@ center; font-size: 14px; font-weight: 600;">
                 presencas.forEach(p => {
                     if (p.jogadores && p.jogadores.user_id === currentUser.id) {
                         let nome = p.jogadores.nome;
-                        let tipo 
-= p.jogadores.tipo;
+                        let tipo = p.jogadores.tipo;
                         if(tipo !== 'Mensalista') return;
                         if(!rankingAnual[nome]) rankingAnual[nome] = { gols: 0, presencas: 0 };
                         let pt = partidas.find(x => x.id === p.partida_id);
-         
                         if(pt) rankingAnual[nome].presencas++;
                     }
                 });
@@ -2213,12 +2140,10 @@ center; font-size: 14px; font-weight: 600;">
 
                     for(let nome in arts) {
                         let isMensalista = mensalistasNesta.has(nome) || jogadores.some(j => j.nome === nome && j.tipo === 'Mensalista');
-        
                         if(!isMensalista) continue; 
 
                         let gols = arts[nome];
                         if(!rankingAnual[nome]) rankingAnual[nome] = { gols: 0, presencas: 0 };
-                       
                         rankingAnual[nome].gols += gols;
                         if(isEsteMes) artilhariaMes[nome] = (artilhariaMes[nome] || 0) + gols;
                     }
@@ -2250,7 +2175,7 @@ center; font-size: 14px; font-weight: 600;">
 
         function atualizarFinanceiro() {
             if(window.isModoPublico) return;
-            renderizarListaCustos();
+            gerarRelatorioMensal();
             salvarEstadoCompleto();
         }
 
@@ -2262,15 +2187,13 @@ center; font-size: 14px; font-weight: 600;">
 
             if(!desc || val <= 0) return alert("Preencha descrição e valor válido.");
 
-            // Se o usuário não selecionar a data, pega a de hoje automaticamente
             if(!dataInput) {
                 let tzoffset = (new Date()).getTimezoneOffset() * 60000;
                 dataInput = (new Date(Date.now() - tzoffset)).toISOString().split('T')[0];
             }
 
-            // Unificando tudo no Livro Caixa (despesasMensaisGlobais)
             let novaDespesa = { 
-                id: Date.now(), // ID único para facilitar a exclusão
+                id: Date.now(), 
                 desc: desc, 
                 valor: val, 
                 tipo: tipo,
@@ -2289,13 +2212,12 @@ center; font-size: 14px; font-weight: 600;">
                 btn.innerText = txtOrigin; btn.disabled = false;
 
                 if (error) {
-                    alert("Erro ao salvar despesa no Livro Caixa: " + error.message);
-                    window.despesasMensaisGlobais.pop(); // Reverte em caso de erro
+                    alert("Erro ao salvar despesa: " + error.message);
+                    window.despesasMensaisGlobais.pop(); 
                 } else {
                     document.getElementById('desc-custo').value = ''; 
                     document.getElementById('valor-custo').value = '';
                     document.getElementById('data-custo').value = '';
-                    atualizarFinanceiro();
                     gerarRelatorioMensal();
                 }
             }
@@ -2304,7 +2226,6 @@ center; font-size: 14px; font-weight: 600;">
         async function removerCusto(idUnico, indexArrayFallback) { 
             if(!confirm("Deseja realmente apagar esta despesa do Livro Caixa?")) return;
 
-            // Busca pelo ID único (novo formato) ou cai pro index original (legado antigo)
             let indexReal = window.despesasMensaisGlobais.findIndex(c => c.id === idUnico);
             if (indexReal === -1) indexReal = indexArrayFallback;
             
@@ -2316,84 +2237,11 @@ center; font-size: 14px; font-weight: 600;">
                 const { error } = await db.from('profiles').update({ despesas_mensais_json: window.despesasMensaisGlobais }).eq('id', currentUser.id);
                 if(error) {
                     alert("Erro ao remover do banco: " + error.message);
-                    window.despesasMensaisGlobais.splice(indexReal, 0, removido); // Reverte
+                    window.despesasMensaisGlobais.splice(indexReal, 0, removido); 
                 } else {
-                    atualizarFinanceiro(); 
                     gerarRelatorioMensal();
                 }
             }
-        }
-        
-        function renderizarListaCustos() {
-            let listaDiarios = document.getElementById('lista-custos'); 
-            let listaMensais = document.getElementById('lista-custos-mensais'); 
-            if(!listaDiarios) return;
-
-            listaDiarios.innerHTML = '';
-            if(listaMensais) listaMensais.innerHTML = '';
-
-            let filtroInput = document.getElementById('filtro-mes-relatorio');
-            
-            let tzoffset = (new Date()).getTimezoneOffset() * 60000;
-            let hojeIsoStr = (new Date(Date.now() - tzoffset)).toISOString().split('T')[0];
-            let mesKey = filtroInput ? filtroInput.value : hojeIsoStr.substring(0, 7);
-
-            let todasDespesas = window.despesasMensaisGlobais || [];
-
-            let custHojeDiario = 0;
-            let temMensalEsteMes = false;
-            let temAvulsaEsteMes = false;
-
-            todasDespesas.forEach((c, indexReal) => {
-                let idUnico = c.id || indexReal; // Para compatibilidade
-                
-                // Despesas Avulsas (Diárias)
-                if (c.tipo !== 'mensal') {
-                    let dCusto = c.data || hojeIsoStr;
-                    
-                    // Soma no painel principal apenas se a data for hoje
-                    if (dCusto === hojeIsoStr) custHojeDiario += c.valor;
-
-                    // Lista no painel apenas se for do mês que está selecionado no filtro
-                    if (dCusto.substring(0, 7) === mesKey) {
-                        temAvulsaEsteMes = true;
-                        let dDataBr = dCusto.split('-').reverse().join('/');
-                        listaDiarios.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 10px; background:var(--light); border:1px solid var(--border); border-radius:6px; margin-bottom:5px; font-size:13px;">
-                            <span>${c.desc} <span style="color:var(--text-muted); font-size:10px;">(${dDataBr})</span></span>
-                            <span><strong class="valor-negativo">R$ ${c.valor.toFixed(2)}</strong> <button class="btn-excluir-mini" style="margin-left:8px;" onclick="removerCusto(${idUnico}, ${indexReal})">X</button></span>
-                        </div>`;
-                    }
-                } 
-                // Despesas Fixas (Mensais)
-                else {
-                    if (c.data === mesKey) {
-                        temMensalEsteMes = true;
-                        listaMensais.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 10px; background:var(--light); border:1px solid var(--border); border-radius:6px; margin-bottom:5px; font-size:13px;">
-                            <span>${c.desc}</span>
-                            <span><strong class="valor-negativo">R$ ${c.valor.toFixed(2)}</strong> <button class="btn-excluir-mini" style="margin-left:8px;" onclick="removerCusto(${idUnico}, ${indexReal})">X</button></span>
-                        </div>`;
-                    }
-                }
-            });
-
-            if(!temAvulsaEsteMes) { 
-                listaDiarios.innerHTML = '<p style="color:var(--text-muted); font-size:12px; text-align:center; padding:8px;">Nenhuma despesa avulsa lançada neste mês.</p>'; 
-            }
-            if(!temMensalEsteMes && listaMensais) {
-                listaMensais.innerHTML = '<p style="color:var(--text-muted); font-size:12px; text-align:center; padding:8px;">Nenhuma despesa fixa lançada neste mês.</p>';
-            }
-
-            // Atualiza o painel principal (Receita Hoje x Custos Hoje)
-            let valConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
-            let convPagantesHoje = jogadores.filter(j => j.tipo === 'Convidado' && j.presente && j.pagou).length;
-            let recHoje = (convPagantesHoje * valConv); 
-            
-            let elFinRec = document.getElementById('fin-receita-hoje');
-            let elFinCust = document.getElementById('fin-custos-hoje');
-            if(elFinRec) elFinRec.innerText = `R$ ${recHoje.toFixed(2)}`;
-            if(elFinCust) elFinCust.innerText = `R$ ${custHojeDiario.toFixed(2)}`;
-            
-            salvarEstadoCompleto();
         }
 
         async function salvarPartidaComPlacares() {
@@ -2418,7 +2266,6 @@ center; font-size: 14px; font-weight: 600;">
                     valor_por_convidado: valorConv,
                     valor_por_mensalista: valorMens,
                     custos_json: window.custosDaRodada,
-        
                     artilheiros_json: artilheiros,
                     jogos_json: window.jogosDaRodada,
                     times_json: window.timesSorteadosObjs,
@@ -2450,8 +2297,7 @@ center; font-size: 14px; font-weight: 600;">
 
                 btn.innerText = "✅ Baba Encerrado e Salvo com Sucesso!";
                 alert("Baba finalizado com sucesso!");
-            } catch(err) { alert("Erro: " + err.message); btn.innerText = "Tentar Novamente"; btn.disabled = false;
-            }
+            } catch(err) { alert("Erro: " + err.message); btn.innerText = "Tentar Novamente"; btn.disabled = false; }
         }
     </script>
 </body>
