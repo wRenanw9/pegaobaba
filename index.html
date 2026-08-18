@@ -184,7 +184,7 @@
         .dev-signature .btn-dev-whatsapp { display: inline-flex; align-items: center; justify-content: center; background: var(--whatsapp); color: white; padding: 8px 16px; border-radius: 8px; margin-top: 10px; font-weight: bold; text-decoration: none; box-shadow: 0 2px 4px rgba(37, 211, 102, 0.3); }
 
         @media print {
-            body { background: white; color: black; padding: 0; margin: 0; max-width: 100%; font-size: 11px; }
+            body { background: white; color: black; padding: 0; margin: 0; max-width: 100%; font-size: 11px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .top-bar, .bottom-nav, .no-print, button, input, select, .card-secao-stats:not(#card-relatorio-mensal) { display: none !important; }
             #card-relatorio-mensal { display: block !important; border: none !important; box-shadow: none !important; margin: 0 !important; padding: 0 !important; }
             #view-financeiro { display: block !important; padding: 0 !important; margin: 0 !important; }
@@ -1744,25 +1744,48 @@
                 html += `<tr><td colspan="2" style="color:var(--text-muted);">Nenhuma despesa registrada no mês selecionado.</td></tr>`;
             }
 
-            html += `<tr><td><strong>Total de Despesas:</strong></td><td style="text-align:right; font-weight:bold; color:var(--danger);">R$ ${totalCustos.toFixed(2)}</td></tr>`;
+            // FECHAMOS A TABELA AQUI PARA O BALANÇO ENTRAR NOVO
+            html += `</table>`;
 
             let receitaTotal = totalMensalidades + totalConvidados;
             let saldoMensal = receitaTotal - totalCustos;
             let saldoTotalCaixa = saldoAnterior + saldoMensal;
 
-            html += `<tr><th colspan="2" style="padding-top:15px; background:var(--dark); color:white; text-align:center;">💰 BALANÇO FINANCEIRO DO MÊS</th></tr>`;
+            // INÍCIO DO NOVO LAYOUT DE BALANÇO (CARTÃO ISOLADO)
+            html += `<div style="margin-top: 20px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); page-break-inside: avoid;">`;
             
-            // Nova linha de saldo anterior
-            html += `<tr><td style="color:var(--text-muted);">Saldo Acumulado (Meses Anteriores):</td><td style="text-align:right; font-weight:bold; color:${saldoAnterior >= 0 ? 'var(--supabase)' : 'var(--danger)'};">R$ ${saldoAnterior.toFixed(2)}</td></tr>`;
+            // Cabeçalho do Cartão
+            html += `<div style="background: var(--dark); color: white; padding: 12px 15px; text-align: center; font-weight: 700; font-size: 14px; text-transform: uppercase; -webkit-print-color-adjust: exact; print-color-adjust: exact;">💰 Resumo Financeiro (${partes[1]}/${partes[0]})</div>`;
             
-            html += `<tr><td>Receitas (Mensalidades + Convidados):</td><td style="text-align:right; font-weight:bold; color:var(--supabase);">+ R$ ${receitaTotal.toFixed(2)}</td></tr>`;
-            html += `<tr><td>Despesas:</td><td style="text-align:right; font-weight:bold; color:var(--danger);">- R$ ${totalCustos.toFixed(2)}</td></tr>`;
-            html += `<tr><td style="padding-bottom: 10px; border-bottom: 2px dashed var(--border);"><strong style="font-size:12px;">SALDO (SÓ DESTE MÊS):</strong></td><td style="padding-bottom: 10px; border-bottom: 2px dashed var(--border); text-align:right; font-weight:bold; font-size:13px; color:${saldoMensal >= 0 ? 'var(--primary)' : 'var(--danger)'};">R$ ${saldoMensal.toFixed(2)}</td></tr>`;
+            // Corpo - Movimentações apenas do Mês atual
+            html += `<div style="padding: 15px; background: white;">`;
+            html += `<div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;">
+                        <span style="color: var(--text-muted);">Entradas no Mês:</span>
+                        <span style="font-weight: bold; color: var(--supabase);">+ R$ ${receitaTotal.toFixed(2)}</span>
+                     </div>`;
+            html += `<div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13px; border-bottom: 1px dashed var(--border); padding-bottom: 12px;">
+                        <span style="color: var(--text-muted);">Saídas no Mês:</span>
+                        <span style="font-weight: bold; color: var(--danger);">- R$ ${totalCustos.toFixed(2)}</span>
+                     </div>`;
+            html += `<div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: bold;">
+                        <span>Saldo do Mês:</span>
+                        <span style="color: ${saldoMensal >= 0 ? 'var(--primary)' : 'var(--danger)'};">R$ ${saldoMensal.toFixed(2)}</span>
+                     </div>`;
+            html += `</div>`;
             
-            // Resumo Total Atual
-            html += `<tr><td style="padding-top:15px;"><strong style="font-size:14px;">🏦 CAIXA ATUAL TOTAL:</strong></td><td style="text-align:right; padding-top:15px; font-weight:900; font-size:16px; color:${saldoTotalCaixa >= 0 ? 'var(--supabase)' : 'var(--danger)'};">R$ ${saldoTotalCaixa.toFixed(2)}</td></tr>`;
-
-            html += `</table>`;
+            // Rodapé - Fundo Cinza com o Acumulado Geral e Caixa Total
+            html += `<div style="padding: 15px; background: var(--light); border-top: 1px solid var(--border); -webkit-print-color-adjust: exact; print-color-adjust: exact;">`;
+            html += `<div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 12px; color: var(--text-muted);">
+                        <span>⏪ Saldo Anterior Acumulado:</span>
+                        <span style="font-weight: bold; color: ${saldoAnterior >= 0 ? 'var(--supabase)' : 'var(--danger)'};">R$ ${saldoAnterior.toFixed(2)}</span>
+                     </div>`;
+            html += `<div style="display: flex; justify-content: space-between; align-items: center; font-size: 16px;">
+                        <span style="font-weight: 800; color: var(--dark);">🏦 CAIXA TOTAL:</span>
+                        <span style="font-weight: 900; font-size: 18px; color: ${saldoTotalCaixa >= 0 ? 'var(--supabase)' : 'var(--danger)'};">R$ ${saldoTotalCaixa.toFixed(2)}</span>
+                     </div>`;
+            html += `</div>`;
+            
+            html += `</div>`; // Fim do Cartão de Balanço
             
             let elConteudo = document.getElementById('conteudo-relatorio-mensal');
             if(elConteudo) elConteudo.innerHTML = html;
