@@ -1427,7 +1427,8 @@
 
                 let tagConvidado = j.tipo === 'Convidado' ? '<span class="badge badge-convidado">C</span>' : '';
                 let posAbbr = posMap[j.posicao] || j.posicao;
-                let tagPosicao = (j.posicao !== 'Goleiro' && j.posicao !== 'Linha') ? `<span class="badge badge-posicao" style="width:36px; text-align:center; padding:3px 0;">${posAbbr}</span>` : '';
+                // Ajuste crítico para o selo ficar com aparência de pílula (inline-block e largura mínima)
+                let tagPosicao = (j.posicao !== 'Goleiro' && j.posicao !== 'Linha') ? `<span class="badge badge-posicao" style="display: inline-block; min-width: 28px; text-align: center;">${posAbbr}</span>` : '';
                 
                 if(listaElenco) {
                     let btnEdicao = `<button class="btn-small btn-acao-outline" onclick="prepararEdicao(${indexArray})">✏️</button>`;
@@ -1452,11 +1453,11 @@
 
                         listaAguardando.innerHTML += `
                         <div class="linha-jogador grid-aguardando" data-nome="${j.nome}">
-                            <div class="col-nome" style="justify-content: space-between;">
-                                <div style="display:flex; align-items:center; gap:5px; overflow:hidden; ${colorStyle} ${cursorStyle}" ${publicDisabled} title="${isPago ? 'Pago' : 'Pendente - Clique para pagar'}">
-                                    ${tagConvidado} <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${j.nome}</span>
+                            <div class="col-nome" style="justify-content: space-between; width: 100%;">
+                                <div style="display:flex; align-items:center; gap:5px; overflow:hidden; flex: 1; min-width: 0; ${colorStyle} ${cursorStyle}" ${publicDisabled} title="${isPago ? 'Pago' : 'Pendente - Clique para pagar'}">
+                                    ${tagConvidado} <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block;">${j.nome}</span>
                                 </div>
-                                ${tagPosicao ? `<div style="margin-left:5px; flex-shrink:0;">${tagPosicao}</div>` : ''}
+                                ${tagPosicao ? `<div style="flex-shrink:0; margin-left: 5px;">${tagPosicao}</div>` : ''}
                             </div>
                             <div class="col-status">${btnAcoesAguardando}</div>
                             <div class="col-acoes"><button class="btn-small btn-presente" onclick="marcarPresenca(${indexArray})">Chegou</button></div>
@@ -1954,7 +1955,7 @@
                     <ul>`;
                 t.jogadores.forEach(j => { 
                     let posAbbr = posMap[j.posicao] || j.posicao;
-                    html += `<li><strong>${j.nome}</strong> ${j.posicao!=='Linha'?`<span class="badge badge-posicao">${posAbbr}</span>`:''}</li>`; 
+                    html += `<li><strong>${j.nome}</strong> ${j.posicao!=='Linha'?`<span class="badge badge-posicao" style="display:inline-block; min-width:32px; text-align:center; font-size:9px;">${posAbbr}</span>`:''}</li>`; 
                 });
                 containerEscalacao.innerHTML += html + `</ul></div>`;
             });
