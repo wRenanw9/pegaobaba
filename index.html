@@ -83,20 +83,20 @@
         .btn-limpar { background-color: var(--light); color: var(--text-muted); border: 1px solid var(--border); margin-bottom: 15px; }
         .btn-small { width: auto; padding: 6px 8px; font-size: 11px; border-radius: 6px; }
 
-        /* LISTAS E JOGADORES - GRADE HÍBRIDA PARA MÁXIMO ESPAÇO NO NOME */
+        /* LISTAS E JOGADORES - GRADE INTELIGENTE QUE PRIORIZA O NOME */
         .busca-container { position: relative; margin-bottom: 15px; }
         
         .linha-jogador { display: grid; align-items: center; padding: 12px 10px; border-bottom: 1px solid var(--border); background: white; border-radius: 8px; margin-bottom: 8px; font-size: 13px; gap: 8px;}
         .linha-jogador:hover { background: var(--light); }
-        .col-nome { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 5px;}
+        .col-nome { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center;}
         
-        /* 1fr usa o espaço restante. As outras são compactas e fixas para alinhamento tipo tabela */
-        .grid-elenco { grid-template-columns: 1fr 70px 65px; } 
-        .grid-aguardando { grid-template-columns: 1fr 70px 60px 65px; } 
-        .grid-prontos { grid-template-columns: 1fr 70px 65px; } 
+        /* 1fr usa o espaço restante, auto se adapta aos botões perfeitamente */
+        .grid-elenco { grid-template-columns: 1fr auto auto; } 
+        .grid-aguardando { grid-template-columns: 1fr auto auto; } 
+        .grid-prontos { grid-template-columns: 1fr auto; } 
 
         .col-status { display: flex; justify-content: center; width: 100%; }
-        .col-status .btn-small { width: 100%; text-align: center; padding: 6px 4px; font-size: 11px; }
+        .col-status .btn-small { width: 100%; text-align: center; padding: 6px 8px; font-size: 11px; }
         .col-status span { font-size: 10px; color: var(--text-muted); text-align: center; width: 100%;}
         
         .col-pos { display: flex; justify-content: center; width: 100%; }
@@ -189,6 +189,10 @@
             .top-bar, .bottom-nav, .no-print, button, input, select, .card-secao-stats:not(#card-relatorio-mensal), .dev-signature { display: none !important; }
             #card-relatorio-mensal { display: block !important; border: none !important; box-shadow: none !important; margin: 0 !important; padding: 0 !important; }
             #view-financeiro { display: block !important; padding: 0 !important; margin: 0 !important; }
+            
+            /* Ajuste Perfeito para o Bloco de Despesas não quebrar no PDF */
+            .grid-relatorio-custos { display: flex !important; flex-direction: column !important; gap: 4px !important; }
+            .item-custo-relatorio { width: 100% !important; box-sizing: border-box !important; display: flex !important; justify-content: space-between !important; margin-bottom: 4px !important; page-break-inside: avoid; }
             
             .relatorio-tabela { font-size: 11px; }
             .relatorio-tabela th, .relatorio-tabela td { padding: 4px; }
@@ -1404,17 +1408,16 @@
             todosOrdenados.forEach((j) => {
                 let indexArray = jogadores.findIndex(jog => jog.id === j.id);
                 let tagConvidado = j.tipo === 'Convidado' ? '<span class="badge badge-convidado">C</span>' : '';
-                let tagPosicao = (j.posicao !== 'Goleiro' && j.posicao !== 'Linha') ? `<span class="badge badge-posicao">${j.posicao}</span>` : '';
+                let tagPosicao = (j.posicao !== 'Goleiro' && j.posicao !== 'Linha') ? `<span class="badge badge-posicao" style="margin-left: 5px;">${j.posicao}</span>` : '';
                 
                 if(listaElenco) {
                     let btnEdicao = `<button class="btn-small btn-acao-outline" onclick="prepararEdicao(${indexArray})">✏️</button>`;
                     let btnExcluir = `<button class="btn-small btn-acao-outline" style="color:var(--danger); border-color:var(--danger);" onclick="removerJogador('${j.id}', ${indexArray})">X</button>`;
                     let btnMensal = j.tipo === 'Mensalista' ? (j.pagamentos_json && j.pagamentos_json[mesKey] === true ? `<button class="btn-small btn-pagou" onclick="alternarMensalidade('${j.id}', ${indexArray})">Pago</button>` : `<button class="btn-small btn-devendo" onclick="alternarMensalidade('${j.id}', ${indexArray})">Pendente</button>`) : `<span>Diária local</span>`;
                     
-                    /* Tabela Elenco agora não renderiza a Posição */
                     listaElenco.innerHTML += `
                     <div class="linha-jogador grid-elenco" data-nome="${j.nome}">
-                        <div class="col-nome">${tagConvidado} ${j.nome}</div>
+                        <div class="col-nome">${tagConvidado} <span style="margin-left: 4px;">${j.nome}</span></div>
                         <div class="col-status">${btnMensal}</div>
                         <div class="col-acoes">${btnEdicao} ${btnExcluir}</div>
                     </div>`;
@@ -1430,9 +1433,8 @@
 
                         listaAguardando.innerHTML += `
                         <div class="linha-jogador grid-aguardando" data-nome="${j.nome}">
-                            <div class="col-nome">${tagConvidado} ${j.nome}</div>
+                            <div class="col-nome">${tagConvidado} <span style="margin-left: 4px; margin-right: 4px;">${j.nome}</span> ${tagPosicao}</div>
                             <div class="col-status">${btnAcoesAguardando}</div>
-                            <div class="col-pos">${tagPosicao}</div>
                             <div class="col-acoes"><button class="btn-small btn-presente" onclick="marcarPresenca(${indexArray})">Chegou</button></div>
                         </div>`;
                     }
@@ -1442,18 +1444,18 @@
             presentes.forEach((j, pos) => {
                 let tagConvidado = j.tipo === 'Convidado' ? '<span class="badge badge-convidado">C</span>' : '';
                 
-                let controleFinanceiro = '';
-                if (j.tipo === 'Mensalista') {
-                    controleFinanceiro = (j.pagamentos_json && j.pagamentos_json[mesKey] === true) ? `<button class="btn-small btn-pagou hidden-public" onclick="alternarMensalidade('${j.id}', ${j.indexArray})">Pago</button>` : `<button class="btn-small btn-devendo hidden-public" onclick="alternarMensalidade('${j.id}', ${j.indexArray})">Pendente</button>`;
-                } else {
-                    controleFinanceiro = j.pagou ? `<button class="btn-small btn-pagou hidden-public" onclick="alternarPagamentoDiaria(${j.indexArray})">Pago</button>` : `<button class="btn-small btn-devendo hidden-public" onclick="alternarPagamentoDiaria(${j.indexArray})">Pendente</button>`;
-                }
+                let isPago = j.tipo === 'Mensalista' ? (j.pagamentos_json && j.pagamentos_json[mesKey] === true) : j.pagou;
+                let colorStyle = isPago ? 'color: inherit;' : 'color: var(--danger); font-weight: 700;';
+                let clickAction = j.tipo === 'Mensalista' ? `onclick="alternarMensalidade('${j.id}', ${j.indexArray})"` : `onclick="alternarPagamentoDiaria(${j.indexArray})"`;
+                let publicDisabled = window.isModoPublico ? "" : clickAction;
+                let cursorStyle = window.isModoPublico ? "" : "cursor: pointer;";
 
                 if(listaPresentes) {
                     listaPresentes.innerHTML += `
                     <div class="linha-jogador grid-prontos">
-                        <div class="col-nome"><span class="badge" style="background:var(--dark); color:white;">${pos + 1}º</span> ${tagConvidado} ${j.nome}</div>
-                        <div class="col-status">${controleFinanceiro}</div>
+                        <div class="col-nome" style="${colorStyle} ${cursorStyle}" ${publicDisabled} title="${isPago ? 'Pago' : 'Pendente - Clique para pagar'}">
+                            <span class="badge" style="background:var(--dark); color:white;">${pos + 1}º</span> ${tagConvidado} <span style="margin-left: 5px;">${j.nome}</span>
+                        </div>
                         <div class="col-acoes"><button class="btn-small btn-acao-outline hidden-public" style="color:var(--danger); border-color:var(--danger);" onclick="desmarcarPresenca(${j.indexArray})">Retirar</button></div>
                     </div>`;
                 }
@@ -1735,7 +1737,7 @@
                     let dStr = dataBr ? ` <span style="color:var(--text-muted); font-size:10px;">(${dataBr})</span>` : '';
                     let idUnico = c.id || indexReal;
                     
-                    htmlCustosDiarios += `<div class="item-custo-relatorio"><span>${c.desc}${dStr}</span> <span><strong class="valor-negativo">R$ ${c.valor.toFixed(2)}</strong> <button class="btn-excluir-mini no-print" style="margin-left:8px;" onclick="removerCusto(${idUnico}, ${indexReal})">X</button></span></div>`;
+                    htmlCustosDiarios += `<div class="item-custo-relatorio"><span>${c.desc}${dStr}</span> <span style="display:flex; align-items:center;"><strong class="valor-negativo" style="white-space:nowrap;">R$ ${c.valor.toFixed(2)}</strong> <button class="btn-excluir-mini no-print" style="margin-left:8px;" onclick="removerCusto(${idUnico}, ${indexReal})">X</button></span></div>`;
                 }
             });
 
@@ -1747,7 +1749,7 @@
                         temCustos = true;
                         let rawDate = p.data_sorteio || p.created_at || "";
                         let dData = rawDate ? rawDate.split('T')[0].split('-').reverse().join('/') : "Antigo";
-                        htmlCustosDiarios += `<div class="item-custo-relatorio"><span>${c.desc} <span style="color:var(--text-muted); font-size:10px;">(${dData})</span></span> <strong class="valor-negativo">R$ ${c.valor.toFixed(2)}</strong></div>`;
+                        htmlCustosDiarios += `<div class="item-custo-relatorio"><span>${c.desc} <span style="color:var(--text-muted); font-size:10px;">(${dData})</span></span> <strong class="valor-negativo" style="white-space:nowrap;">R$ ${c.valor.toFixed(2)}</strong></div>`;
                     });
                 });
             }
