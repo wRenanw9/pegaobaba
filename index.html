@@ -175,6 +175,7 @@
         /* MODO PÚBLICO E IMPRESSÃO / PDF */
         .hidden-public { display: block; }
         .public-mode .hidden-public { display: none !important; }
+        body:not(.public-mode) .public-only { display: none !important; }
         .codigo-gerado-box { background: var(--light); padding: 15px; border: 2px dashed var(--primary); border-radius: 12px; text-align: center; margin-top: 15px; font-weight: 700; font-size: 20px; letter-spacing: 2px;}
 
         /* ASSINATURA DO DESENVOLVEDOR CTA */
@@ -376,7 +377,7 @@
             </div>
 
             <!-- Assinatura do Desenvolvedor (Vitrine Pública) na Súmula -->
-            <div class="dev-signature card" style="border: 1px solid var(--border); box-shadow: none; padding: 20px;">
+            <div class="dev-signature card public-only" style="border: 1px solid var(--border); box-shadow: none; padding: 20px;">
                 <p class="cta-title">Quer ter este sistema no seu baba?</p>
                 <p class="cta-desc">Entre em contato e profissionalize a sua resenha!</p>
                 Desenvolvido por <strong>Renan Barbosa</strong><br>
@@ -437,7 +438,7 @@
             </div>
 
             <!-- Assinatura do Desenvolvedor (Vitrine Pública) nas Estatísticas -->
-            <div class="dev-signature card" style="border: 1px solid var(--border); box-shadow: none; padding: 20px; margin-top: 20px;">
+            <div class="dev-signature card public-only" style="border: 1px solid var(--border); box-shadow: none; padding: 20px; margin-top: 20px;">
                 <p class="cta-title">Quer ter este sistema no seu baba?</p>
                 <p class="cta-desc">Entre em contato e profissionalize a sua resenha!</p>
                 Desenvolvido por <strong>Renan Barbosa</strong><br>
