@@ -484,27 +484,36 @@
                 </div>
             </div>
 
-            <!-- LANÇAR NOVA DESPESA (LIVRO CAIXA INDEPENDENTE) -->
+            <!-- LANÇAR NOVA DESPESA / ENTRADA EXTRA -->
             <div class="card hidden-public no-print" style="margin-bottom:15px; padding: 15px;">
-                <h3 style="font-size: 14px; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom: 12px;">💸 Lançar Nova Despesa</h3>
+                <h3 style="font-size: 14px; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom: 12px;">💸 Lançar Movimentação</h3>
+                
                 <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                    <input type="text" id="desc-custo" placeholder="Ex: Juiz, Água, Bola" style="flex:2; margin:0; padding:10px; font-size:13px;">
-                    <input type="number" id="valor-custo" placeholder="R$" style="flex:1; margin:0; padding:10px; font-size:13px;">
+                    <select id="operacao-movimentacao" style="flex:1; margin:0; padding:10px; font-size:13px; font-weight:bold;">
+                        <option value="saida">🔴 Saída (-)</option>
+                        <option value="entrada">🟢 Entrada (+)</option>
+                    </select>
+                    <input type="text" id="desc-custo" placeholder="Ex: Juiz, Água, Saldo Extra" style="flex:2; margin:0; padding:10px; font-size:13px;">
                 </div>
+                
                 <div style="display: flex; gap: 8px; margin-bottom: 12px; align-items: flex-end;">
+                    <div style="flex: 1;">
+                        <label style="font-size: 10px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">Valor:</label>
+                        <input type="number" id="valor-custo" placeholder="R$" style="width:100%; margin:0; padding:10px; font-size:13px;">
+                    </div>
                     <div style="flex: 1.2;">
-                        <label style="font-size: 10px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">Tipo de Despesa:</label>
+                        <label style="font-size: 10px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">Frequência:</label>
                         <select id="tipo-custo" style="width:100%; margin:0; padding:10px; font-size:13px;">
-                            <option value="diario">Avulso / Diária</option>
+                            <option value="diario">Avulso / Pontual</option>
                             <option value="mensal">Mensal (Fixo)</option>
                         </select>
                     </div>
                     <div style="flex: 1;">
-                        <label style="font-size: 10px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">Data do Gasto:</label>
+                        <label style="font-size: 10px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">Data:</label>
                         <input type="date" id="data-custo" style="width:100%; margin:0; padding:10px; font-size:13px;">
                     </div>
                 </div>
-                <button onclick="adicionarCusto()" style="background: var(--dark); padding: 12px; font-size:14px;">Registrar Saída</button>
+                <button onclick="adicionarCusto()" style="background: var(--dark); padding: 12px; font-size:14px;">Registrar Movimentação</button>
             </div>
 
             <!-- RELATÓRIO MENSAL DETALHADO -->
@@ -1722,11 +1731,16 @@
                 }
             });
 
-            // Calcula Despesas Livro Caixa de meses passados
+            // Calcula Despesas/Entradas do Livro Caixa de meses passados
             (window.despesasMensaisGlobais || []).forEach(c => {
                 let cMes = c.data ? c.data.substring(0, 7) : "";
                 if(cMes && cMes < mesKey) {
-                    saldoAnterior -= c.valor;
+                    let op = c.operacao || 'saida';
+                    if (op === 'entrada') {
+                        saldoAnterior += c.valor;
+                    } else {
+                        saldoAnterior -= c.valor;
+                    }
                 }
             });
 
@@ -1767,26 +1781,35 @@
             }
             html += `<tr><td><strong>Subtotal Convidados:</strong></td><td style="text-align:right; font-weight:bold; color:var(--supabase);">R$ ${totalConvidados.toFixed(2)}</td></tr>`;
 
-            html += `<tr><th colspan="2" style="padding-top:12px;">📉 Detalhamento de Despesas (Custos)</th></tr>`;
             let totalCustos = 0;
+            let totalEntradasExtras = 0;
             let htmlCustosDiarios = `<div class="grid-relatorio-custos">`;
+            let htmlEntradasExtras = `<div class="grid-relatorio-custos">`;
             let temCustos = false;
+            let temEntradaExtra = false;
 
-            // LER DESPESAS DO LIVRO CAIXA UNIFICADO DO MÊS
+            // LER MOVIMENTAÇÕES DO LIVRO CAIXA UNIFICADO DO MÊS
             (window.despesasMensaisGlobais || []).forEach((c, indexReal) => {
                 let dIso = c.data || "";
                 if (dIso.substring(0, 7) === mesKey) {
-                    totalCustos += c.valor;
-                    temCustos = true;
                     let dataBr = (c.data && c.tipo !== 'mensal') ? c.data.split('-').reverse().join('/') : '';
                     let dStr = dataBr ? ` <span style="color:var(--text-muted); font-size:10px;">(${dataBr})</span>` : '';
                     let idUnico = c.id || indexReal;
+                    let op = c.operacao || 'saida';
                     
-                    htmlCustosDiarios += `<div class="item-custo-relatorio"><span>${c.desc}${dStr}</span> <span style="display:flex; align-items:center;"><strong class="valor-negativo" style="white-space:nowrap;">R$ ${c.valor.toFixed(2)}</strong> <button class="btn-excluir-mini no-print" style="margin-left:8px;" onclick="removerCusto(${idUnico}, ${indexReal})">X</button></span></div>`;
+                    if (op === 'entrada') {
+                        totalEntradasExtras += c.valor;
+                        temEntradaExtra = true;
+                        htmlEntradasExtras += `<div class="item-custo-relatorio"><span>${c.desc}${dStr}</span> <span style="display:flex; align-items:center;"><strong class="valor-positivo" style="white-space:nowrap;">+ R$ ${c.valor.toFixed(2)}</strong> <button class="btn-excluir-mini no-print" style="margin-left:8px;" onclick="removerCusto(${idUnico}, ${indexReal})">X</button></span></div>`;
+                    } else {
+                        totalCustos += c.valor;
+                        temCustos = true;
+                        htmlCustosDiarios += `<div class="item-custo-relatorio"><span>${c.desc}${dStr}</span> <span style="display:flex; align-items:center;"><strong class="valor-negativo" style="white-space:nowrap;">- R$ ${c.valor.toFixed(2)}</strong> <button class="btn-excluir-mini no-print" style="margin-left:8px;" onclick="removerCusto(${idUnico}, ${indexReal})">X</button></span></div>`;
+                    }
                 }
             });
 
-            // LER DESPESAS ANTIGAS (LEGADO) DO MÊS
+            // LER DESPESAS ANTIGAS (LEGADO) DO MÊS (Só existiam Saídas)
             if(partidasDoMes.length > 0) {
                 partidasDoMes.forEach(p => {
                     (p.custos_json || []).forEach(c => {
@@ -1794,13 +1817,26 @@
                         temCustos = true;
                         let rawDate = p.data_sorteio || p.created_at || "";
                         let dData = rawDate ? rawDate.split('T')[0].split('-').reverse().join('/') : "Antigo";
-                        htmlCustosDiarios += `<div class="item-custo-relatorio"><span>${c.desc} <span style="color:var(--text-muted); font-size:10px;">(${dData})</span></span> <strong class="valor-negativo" style="white-space:nowrap;">R$ ${c.valor.toFixed(2)}</strong></div>`;
+                        htmlCustosDiarios += `<div class="item-custo-relatorio"><span>${c.desc} <span style="color:var(--text-muted); font-size:10px;">(${dData})</span></span> <strong class="valor-negativo" style="white-space:nowrap;">- R$ ${c.valor.toFixed(2)}</strong></div>`;
                     });
                 });
             }
 
             htmlCustosDiarios += `</div>`;
+            htmlEntradasExtras += `</div>`;
 
+            // RENDERIZAR ENTRADAS EXTRAS
+            html += `<tr><th colspan="2" style="padding-top:12px;">📈 Entradas Extras (Manuais)</th></tr>`;
+            if(temEntradaExtra) {
+                html += `<tr><td colspan="2" style="padding: 0 0 10px 0;">${htmlEntradasExtras}</td></tr>`;
+            } else {
+                html += `<tr><td colspan="2" style="color:var(--text-muted);">Nenhuma entrada extra neste mês.</td></tr>`;
+            }
+            html += `<tr><td><strong>Subtotal Extras:</strong></td><td style="text-align:right; font-weight:bold; color:var(--supabase);">R$ ${totalEntradasExtras.toFixed(2)}</td></tr>`;
+
+
+            // RENDERIZAR SAÍDAS / DESPESAS
+            html += `<tr><th colspan="2" style="padding-top:12px;">📉 Detalhamento de Despesas (Saídas)</th></tr>`;
             if(temCustos) {
                 html += `<tr><td colspan="2" style="padding: 0 0 10px 0;">${htmlCustosDiarios}</td></tr>`;
             } else {
@@ -1810,7 +1846,7 @@
             // FECHAMOS A TABELA AQUI PARA O BALANÇO ENTRAR NOVO
             html += `</table>`;
 
-            let receitaTotal = totalMensalidades + totalConvidados;
+            let receitaTotal = totalMensalidades + totalConvidados + totalEntradasExtras;
             let saldoMensal = receitaTotal - totalCustos;
             let saldoTotalCaixa = saldoAnterior + saldoMensal;
 
@@ -2354,6 +2390,7 @@
             let desc = document.getElementById('desc-custo').value; 
             let val = parseFloat(document.getElementById('valor-custo').value) || 0;
             let tipo = document.getElementById('tipo-custo').value;
+            let operacao = document.getElementById('operacao-movimentacao').value;
             let dataInput = document.getElementById('data-custo').value;
 
             if(!desc || val <= 0) return alert("Preencha descrição e valor válido.");
@@ -2368,6 +2405,7 @@
                 desc: desc, 
                 valor: val, 
                 tipo: tipo,
+                operacao: operacao,
                 data: tipo === 'mensal' ? dataInput.substring(0, 7) : dataInput 
             };
 
@@ -2383,7 +2421,7 @@
                 btn.innerText = txtOrigin; btn.disabled = false;
 
                 if (error) {
-                    alert("Erro ao salvar despesa: " + error.message);
+                    alert("Erro ao salvar movimentação: " + error.message);
                     window.despesasMensaisGlobais.pop(); 
                 } else {
                     document.getElementById('desc-custo').value = ''; 
@@ -2395,12 +2433,12 @@
         }
         
         async function removerCusto(idUnico, indexArrayFallback) { 
-            if(!confirm("Deseja realmente apagar esta despesa do Livro Caixa?")) return;
+            if(!confirm("Deseja realmente apagar esta movimentação do Livro Caixa?")) return;
 
             let indexReal = window.despesasMensaisGlobais.findIndex(c => c.id === idUnico);
             if (indexReal === -1) indexReal = indexArrayFallback;
             
-            if (indexReal === -1 || indexReal === undefined) return alert("Erro: Despesa não encontrada.");
+            if (indexReal === -1 || indexReal === undefined) return alert("Erro: Movimentação não encontrada.");
 
             let removido = window.despesasMensaisGlobais.splice(indexReal, 1)[0];
 
