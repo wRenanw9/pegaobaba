@@ -88,7 +88,7 @@
         
         .linha-jogador { display: grid; align-items: center; padding: 12px 10px; border-bottom: 1px solid var(--border); background: white; border-radius: 8px; margin-bottom: 8px; font-size: 13px; gap: 8px;}
         .linha-jogador:hover { background: var(--light); }
-        .col-nome { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center;}
+        .col-nome { font-weight: 600; white-space: nowrap; overflow: hidden; display: flex; align-items: center;}
         
         /* 1fr usa o espaço restante, auto se adapta aos botões perfeitamente */
         .grid-elenco { grid-template-columns: 1fr auto auto; } 
@@ -641,6 +641,17 @@
         let supabaseChannel = null;
         const coresTimes = ["Vermelho", "Azul", "Amarelo", "Verde", "Branco", "Preto", "Roxo", "Laranja"];
         const emojisTimes = ["🔴", "🔵", "🟡", "🟢", "⚪", "⚫", "🟣", "🟠"];
+        
+        // MAPA PARA ABREVIAÇÃO DAS POSIÇÕES
+        const posMap = {
+            "Atacante": "ATA",
+            "Meia": "MEI",
+            "Lateral": "LAT",
+            "Zagueiro": "ZAG",
+            "Goleiro": "GOL",
+            "Linha": "LIN"
+        };
+
         function getCorHex(corBase) {
             const map = {
                 "Vermelho": "#ef4444",
@@ -1407,13 +1418,21 @@
             let todosOrdenados = [...jogadores].sort((a, b) => a.nome.localeCompare(b.nome));
             todosOrdenados.forEach((j) => {
                 let indexArray = jogadores.findIndex(jog => jog.id === j.id);
+                
+                let isPago = j.tipo === 'Mensalista' ? (j.pagamentos_json && j.pagamentos_json[mesKey] === true) : j.pagou;
+                let colorStyle = isPago ? 'color: inherit;' : 'color: var(--danger); font-weight: 700;';
+                let clickAction = j.tipo === 'Mensalista' ? `onclick="alternarMensalidade('${j.id}', ${indexArray})"` : `onclick="alternarPagamentoDiaria(${indexArray})"`;
+                let publicDisabled = window.isModoPublico ? "" : clickAction;
+                let cursorStyle = window.isModoPublico ? "" : "cursor: pointer;";
+
                 let tagConvidado = j.tipo === 'Convidado' ? '<span class="badge badge-convidado">C</span>' : '';
-                let tagPosicao = (j.posicao !== 'Goleiro' && j.posicao !== 'Linha') ? `<span class="badge badge-posicao" style="margin-left: 5px;">${j.posicao}</span>` : '';
+                let posAbbr = posMap[j.posicao] || j.posicao;
+                let tagPosicao = (j.posicao !== 'Goleiro' && j.posicao !== 'Linha') ? `<span class="badge badge-posicao" style="width:36px; text-align:center; padding:3px 0;">${posAbbr}</span>` : '';
                 
                 if(listaElenco) {
                     let btnEdicao = `<button class="btn-small btn-acao-outline" onclick="prepararEdicao(${indexArray})">✏️</button>`;
                     let btnExcluir = `<button class="btn-small btn-acao-outline" style="color:var(--danger); border-color:var(--danger);" onclick="removerJogador('${j.id}', ${indexArray})">X</button>`;
-                    let btnMensal = j.tipo === 'Mensalista' ? (j.pagamentos_json && j.pagamentos_json[mesKey] === true ? `<button class="btn-small btn-pagou" onclick="alternarMensalidade('${j.id}', ${indexArray})">Pago</button>` : `<button class="btn-small btn-devendo" onclick="alternarMensalidade('${j.id}', ${indexArray})">Pendente</button>`) : `<span>Diária local</span>`;
+                    let btnMensal = j.tipo === 'Mensalista' ? (isPago ? `<button class="btn-small btn-pagou" onclick="alternarMensalidade('${j.id}', ${indexArray})">Pago</button>` : `<button class="btn-small btn-devendo" onclick="alternarMensalidade('${j.id}', ${indexArray})">Pendente</button>`) : `<span>Diária local</span>`;
                     
                     listaElenco.innerHTML += `
                     <div class="linha-jogador grid-elenco" data-nome="${j.nome}">
@@ -1428,12 +1447,17 @@
                     if(listaAguardando) {
                         let btnAcoesAguardando = '';
                         if (j.tipo === 'Convidado') {
-                            btnAcoesAguardando += j.pagou ? `<button class="btn-small btn-pagou" onclick="alternarPagamentoDiaria(${indexArray})">Pago</button>` : `<button class="btn-small btn-devendo" onclick="alternarPagamentoDiaria(${indexArray})">Pendente</button>`;
+                            btnAcoesAguardando += isPago ? `<button class="btn-small btn-pagou" onclick="alternarPagamentoDiaria(${indexArray})">Pago</button>` : `<button class="btn-small btn-devendo" onclick="alternarPagamentoDiaria(${indexArray})">Pendente</button>`;
                         }
 
                         listaAguardando.innerHTML += `
                         <div class="linha-jogador grid-aguardando" data-nome="${j.nome}">
-                            <div class="col-nome">${tagConvidado} <span style="margin-left: 4px; margin-right: 4px;">${j.nome}</span> ${tagPosicao}</div>
+                            <div class="col-nome" style="justify-content: space-between;">
+                                <div style="display:flex; align-items:center; gap:5px; overflow:hidden; ${colorStyle} ${cursorStyle}" ${publicDisabled} title="${isPago ? 'Pago' : 'Pendente - Clique para pagar'}">
+                                    ${tagConvidado} <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${j.nome}</span>
+                                </div>
+                                ${tagPosicao ? `<div style="margin-left:5px; flex-shrink:0;">${tagPosicao}</div>` : ''}
+                            </div>
                             <div class="col-status">${btnAcoesAguardando}</div>
                             <div class="col-acoes"><button class="btn-small btn-presente" onclick="marcarPresenca(${indexArray})">Chegou</button></div>
                         </div>`;
@@ -1604,7 +1628,8 @@
             window.timesSorteadosObjs.forEach(t => {
                 texto += `*${t.nome}*:\n`;
                 t.jogadores.forEach(j => {
-                    texto += `• ${j.nome} ${j.posicao !== 'Linha' ? '('+j.posicao+')' : ''}\n`;
+                    let posAbbr = posMap[j.posicao] || j.posicao;
+                    texto += `• ${j.nome} ${j.posicao !== 'Linha' ? '('+posAbbr+')' : ''}\n`;
                 });
                 texto += "\n";
             });
@@ -1927,7 +1952,10 @@
                         <input type="text" value="${t.nome}" onchange="atualizarNomeTime(${t.id}, this.value)" class="input-nome-time" placeholder="Nome do Time" style="color: ${corHex};" ${window.isModoPublico ? 'disabled' : ''}>
                     </div>
                     <ul>`;
-                t.jogadores.forEach(j => { html += `<li><strong>${j.nome}</strong> ${j.posicao!=='Linha'?`<span class="badge badge-posicao">${j.posicao}</span>`:''}</li>`; });
+                t.jogadores.forEach(j => { 
+                    let posAbbr = posMap[j.posicao] || j.posicao;
+                    html += `<li><strong>${j.nome}</strong> ${j.posicao!=='Linha'?`<span class="badge badge-posicao">${posAbbr}</span>`:''}</li>`; 
+                });
                 containerEscalacao.innerHTML += html + `</ul></div>`;
             });
             if (window.reservasSorteados && window.reservasSorteados.length > 0) {
