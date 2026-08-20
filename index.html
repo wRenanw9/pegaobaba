@@ -350,7 +350,7 @@
             <div class="card" style="margin-bottom: 20px;">
                 <h2>📝 Súmula de Jogo</h2>
                 <div id="data-rodada-label" style="font-size: 13px; color: var(--text-muted); text-align: center; margin-top: -10px; margin-bottom: 15px; font-weight: 600;"></div>
-                <p class="hidden-public" style="font-size: 13px; color: var(--text-muted); margin-top: -10px; margin-bottom: 20px; text-align:center;">
+                <p id="texto-instrucoes-sumula" class="hidden-public" style="font-size: 13px; color: var(--text-muted); margin-top: -10px; margin-bottom: 20px; text-align:center;">
                     Registre o resultado. Em caso de empate, as duas equipes saem da quadra automaticamente.
                 </p>
                 
@@ -733,6 +733,14 @@
                 }, payload => {
                     const novaPartida = payload.new;
                     if (novaPartida) {
+                        
+                        // SE O CÓDIGO FOR APAGADO E FOR JOGADOR PÚBLICO: EXPULSA DA TELA VELHA
+                        if (window.isModoPublico && !novaPartida.codigo_acesso) {
+                            alert("O organizador iniciou um novo baba. Este placar foi desativado.");
+                            sairModoPublico();
+                            return;
+                        }
+
                         if (novaPartida.jogos_json) window.jogosDaRodada = novaPartida.jogos_json;
                         if (novaPartida.times_json) {
                             window.timesSorteadosObjs = novaPartida.times_json;
@@ -1150,7 +1158,7 @@
             document.getElementById('status-db').innerText = "Buscando Baba...";
             const { data: partida, error } = await db.from('partidas').select('*').eq('codigo_acesso', codigo).single();
             if(error || !partida) {
-                alert("Baba não encontrado ou código inválido.");
+                alert("Baba não encontrado ou código inválido. O organizador pode ter iniciado um novo baba.");
                 sairModoPublico();
                 return;
             }
@@ -1282,7 +1290,7 @@
                         }
 
                         if (window.timesSorteadosObjs.length > 0) {
-                            exibirBoxCodigoSorteio(window.codigoAcessoAtual);
+                            if(window.codigoAcessoAtual) exibirBoxCodigoSorteio(window.codigoAcessoAtual);
                             let btnSum = document.getElementById('btn-ir-placares');
                             if(btnSum) {
                                 btnSum.style.display = 'block';
@@ -1622,7 +1630,12 @@
 
         async function criarPartidaInicialNoBanco() {
             try {
-                let codigoAleatorio = window.codigoAcessoAtual || Math.random().toString(36).substring(2, 8).toUpperCase();
+                // QUEIMA DE ARQUIVO: Invalida qualquer código de acesso de partidas anteriores para expulsar usuários velhos
+                if (currentUser) {
+                    await db.from('partidas').update({ codigo_acesso: null }).eq('user_id', currentUser.id);
+                }
+
+                let codigoAleatorio = Math.random().toString(36).substring(2, 8).toUpperCase();
                 let valorConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
                 let valorMens = parseFloat(document.getElementById('valor-mensalista').value) || 0;
                 
@@ -1945,16 +1958,19 @@
             const container = document.getElementById('container-sumula');
             const aviso = document.getElementById('aviso-sem-sorteio');
             const dataLabel = document.getElementById('data-rodada-label');
+            const instrucoes = document.getElementById('texto-instrucoes-sumula');
 
             if((!window.timesSorteadosObjs || window.timesSorteadosObjs.length === 0) && window.jogosDaRodada.length === 0) {
                 container.style.display = 'none';
                 aviso.style.display = 'block'; 
                 if(dataLabel) dataLabel.innerText = "";
+                if(instrucoes) instrucoes.style.display = 'none';
                 return;
             }
 
             aviso.style.display = 'none';
             container.style.display = 'block';
+            if(instrucoes) instrucoes.style.display = 'block';
 
             if(window.codigoAcessoAtual) {
                 exibirBoxCodigoSorteio(window.codigoAcessoAtual);
@@ -2295,7 +2311,7 @@
                         let dataCriacao = new Date(ultimaPartida.created_at);
                         let agora = new Date();
                         let diffMs = agora.getTime() - dataCriacao.getTime();
-                        if (diffMs <= 518400000) {
+                        if (diffMs <= 518400000 && !window.partidaSalvaManual) {
                             window.jogosDaRodada = ultimaPartida.jogos_json || [];
                             if (ultimaPartida.data_sorteio) {
                                 let d = new Date(ultimaPartida.data_sorteio);
