@@ -302,6 +302,7 @@
         <div id="view-sorteio" class="page-view organizer-only active">
             <div class="card hidden-public" style="border: 2px dashed var(--border); background: var(--white);">
                 <h2 style="color: var(--text-muted);">Aguardando Chegada</h2>
+                <button class="btn-limpar" onclick="marcarTodosPresentes()" style="display: block; width:100%; margin-bottom:15px; color: var(--dark); border-color: var(--border);">✅ Todos Chegaram</button>
                 <div class="busca-container">
                     <input type="text" id="busca-jogador-sorteio" placeholder="🔍 Buscar jogador..." onkeyup="filtrarSorteioAusentes()">
                 </div>
@@ -1393,6 +1394,36 @@
             salvarEstadoLocal();
             atualizarListas(); 
         }
+
+        // NOVO: Função para marcar todos os ausentes como presentes
+        function marcarTodosPresentes() {
+            let convidadosPendentes = 0;
+            let countAdicionados = 0;
+            let agora = Date.now();
+            
+            jogadores.forEach((j) => {
+                if (!j.presente) {
+                    if (j.tipo === 'Convidado' && !j.pagou) {
+                        convidadosPendentes++;
+                    } else {
+                        j.presente = true;
+                        j.ordemChegada = agora++; // Incrementa para manter a ordem de quem foi adicionado
+                        countAdicionados++;
+                    }
+                }
+            });
+
+            if (countAdicionados > 0) {
+                salvarEstadoLocal();
+                atualizarListas();
+            }
+
+            if (convidadosPendentes > 0) {
+                alert(`⚠️ ${convidadosPendentes} convidado(s) não foram adicionados pois precisam pagar a diária primeiro.`);
+            } else if (countAdicionados === 0) {
+                alert("Todos os jogadores do elenco já estão prontos pro jogo!");
+            }
+        }
         
         function desmarcarPresenca(indexArray) { 
             jogadores[indexArray].presente = false;
@@ -1600,11 +1631,28 @@
                 const grupos = {}; posicoes.forEach(p => grupos[p] = []);
                 linhaChunk.forEach(j => { if (grupos[j.posicao]) grupos[j.posicao].push(j); else grupos["Linha"].push(j); });
                 posicoes.forEach(p => grupos[p].sort((a, b) => (Number(b.nivel) || 3) - (Number(a.nivel) || 3)));
+                
                 posicoes.forEach(pos => {
                     grupos[pos].forEach(jogador => {
-                        let minTam = Math.min(...timesLocais.map(t => t.length)); let elegiveis = timesLocais.filter(t => t.length === minTam);
-                        let minPos = Math.min(...elegiveis.map(t => getQtdPosicao(t, pos))); let menosPos = elegiveis.filter(t => getQtdPosicao(t, pos) === minPos);
-                        menosPos.sort((a, b) => getSomaNotas(a) - getSomaNotas(b)); menosPos[0].push(jogador);
+                        let minTam = Math.min(...timesLocais.map(t => t.length)); 
+                        let elegiveis = timesLocais.filter(t => t.length === minTam);
+                        let minPos = Math.min(...elegiveis.map(t => getQtdPosicao(t, pos))); 
+                        let menosPos = elegiveis.filter(t => getQtdPosicao(t, pos) === minPos);
+                        
+                        menosPos.sort((a, b) => getSomaNotas(a) - getSomaNotas(b)); 
+                        
+                        // FATOR SURPRESA: Se os times estiverem empatados no nível técnico, sorteia quem recebe o jogador
+                        let menorNota = getSomaNotas(menosPos[0]);
+                        let timesEmpatados = menosPos.filter(t => getSomaNotas(t) === menorNota);
+                        
+                        let timeEscolhido;
+                        if (timesEmpatados.length > 1) {
+                            timeEscolhido = timesEmpatados[Math.floor(Math.random() * timesEmpatados.length)];
+                        } else {
+                            timeEscolhido = menosPos[0];
+                        }
+                        
+                        timeEscolhido.push(jogador);
                     });
                 });
                 times.push(...timesLocais);
@@ -2490,7 +2538,7 @@
 
         async function salvarPartidaComPlacares() {
             if(!window.partidaAtualId) return alert("Nenhuma partida ativa para encerrar.");
-            if(!confirm("Deseja encerrar o baba de hoje?")) return;
+            if(!confirm("Deseja encerrar o baba de hoje e computar a presença de todos os jogadores?")) return;
             
             const btn = document.getElementById('btn-encerrar-baba'); btn.innerText = "Sincronizando Servidor..."; btn.disabled = true;
             try {
@@ -2517,7 +2565,7 @@
                 }).eq('id', window.partidaAtualId);
                 if(errP) throw errP;
 
-                // INSERE AS PRESENÇAS DEFINITIVAMENTE NO BANCO SOMENTE AGORA
+                // INSERE AS PRESENÇAS DEFINITIVAMENTE NO BANCO SOMENTE AGORA (NA FINALIZAÇÃO)
                 await db.from('presencas').delete().eq('partida_id', window.partidaAtualId);
                 let presencasToInsert = [];
                 window.timesSorteadosObjs.forEach((t) => { 
