@@ -801,6 +801,11 @@
                 if(window.timesSorteadosObjs.length > 0) {
                     if(window.codigoAcessoAtual) {
                         exibirBoxCodigoSorteio(window.codigoAcessoAtual);
+                        let btnSum = document.getElementById('btn-ir-placares');
+                        if(btnSum) {
+                            btnSum.style.display = 'block';
+                            btnSum.innerText = window.partidaSalva ? "📝 Ver Súmula Anterior" : "📝 Preencher Súmula";
+                        }
                         iniciarOuvinteRealtime(window.partidaAtualId);
                     }
                 }
@@ -1257,11 +1262,13 @@
                 .eq('user_id', currentUser.id)
                 .order('created_at', { ascending: false })
                 .limit(1);
+            
             if (!error && partidas && partidas.length > 0) {
                 let p = partidas[0];
                 if (p.created_at) {
                     let diffMs = Date.now() - new Date(p.created_at).getTime();
-                    if (diffMs <= 518400000 && !window.partidaSalvaManual) { 
+                    // Agora sempre carrega se tiver menos de 6 dias
+                    if (diffMs <= 518400000) { 
                         window.partidaAtualId = p.id;
                         window.codigoAcessoAtual = p.codigo_acesso;
                         window.jogosDaRodada = p.jogos_json || [];
@@ -1274,9 +1281,13 @@
                             window.dataPartidaAtual = !isNaN(d.getTime()) ? d.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}) : p.data_sorteio;
                         }
 
-                        if (window.timesSorteadosObjs.length > 0 && !window.partidaSalva) {
+                        if (window.timesSorteadosObjs.length > 0) {
                             exibirBoxCodigoSorteio(window.codigoAcessoAtual);
-                            document.getElementById('btn-ir-placares').style.display = 'block';
+                            let btnSum = document.getElementById('btn-ir-placares');
+                            if(btnSum) {
+                                btnSum.style.display = 'block';
+                                btnSum.innerText = window.partidaSalva ? "📝 Ver Súmula Anterior" : "📝 Preencher Súmula";
+                            }
                         }
                         iniciarOuvinteRealtime(window.partidaAtualId);
                     }
@@ -1402,13 +1413,12 @@
         }
         
         function zerarPresencas() { 
-            if(confirm("Deseja preparar o aplicativo para um NOVO BABA?\n\nIsso vai apagar a súmula da tela, retirar todos da quadra e ZERAR as DIÁRIAS temporárias dos convidados.")) { 
+            if(confirm("Deseja preparar o aplicativo para um NOVO BABA?\n\nIsso vai retirar todos da quadra e zerar as diárias temporárias.\n\n(A Súmula do jogo atual continuará salva e visível até você sortear novas equipes)")) { 
                 jogadores.forEach(j => { j.presente = false; j.ordemChegada = 0; j.pagou = false; });
-                salvarEstadoLocal(); limparEstadoRodada(); atualizarListas(); atualizarFinanceiro(); 
+                salvarEstadoLocal(); 
+                atualizarListas(); 
+                atualizarFinanceiro(); 
                 document.getElementById('resultado').innerHTML = ""; 
-                document.getElementById('btn-ir-placares').style.display = 'none'; 
-                let boxSorteio = document.getElementById('box-codigo-gerado-sorteio');
-                if(boxSorteio) { boxSorteio.style.display = 'none'; boxSorteio.innerHTML = ''; }
             } 
         }
 
@@ -1592,7 +1602,7 @@
                 window.timesSorteadosObjs.push({ id: idx, corBase: cor, nome: cor, jogadores: timeArr });
             });
             window.reservasSorteados = reservas; window.partidaSalva = false;
-            window.partidaSalvaManual = false; // Garante que é uma nova partida limpa
+            
             window.jogosDaRodada = []; window.filaEquipes = window.timesSorteadosObjs.map(t => t.id); window.golsTempA = []; window.golsTempB = [];
             
             window.partidaAtualId = null; // Força a criação de um NOVO ID limpo no banco
@@ -1603,7 +1613,11 @@
             salvarEstadoCompleto();
 
             document.getElementById('resultado').innerHTML = "";
-            document.getElementById('btn-ir-placares').style.display = 'block';
+            let btnSum = document.getElementById('btn-ir-placares');
+            if(btnSum) {
+                btnSum.style.display = 'block';
+                btnSum.innerText = "📝 Preencher Súmula";
+            }
         }
 
         async function criarPartidaInicialNoBanco() {
@@ -1911,8 +1925,12 @@
         }
 
         function renderizarTimesNaTela() {
-            if (window.timesSorteadosObjs && window.timesSorteadosObjs.length > 0 && !window.partidaSalva) {
-                document.getElementById('btn-ir-placares').style.display = 'block';
+            if (window.timesSorteadosObjs && window.timesSorteadosObjs.length > 0) {
+                let btnSum = document.getElementById('btn-ir-placares');
+                if(btnSum) {
+                    btnSum.style.display = 'block';
+                    btnSum.innerText = window.partidaSalva ? "📝 Ver Súmula Anterior" : "📝 Preencher Súmula";
+                }
             }
         }
 
@@ -2277,7 +2295,7 @@
                         let dataCriacao = new Date(ultimaPartida.created_at);
                         let agora = new Date();
                         let diffMs = agora.getTime() - dataCriacao.getTime();
-                        if (diffMs <= 518400000 && !window.partidaSalvaManual) {
+                        if (diffMs <= 518400000) {
                             window.jogosDaRodada = ultimaPartida.jogos_json || [];
                             if (ultimaPartida.data_sorteio) {
                                 let d = new Date(ultimaPartida.data_sorteio);
@@ -2490,7 +2508,6 @@
 
                 await db.from('jogadores').delete().eq('tipo', 'Convidado').eq('user_id', currentUser.id);
                 window.partidaSalva = true; 
-                window.partidaSalvaManual = true; // Marca que a partida foi encerrada para limpar ao gerar nova
                 
                 jogadores.forEach(j => { 
                     j.presente = false; 
@@ -2502,6 +2519,10 @@
                 atualizarFilaUI();
                 atualizarListaJogosDaRodada();
                 salvarEstadoCompleto();
+                
+                let btnSum = document.getElementById('btn-ir-placares');
+                if(btnSum) btnSum.innerText = "📝 Ver Súmula Anterior";
+
                 carregarElencoDaNuvem();
                 gerarRelatorioMensal();
 
