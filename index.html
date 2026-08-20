@@ -630,7 +630,7 @@
                 <span>Elenco</span>
             </div>
             <div class="nav-item hidden-public organizer-only" onclick="mudarAba('view-sorteio')" id="nav-sorteio">
-                <div class="nav-icon"><svg viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><path d="M16 8h.01"/><path d="M8 8h.01"/><path d="M8 16h.01"/><path d="M16 16h.01"/><path d="M12 12h.01"></svg></div>
+                <div class="nav-icon"><svg viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><path d="M16 8h.01"/><path d="M8 8h.01"/><path d="M8 16h.01"/><path d="M16 16h.01"/><path d="M12 12h.01"/></svg></div>
                 <span>Sorteio</span>
             </div>
             <div class="nav-item active organizer-only" onclick="mudarAba('view-placares')" id="nav-placares">
@@ -1284,7 +1284,11 @@
                         window.custosDaRodada = p.custos_json || [];
                         window.timesSorteadosObjs = p.times_json || [];
                         window.filaEquipes = p.fila_json || [];
-                        window.partidaSalva = (window.filaEquipes.length === 0 && window.jogosDaRodada.length > 0);
+                        
+                        // IDENTIFICAÇÃO CORRETA SE FOI FINALIZADA
+                        // Se tem times sorteados mas a fila está vazia = Finalizada.
+                        window.partidaSalva = (window.timesSorteadosObjs.length > 0 && window.filaEquipes.length === 0);
+                        
                         if (p.data_sorteio) {
                             let d = new Date(p.data_sorteio);
                             window.dataPartidaAtual = !isNaN(d.getTime()) ? d.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}) : p.data_sorteio;
@@ -1299,6 +1303,11 @@
                             }
                         }
                         iniciarOuvinteRealtime(window.partidaAtualId);
+                        
+                        // SINCRONIA: Garante que as telas atualizem caso o adm já esteja nelas
+                        if (document.getElementById('view-placares').classList.contains('active')) renderizarSumula();
+                        if (document.getElementById('view-estatisticas').classList.contains('active')) renderizarPainelDoDia();
+                        if (document.getElementById('view-financeiro').classList.contains('active')) atualizarFinanceiro();
                     }
                 }
             }
