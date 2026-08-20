@@ -656,6 +656,7 @@
         </nav>
     </div>
 
+    <script>
     // --- FUNÇÃO DE TRADUÇÃO SEGURA DE DADOS ---
         // Isso impede o bug de "tela em branco" caso o banco de dados envie os times como texto puro em vez de lista
         function safeParse(data) {
@@ -2617,5 +2618,6 @@
                 alert("Baba finalizado com sucesso!");
             } catch(err) { alert("Erro: " + err.message); btn.innerText = "Tentar Novamente"; btn.disabled = false; }
         }
+        </script>
 </body>
 </html>
