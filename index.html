@@ -656,7 +656,15 @@
         </nav>
     </div>
 
-    <script>
+    // --- FUNÇÃO DE TRADUÇÃO SEGURA DE DADOS ---
+        // Isso impede o bug de "tela em branco" caso o banco de dados envie os times como texto puro em vez de lista
+        function safeParse(data) {
+            if (typeof data === 'string') {
+                try { return JSON.parse(data); } catch(e) { return data; }
+            }
+            return data;
+        }
+
         let db;
         let jogadores = [];
         let jogadorEdicaoId = null; 
@@ -742,14 +750,14 @@
                             return;
                         }
 
-                        if (novaPartida.jogos_json) window.jogosDaRodada = novaPartida.jogos_json;
+                        if (novaPartida.jogos_json) window.jogosDaRodada = safeParse(novaPartida.jogos_json);
                         if (novaPartida.times_json) {
-                            window.timesSorteadosObjs = novaPartida.times_json;
+                            window.timesSorteadosObjs = safeParse(novaPartida.times_json);
                         }
-                        if (novaPartida.artilheiros_json) window.artilheirosPub = novaPartida.artilheiros_json;
+                        if (novaPartida.artilheiros_json) window.artilheirosPub = safeParse(novaPartida.artilheiros_json);
                         
-                        window.filaEquipes = novaPartida.fila_json || [];
-                        if(window.filaEquipes.length === 0) {
+                        window.filaEquipes = safeParse(novaPartida.fila_json) || [];
+                        if(window.filaEquipes.length === 0 && window.jogosDaRodada.length > 0) {
                             window.partidaSalva = true;
                         } else {
                             window.partidaSalva = false;
@@ -938,7 +946,7 @@
             }
 
             currentProfile = profile;
-            window.despesasMensaisGlobais = profile.despesas_mensais_json || [];
+            window.despesasMensaisGlobais = safeParse(profile.despesas_mensais_json) || [];
             mostrarApp();
         }
 
@@ -1166,7 +1174,7 @@
 
             if (partida.user_id) {
                 const { data: prof } = await db.from('profiles').select('despesas_mensais_json').eq('id', partida.user_id).single();
-                window.despesasMensaisGlobais = prof ? (prof.despesas_mensais_json || []) : [];
+                window.despesasMensaisGlobais = prof ? (safeParse(prof.despesas_mensais_json) || []) : [];
             }
 
             if (partida.created_at) {
@@ -1196,7 +1204,7 @@
             window.partidaAtualId = partida.id;
             iniciarOuvinteRealtime(window.partidaAtualId);
             document.getElementById('status-db').innerText = `Visualizando: ${codigo}`;
-            window.custosDaRodada = partida.custos_json || [];
+            window.custosDaRodada = safeParse(partida.custos_json) || [];
             if(partida.valor_por_convidado) document.getElementById('valor-convidado').value = partida.valor_por_convidado;
             if(partida.valor_por_mensalista) document.getElementById('valor-mensalista').value = partida.valor_por_mensalista;
             if(partida.data_sorteio) {
@@ -1208,28 +1216,19 @@
                 }
             }
             
-            if (partida.times_json && partida.times_json.length > 0) {
-                window.timesSorteadosObjs = partida.times_json;
+            if (partida.times_json) {
+                window.timesSorteadosObjs = safeParse(partida.times_json) || [];
             }
 
-            if (partida.jogos_json && partida.jogos_json.length > 0) {
-                window.jogosDaRodada = partida.jogos_json;
-            } else {
-                window.jogosDaRodada = [];
-            }
-
-            if (partida.fila_json && partida.fila_json.length > 0) {
-                window.filaEquipes = partida.fila_json;
-                window.partidaSalva = false;
-            } else {
-                window.filaEquipes = [];
-                window.partidaSalva = true;
-            }
+            window.jogosDaRodada = safeParse(partida.jogos_json) || [];
+            
+            window.filaEquipes = safeParse(partida.fila_json) || [];
+            window.partidaSalva = (window.filaEquipes.length === 0 && window.jogosDaRodada.length > 0);
             
             atualizarListaJogosDaRodada();
             mudarAba('view-placares'); 
             
-            window.artilheirosPub = partida.artilheiros_json || {};
+            window.artilheirosPub = safeParse(partida.artilheiros_json) || {};
             renderizarPainelDoDia(); 
             
             window.history.pushState({}, '', '?code=' + codigo);
@@ -1254,7 +1253,7 @@
                 presente: estadoLocal[j.id]?.presente || false, 
                 ordemChegada: estadoLocal[j.id]?.ordemChegada || 0, 
                 pagou: estadoLocal[j.id]?.pagou || false,
-                pagamentos_json: j.pagamentos_json || {}
+                pagamentos_json: safeParse(j.pagamentos_json) || {}
             }));
             
             document.getElementById('status-db').innerText = "Online"; document.getElementById('status-db').style.backgroundColor = "var(--supabase)";
@@ -1280,14 +1279,15 @@
                     if (diffMs <= 518400000) { 
                         window.partidaAtualId = p.id;
                         window.codigoAcessoAtual = p.codigo_acesso;
-                        window.jogosDaRodada = p.jogos_json || [];
-                        window.custosDaRodada = p.custos_json || [];
-                        window.timesSorteadosObjs = p.times_json || [];
-                        window.filaEquipes = p.fila_json || [];
+                        
+                        // CONVERSÃO SEGURA: Garante que os dados sempre virem objetos, mesmo se o banco devolver string
+                        window.jogosDaRodada = safeParse(p.jogos_json) || [];
+                        window.custosDaRodada = safeParse(p.custos_json) || [];
+                        window.timesSorteadosObjs = safeParse(p.times_json) || [];
+                        window.filaEquipes = safeParse(p.fila_json) || [];
                         
                         // IDENTIFICAÇÃO CORRETA SE FOI FINALIZADA
-                        // Se tem times sorteados mas a fila está vazia = Finalizada.
-                        window.partidaSalva = (window.timesSorteadosObjs.length > 0 && window.filaEquipes.length === 0);
+                        window.partidaSalva = (window.timesSorteadosObjs.length > 0 && window.filaEquipes.length === 0 && window.jogosDaRodada.length > 0);
                         
                         if (p.data_sorteio) {
                             let d = new Date(p.data_sorteio);
@@ -1304,10 +1304,10 @@
                         }
                         iniciarOuvinteRealtime(window.partidaAtualId);
                         
-                        // SINCRONIA: Garante que as telas atualizem caso o adm já esteja nelas
-                        if (document.getElementById('view-placares').classList.contains('active')) renderizarSumula();
-                        if (document.getElementById('view-estatisticas').classList.contains('active')) renderizarPainelDoDia();
-                        if (document.getElementById('view-financeiro').classList.contains('active')) atualizarFinanceiro();
+                        // SINCRONIA FORÇADA: Atualiza os painéis "invisíveis" para que quando você clique neles, eles já estejam prontos!
+                        renderizarSumula();
+                        renderizarPainelDoDia();
+                        atualizarFinanceiro();
                     }
                 }
             }
@@ -1894,7 +1894,8 @@
             // LER DESPESAS ANTIGAS (LEGADO) DO MÊS (Só existiam Saídas)
             if(partidasDoMes.length > 0) {
                 partidasDoMes.forEach(p => {
-                    (p.custos_json || []).forEach(c => {
+                    let c_json = safeParse(p.custos_json) || [];
+                    c_json.forEach(c => {
                         totalCustos += c.valor;
                         temCustos = true;
                         let rawDate = p.data_sorteio || p.created_at || "";
@@ -2370,7 +2371,7 @@
                         let agora = new Date();
                         let diffMs = agora.getTime() - dataCriacao.getTime();
                         if (diffMs <= 518400000 && !window.partidaSalvaManual) {
-                            window.jogosDaRodada = ultimaPartida.jogos_json || [];
+                            window.jogosDaRodada = safeParse(ultimaPartida.jogos_json) || [];
                             if (ultimaPartida.data_sorteio) {
                                 let d = new Date(ultimaPartida.data_sorteio);
                                 if (!isNaN(d.getTime())) {
@@ -2434,7 +2435,7 @@
                     let dataP = new Date(p.data_sorteio);
                     let isEsteMes = dataP.getMonth() === mesAtual;
                     
-                    let arts = p.artilheiros_json || {};
+                    let arts = safeParse(p.artilheiros_json) || {};
                     let mensalistasNesta = mensalistasPorPartida[p.id] || new Set();
 
                     for(let nome in arts) {
@@ -2616,6 +2617,5 @@
                 alert("Baba finalizado com sucesso!");
             } catch(err) { alert("Erro: " + err.message); btn.innerText = "Tentar Novamente"; btn.disabled = false; }
         }
-    </script>
 </body>
 </html>
