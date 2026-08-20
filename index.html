@@ -2172,6 +2172,13 @@
         }
 
         function atualizarListaJogosDaRodada() {
+            // MOVIDO PARA CIMA: Oculta ou mostra o painel e o botão ANTES de qualquer validação de quantidade de jogos
+            const painelArena = document.getElementById('painel-placar-arena');
+            if(painelArena) painelArena.style.display = window.partidaSalva ? 'none' : 'block';
+
+            const btnEncerrar = document.getElementById('btn-encerrar-baba');
+            if(btnEncerrar) btnEncerrar.style.display = window.partidaSalva ? 'none' : 'block';
+
             const lista = document.getElementById('lista-jogos-registrados');
             lista.innerHTML = '';
             document.getElementById('qtd-jogos-reg').innerText = window.jogosDaRodada.length;
@@ -2216,12 +2223,6 @@
             });
             
             lista.innerHTML = htmlCompleto;
-
-            const painelArena = document.getElementById('painel-placar-arena');
-            if(painelArena) painelArena.style.display = window.partidaSalva ? 'none' : 'block';
-
-            const btnEncerrar = document.getElementById('btn-encerrar-baba');
-            if(btnEncerrar) btnEncerrar.style.display = window.partidaSalva ? 'none' : 'block';
         }
 
         function renderizarPainelDoDiaComJogos(jogosArr, dataStr) {
