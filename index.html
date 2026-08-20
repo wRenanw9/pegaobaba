@@ -1555,6 +1555,12 @@
         }
 
         async function sortearTimes(presentesBrutos) {
+            // DESLIGA O CANAL DA PARTIDA VELHA ANTES DE TUDO PARA NÃO PUXAR DADOS ANTIGOS
+            if (supabaseChannel) {
+                db.removeChannel(supabaseChannel);
+                supabaseChannel = null;
+            }
+
             let presentes = presentesBrutos;
             let modo = document.getElementById('modo-sorteio').value; let priorizarOrdem = document.getElementById('priorizar-ordem').checked;
             let incluiGoleiros = (modo === '14' || modo === 'todos');
@@ -1610,7 +1616,7 @@
                 window.timesSorteadosObjs.push({ id: idx, corBase: cor, nome: cor, jogadores: timeArr });
             });
             window.reservasSorteados = reservas; window.partidaSalva = false;
-            
+            window.partidaSalvaManual = false; // Garante que é uma nova partida limpa
             window.jogosDaRodada = []; window.filaEquipes = window.timesSorteadosObjs.map(t => t.id); window.golsTempA = []; window.golsTempB = [];
             
             window.partidaAtualId = null; // Força a criação de um NOVO ID limpo no banco
@@ -1643,6 +1649,7 @@
                 window.timesSorteadosObjs.forEach(t => qJogadoresEmQuadra += t.jogadores.length);
                 if (window.reservasSorteados) qJogadoresEmQuadra += window.reservasSorteados.length;
                 
+                // NOTA: AS PRESENÇAS NÃO SÃO MAIS INSERIDAS AQUI. APENAS NO FINAL DO BABA!
                 const { data: pData, error: errP } = await db.from('partidas').insert([{ 
                     quantidade_jogadores: qJogadoresEmQuadra, 
                     renda_convidados: 0,
@@ -1663,16 +1670,7 @@
                 window.partidaAtualId = pData[0].id;
                 window.codigoAcessoAtual = codigoAleatorio;
                 iniciarOuvinteRealtime(window.partidaAtualId);
-
-                await db.from('presencas').delete().eq('partida_id', window.partidaAtualId);
-                let presencas = [];
-                window.timesSorteadosObjs.forEach((t) => { 
-                    t.jogadores.forEach(j => presencas.push({ partida_id: window.partidaAtualId, jogador_id: j.id, pagou: j.pagou || false, equipe: t.nome })); 
-                });
-                if (window.reservasSorteados) {
-                    window.reservasSorteados.forEach(j => presencas.push({ partida_id: window.partidaAtualId, jogador_id: j.id, pagou: j.pagou || false, equipe: "Reserva" }));
-                }
-                if(presencas.length > 0) await db.from('presencas').insert(presencas);
+                
                 exibirBoxCodigoSorteio(window.codigoAcessoAtual);
             } catch(err) {
                 console.error("Erro ao gerar partida automática:", err.message);
@@ -1970,7 +1968,9 @@
 
             aviso.style.display = 'none';
             container.style.display = 'block';
-            if(instrucoes) instrucoes.style.display = 'block';
+            
+            // Esconde as instruções se a partida já estiver salva (finalizada)
+            if(instrucoes) instrucoes.style.display = window.partidaSalva ? 'none' : 'block';
 
             if(window.codigoAcessoAtual) {
                 exibirBoxCodigoSorteio(window.codigoAcessoAtual);
@@ -2516,14 +2516,22 @@
                 }).eq('id', window.partidaAtualId);
                 if(errP) throw errP;
 
-                for(let j of jogadores) {
-                    if(j.presente) {
-                        await db.from('presencas').update({ pagou: j.pagou || false }).eq('partida_id', window.partidaAtualId).eq('jogador_id', j.id);
-                    }
+                // INSERE AS PRESENÇAS DEFINITIVAMENTE NO BANCO SOMENTE AGORA
+                await db.from('presencas').delete().eq('partida_id', window.partidaAtualId);
+                let presencasToInsert = [];
+                window.timesSorteadosObjs.forEach((t) => { 
+                    t.jogadores.forEach(j => presencasToInsert.push({ partida_id: window.partidaAtualId, jogador_id: j.id, pagou: j.pagou || false, equipe: t.nome })); 
+                });
+                if (window.reservasSorteados) {
+                    window.reservasSorteados.forEach(j => presencasToInsert.push({ partida_id: window.partidaAtualId, jogador_id: j.id, pagou: j.pagou || false, equipe: "Reserva" }));
+                }
+                if(presencasToInsert.length > 0) {
+                    await db.from('presencas').insert(presencasToInsert);
                 }
 
                 await db.from('jogadores').delete().eq('tipo', 'Convidado').eq('user_id', currentUser.id);
                 window.partidaSalva = true; 
+                window.partidaSalvaManual = true; // Marca que a partida foi encerrada para limpar ao gerar nova
                 
                 jogadores.forEach(j => { 
                     j.presente = false; 
@@ -2536,6 +2544,10 @@
                 atualizarListaJogosDaRodada();
                 salvarEstadoCompleto();
                 
+                // Oculta o texto teimoso
+                const instrucoes = document.getElementById('texto-instrucoes-sumula');
+                if(instrucoes) instrucoes.style.display = 'none';
+
                 let btnSum = document.getElementById('btn-ir-placares');
                 if(btnSum) btnSum.innerText = "📝 Ver Súmula Anterior";
 
