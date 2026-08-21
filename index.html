@@ -5,12 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Pega o Baba | Gestão Esportiva</title>
     
-    <!-- ÍCONES PARA O ATALHO DO CELULAR E NAVEGADOR -->
     <link rel="icon" type="image/svg+xml" href="icone.svg">
     <link rel="apple-touch-icon" href="icone.svg">
     <meta name="theme-color" content="#0f172a">
 
-    <!-- FONTES E ARQUIVOS EXTERNOS -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -35,10 +33,7 @@
             <input type="password" id="auth-password" placeholder="Sua Senha Segura">
             
             <button onclick="fazerLogin()" style="margin-bottom: 5px; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.3);">Entrar no Painel</button>
-            
-            <!-- Linha Divisória Elegante -->
             <div class="auth-divider">OU</div>
-            
             <button onclick="criarConta()" style="background: white; color: var(--dark); border: 1px solid var(--border);">Criar Nova Conta</button>
             <div id="auth-msg" style="margin-top: 15px; font-size: 14px; text-align: center;"></div>
         </div>
@@ -50,14 +45,11 @@
             <button onclick="acessarModoPublico()" style="background: var(--dark);">Ver Súmula e Painel</button>
         </div>
 
-        <!-- Assinatura do Desenvolvedor (CTA) na Tela Inicial -->
         <div class="dev-signature">
             <p class="cta-title">Quer adicionar este sistema ao seu baba?</p>
             <p class="cta-desc">Entre em contato e profissionalize a sua resenha!</p>
             Desenvolvido por <strong>Renan Barbosa</strong><br>
-            <a href="https://api.whatsapp.com/send?phone=5571996212118&text=Olá%20Renan!%20Gostaria%20de%20adicionar%20o%20sistema%20ao%20meu%20baba." target="_blank" class="btn-dev-whatsapp">
-                📱 Chamar no WhatsApp
-            </a>
+            <a href="https://api.whatsapp.com/send?phone=5571996212118&text=Olá%20Renan!%20Gostaria%20de%20adicionar%20o%20sistema%20ao%20meu%20baba." target="_blank" class="btn-dev-whatsapp">📱 Chamar no WhatsApp</a>
         </div>
     </div>
 
@@ -82,11 +74,8 @@
                 <div class="linha-selects">
                     <select id="tipo"><option value="Mensalista">Mensalista</option><option value="Convidado">Convidado</option></select>
                     <select id="posicao">
-                        <option value="Atacante">Atacante</option>
-                        <option value="Meia" selected>Meia</option>
-                        <option value="Lateral">Lateral</option>
-                        <option value="Zagueiro">Zagueiro</option>
-                        <option value="Goleiro">Goleiro</option>
+                        <option value="Atacante">Atacante</option><option value="Meia" selected>Meia</option><option value="Lateral">Lateral</option>
+                        <option value="Zagueiro">Zagueiro</option><option value="Goleiro">Goleiro</option>
                     </select>
                     <select id="nivel"><option value="5">Craque (5)</option><option value="4">Bom (4)</option><option value="3" selected>Médio (3)</option><option value="2">Iniciante (2)</option><option value="1">Perna (1)</option></select>
                 </div>
@@ -98,9 +87,7 @@
 
             <div class="card hidden-public" style="padding: 15px;">
                 <h2 style="margin-bottom: 10px;">Gestão de Elenco (<span id="total-elenco">0</span>)</h2>
-                <div class="busca-container">
-                    <input type="text" id="busca-jogador-elenco" placeholder="🔍 Buscar jogador..." onkeyup="filtrarElencoAdmin()">
-                </div>
+                <div class="busca-container"><input type="text" id="busca-jogador-elenco" placeholder="🔍 Buscar jogador..." onkeyup="filtrarElencoAdmin()"></div>
                 <div id="lista-elenco-admin"></div>
             </div>
         </div>
@@ -110,18 +97,14 @@
             <div class="card hidden-public" style="border: 2px dashed var(--border); background: var(--white);">
                 <h2 style="color: var(--text-muted);">Aguardando Chegada</h2>
                 <button class="btn-limpar" onclick="marcarTodosPresentes()" style="display: block; width:100%; margin-bottom:15px; color: var(--dark); border-color: var(--border);">✅ Todos Chegaram</button>
-                <div class="busca-container">
-                    <input type="text" id="busca-jogador-sorteio" placeholder="🔍 Buscar jogador..." onkeyup="filtrarSorteioAusentes()">
-                </div>
+                <div class="busca-container"><input type="text" id="busca-jogador-sorteio" placeholder="🔍 Buscar jogador..." onkeyup="filtrarSorteioAusentes()"></div>
                 <div id="lista-aguardando"></div>
             </div>
 
             <div class="card hidden-public" style="border: 2px solid var(--primary); background: #f8fafc;">
                 <h2>Prontos pro Jogo (<span id="total-presentes">0</span>)</h2>
                 <button class="btn-limpar" onclick="zerarPresencas()" id="btn-zerar" style="display: block; width:100%; margin-bottom:15px;">🔄 Iniciar Nova Rodada (Zerar Tudo)</button>
-                
                 <div id="lista-presentes"></div>
-                
                 <div style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 20px;">
                     <label style="font-weight: 600; display: block; margin-bottom: 8px;">Modo de Sorteio:</label>
                     <select id="modo-sorteio" style="margin-bottom: 10px;">
@@ -130,24 +113,19 @@
                         <option value="todos_sem_goleiro">Todos - sem goleiro</option>
                         <option value="todos" selected>Todos - com goleiro</option>
                     </select>
-                    
                     <div style="display:flex; gap:10px; align-items:flex-start; background: white; padding:10px; border-radius:8px; border:1px solid var(--border);">
                         <input type="checkbox" id="priorizar-ordem" style="width:auto; margin-top:2px;">
                         <label for="priorizar-ordem" style="font-size:14px; font-weight:500;">
                             Priorizar Ordem de Chegada
-                            <span style="display:block; font-size:12px; color:var(--text-muted); font-weight:normal; margin-top:4px;">Se desmarcado, mistura focando 100% no equilíbrio técnico.</span>
+                            <span style="display:block; font-size:12px; color:var(--text-muted); font-weight:normal; margin-top:4px;">Se desmarcado, foca 100% no equilíbrio técnico.</span>
                         </label>
                     </div>
                 </div>
                 <button onclick="iniciarSorteioComSuspense()" style="background: var(--dark); margin-top: 15px; font-size:16px; padding:16px;">🎲 Gerar Equipes</button>
             </div>
 
-            <!-- RESULTADO DO SORTEIO -->
             <div id="resultado" class="team-container"></div>
-            
-            <!-- CAIXA DE COMPARTILHAMENTO NA ABA SORTEIO -->
             <div id="box-codigo-gerado-sorteio" class="codigo-gerado-box hidden-public" style="display:none; margin-top: 20px;"></div>
-
             <div class="hidden-public" style="display: flex; gap: 10px; margin-top: 20px;">
                 <button id="btn-ir-placares" style="background: var(--primary); display: none; width:100%;" onclick="mudarAba('view-placares')">📝 Preencher Súmula</button>
             </div>
@@ -168,14 +146,14 @@
 
                 <div id="container-sumula" style="display: none;">
                     
-                    <!-- DESTAQUE DA FILA / PRÓXIMA EQUIPE -->
                     <div id="container-status-fila"></div>
 
-                    <!-- PLACAR DE ARENA -->
+                    <!-- PLACAR DE ARENA (COM ESPAÇO PARA CORINGAS) -->
                     <div class="placar-arena hidden-public" id="painel-placar-arena">
                         <div class="placar-header">
                             <div class="placar-time">
                                 <select id="sumula_equipe_a" onchange="limparGolsTemp('A')"></select>
+                                <div id="status-coringa-a" style="text-align:center; width:90%;"></div>
                                 <div class="placar-numero" id="placar-num-a">0</div>
                                 <button class="btn-add-gol-arena" onclick="abrirModalGol('A')">⚽ Add Gol</button>
                                 <div class="lista-gols-arena" id="lista-gols-a"></div>
@@ -183,6 +161,7 @@
                             <div class="placar-vs">X</div>
                             <div class="placar-time">
                                 <select id="sumula_equipe_b" onchange="limparGolsTemp('B')"></select>
+                                <div id="status-coringa-b" style="text-align:center; width:90%;"></div>
                                 <div class="placar-numero" id="placar-num-b">0</div>
                                 <button class="btn-add-gol-arena" onclick="abrirModalGol('B')">⚽ Add Gol</button>
                                 <div class="lista-gols-arena" id="lista-gols-b"></div>
@@ -194,10 +173,11 @@
                     <h3 style="font-size: 15px; margin-bottom: 10px;">Jogos Registrados (<span id="qtd-jogos-reg">0</span>):</h3>
                     <div id="lista-jogos-registrados" style="margin-bottom: 15px;"></div>
                     
-                    <!-- BOTÃO AJUSTE MANUAL DE GOLS AQUI -->
-                    <button class="btn-acao-outline hidden-public" style="width:100%; margin-bottom: 25px; text-align:center; display:block;" onclick="abrirModalAjuste()">⚙️ Ajuste Manual de Gols</button>
+                    <div style="display: flex; gap: 10px; margin-bottom: 25px;">
+                        <button class="btn-acao-outline hidden-public" style="flex:1; text-align:center; display:block;" onclick="abrirModalAjuste()">⚙️ Ajuste de Gols</button>
+                        <button class="btn-acao-outline hidden-public" style="flex:1; text-align:center; display:block; border-color:var(--danger); color:var(--danger);" onclick="abrirModalLesao()">🚑 DM / Lesão</button>
+                    </div>
 
-                    <!-- ESCALAÇÃO DOS TIMES -->
                     <h3 style="font-size: 15px; margin-bottom: 10px; border-top: 1px solid var(--border); padding-top: 20px;">🛡️ Escalação das Equipes</h3>
                     <div id="lista-escalacao-publica" class="team-container" style="margin-top: 0; margin-bottom: 25px;"></div>
 
@@ -205,14 +185,11 @@
                 </div>
             </div>
 
-            <!-- Assinatura do Desenvolvedor (Vitrine Pública) na Súmula -->
             <div class="dev-signature card public-only" style="border: 1px solid var(--border); box-shadow: none; padding: 20px;">
                 <p class="cta-title">Quer ter este sistema no seu baba?</p>
                 <p class="cta-desc">Entre em contato e profissionalize a sua resenha!</p>
                 Desenvolvido por <strong>Renan Barbosa</strong><br>
-                <a href="https://api.whatsapp.com/send?phone=5571996212118&text=Olá%20Renan!%20Gostaria%20de%20adicionar%20o%20sistema%20ao%20meu%20baba." target="_blank" class="btn-dev-whatsapp">
-                    📱 Chamar no WhatsApp
-                </a>
+                <a href="https://api.whatsapp.com/send?phone=5571996212118&text=Olá%20Renan!%20Gostaria%20de%20adicionar%20o%20sistema%20ao%20meu%20baba." target="_blank" class="btn-dev-whatsapp">📱 Chamar no WhatsApp</a>
             </div>
         </div>
 
@@ -238,9 +215,7 @@
                 </table>
             </div>
 
-            <div id="loading-stats" class="hidden-public" style="text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 20px; display: none;">
-                Buscando histórico na nuvem...
-            </div>
+            <div id="loading-stats" class="hidden-public" style="text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 20px; display: none;">Buscando histórico na nuvem...</div>
 
             <div class="card-secao-stats hidden-public">
                 <div class="header-secao-stats" style="background: #e0e7ff; color: var(--primary);">
@@ -265,85 +240,51 @@
                     </table>
                 </div>
             </div>
-
-            <!-- Assinatura do Desenvolvedor (Vitrine Pública) nas Estatísticas -->
+            
             <div class="dev-signature card public-only" style="border: 1px solid var(--border); box-shadow: none; padding: 20px; margin-top: 20px;">
                 <p class="cta-title">Quer ter este sistema no seu baba?</p>
                 <p class="cta-desc">Entre em contato e profissionalize a sua resenha!</p>
                 Desenvolvido por <strong>Renan Barbosa</strong><br>
-                <a href="https://api.whatsapp.com/send?phone=5571996212118&text=Olá%20Renan!%20Gostaria%20de%20adicionar%20o%20sistema%20ao%20meu%20baba." target="_blank" class="btn-dev-whatsapp">
-                    📱 Chamar no WhatsApp
-                </a>
+                <a href="https://api.whatsapp.com/send?phone=5571996212118&text=Olá%20Renan!%20Gostaria%20de%20adicionar%20o%20sistema%20ao%20meu%20baba." target="_blank" class="btn-dev-whatsapp">📱 Chamar no WhatsApp</a>
             </div>
         </div>
 
         <!-- ABA 5: CAIXA E RELATÓRIOS -->
         <div id="view-financeiro" class="page-view">
             <h2 class="no-print" style="text-align: left; font-size:20px; margin-bottom: 20px;">Gestão de Caixa</h2>
-            
             <div class="card hidden-public no-print" style="padding: 12px 15px; margin-bottom: 15px;">
                 <p style="font-size:11px; color:var(--text-muted); margin-top:0; margin-bottom:10px;">Defina o valor base para a contabilidade.</p>
                 <div style="display: flex; gap: 10px; margin-bottom: 0;">
-                    <div style="flex: 1;">
-                        <label style="font-size: 11px; font-weight: 600; color: var(--text-muted);">Mensalidade (R$):</label>
-                        <input type="number" id="valor-mensalista" value="70" onchange="atualizarFinanceiro()" style="font-size: 16px; font-weight: 700; margin-bottom: 0; padding: 10px;">
-                    </div>
-                    <div style="flex: 1;">
-                        <label style="font-size: 11px; font-weight: 600; color: var(--text-muted);">Diária Convidado (R$):</label>
-                        <input type="number" id="valor-convidado" value="25" onchange="atualizarFinanceiro()" style="font-size: 16px; font-weight: 700; margin-bottom: 0; padding: 10px;">
-                    </div>
+                    <div style="flex: 1;"><label style="font-size: 11px; font-weight: 600; color: var(--text-muted);">Mensalidade (R$):</label><input type="number" id="valor-mensalista" value="70" onchange="atualizarFinanceiro()" style="font-size: 16px; font-weight: 700; margin-bottom: 0; padding: 10px;"></div>
+                    <div style="flex: 1;"><label style="font-size: 11px; font-weight: 600; color: var(--text-muted);">Diária Convidado (R$):</label><input type="number" id="valor-convidado" value="25" onchange="atualizarFinanceiro()" style="font-size: 16px; font-weight: 700; margin-bottom: 0; padding: 10px;"></div>
                 </div>
             </div>
 
-            <!-- LANÇAR NOVA DESPESA / ENTRADA EXTRA -->
             <div class="card hidden-public no-print" style="margin-bottom:15px; padding: 15px;">
                 <h3 style="font-size: 14px; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom: 12px;">💸 Lançar Movimentação</h3>
-                
                 <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                    <select id="operacao-movimentacao" style="flex:1; margin:0; padding:10px; font-size:13px; font-weight:bold;">
-                        <option value="saida">🔴 Saída (-)</option>
-                        <option value="entrada">🟢 Entrada (+)</option>
-                    </select>
+                    <select id="operacao-movimentacao" style="flex:1; margin:0; padding:10px; font-size:13px; font-weight:bold;"><option value="saida">🔴 Saída (-)</option><option value="entrada">🟢 Entrada (+)</option></select>
                     <input type="text" id="desc-custo" placeholder="Ex: Juiz, Água, Saldo Extra" style="flex:2; margin:0; padding:10px; font-size:13px;">
                 </div>
-                
                 <div style="display: flex; gap: 8px; margin-bottom: 12px; align-items: flex-end;">
-                    <div style="flex: 1;">
-                        <label style="font-size: 10px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">Valor:</label>
-                        <input type="number" id="valor-custo" placeholder="R$" style="width:100%; margin:0; padding:10px; font-size:13px;">
-                    </div>
-                    <div style="flex: 1.2;">
-                        <label style="font-size: 10px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">Frequência:</label>
-                        <select id="tipo-custo" style="width:100%; margin:0; padding:10px; font-size:13px;">
-                            <option value="diario">Avulso / Pontual</option>
-                            <option value="mensal">Mensal (Fixo)</option>
-                        </select>
-                    </div>
-                    <div style="flex: 1;">
-                        <label style="font-size: 10px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">Data:</label>
-                        <input type="date" id="data-custo" style="width:100%; margin:0; padding:10px; font-size:13px;">
-                    </div>
+                    <div style="flex: 1;"><label style="font-size: 10px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">Valor:</label><input type="number" id="valor-custo" placeholder="R$" style="width:100%; margin:0; padding:10px; font-size:13px;"></div>
+                    <div style="flex: 1.2;"><label style="font-size: 10px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">Frequência:</label><select id="tipo-custo" style="width:100%; margin:0; padding:10px; font-size:13px;"><option value="diario">Avulso / Pontual</option><option value="mensal">Mensal (Fixo)</option></select></div>
+                    <div style="flex: 1;"><label style="font-size: 10px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">Data:</label><input type="date" id="data-custo" style="width:100%; margin:0; padding:10px; font-size:13px;"></div>
                 </div>
                 <button onclick="adicionarCusto()" style="background: var(--dark); padding: 12px; font-size:14px;">Registrar Movimentação</button>
             </div>
 
-            <!-- RELATÓRIO MENSAL DETALHADO -->
             <div class="card-secao-stats hidden-public" id="card-relatorio-mensal">
                 <div class="header-secao-stats" style="background: var(--primary); color: white; flex-direction: column; align-items: stretch; gap: 10px; padding: 15px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span style="font-size: 15px;">📄 Relatório Mensal Detalhado</span>
-                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size: 15px;">📄 Relatório Mensal Detalhado</span></div>
                     <div style="display:flex; align-items:center; gap:10px; background: rgba(255,255,255,0.1); padding: 8px; border-radius: 8px;">
                         <label style="font-size: 12px; font-weight:600; color: white;">Ver Histórico do Mês:</label>
                         <input type="month" id="filtro-mes-relatorio" style="margin:0; padding:8px; color:black; font-size:14px; border-radius:6px; border:none; max-width: 160px; font-family: inherit; font-weight:bold;" onchange="gerarRelatorioMensal()">
                     </div>
                 </div>
-                <div style="padding: 15px;" id="conteudo-relatorio-mensal">
-                    <p style="text-align: center; color: var(--text-muted); font-size: 13px;">Carregando resumo do mês...</p>
-                </div>
+                <div style="padding: 15px;" id="conteudo-relatorio-mensal"><p style="text-align: center; color: var(--text-muted); font-size: 13px;">Carregando resumo do mês...</p></div>
             </div>
 
-            <!-- BOTÕES DE EXPORTAÇÃO DO RELATÓRIO -->
             <div style="display: flex; gap: 10px; margin-top: 20px;" class="no-print hidden-public">
                 <button onclick="window.print()" style="background: var(--dark); flex: 1; font-size: 14px; padding: 14px;">📄 Exportar PDF / Imprimir Relatório</button>
             </div>
@@ -355,39 +296,23 @@
             
             <div class="card" style="padding: 15px; margin-bottom: 15px;">
                 <h3 style="font-size: 14px; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom: 10px;">🛡️ Escudo do Baba</h3>
-                <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 10px;">Faça o upload do brasão do seu time para aparecer no topo do app.</p>
-                <div style="text-align: center; margin-bottom: 10px;">
-                    <img id="preview-escudo" src="" style="display:none; width:80px; height:80px; border-radius:50%; object-fit:cover; margin: 0 auto 10px auto; border: 2px solid var(--primary);">
-                </div>
+                <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 10px;">Faça o upload do brasão do seu time.</p>
+                <div style="text-align: center; margin-bottom: 10px;"><img id="preview-escudo" src="" style="display:none; width:80px; height:80px; border-radius:50%; object-fit:cover; margin: 0 auto 10px auto; border: 2px solid var(--primary);"></div>
                 <input type="file" id="input-escudo-baba" accept="image/*" style="font-size: 12px; padding: 10px; margin-bottom: 10px; border: 1px dashed var(--border); width: 100%;">
                 <button id="btn-salvar-escudo" onclick="salvarEscudoBaba()" style="background: var(--dark); padding: 10px; font-size: 13px;">Fazer Upload da Imagem</button>
             </div>
 
             <div class="card" style="padding: 15px; margin-bottom: 15px;">
                 <h3 style="font-size: 14px; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom: 10px;">🏷️ Nome do Baba</h3>
-                <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Personalize o nome do seu grupo no topo do aplicativo.</p>
-                <div style="display:flex; gap:10px;">
-                    <input type="text" id="nome-baba-input" placeholder="Ex: Baba dos Amigos" style="margin-bottom:0; padding: 10px;">
-                    <button onclick="salvarNomeBaba()" style="width:auto; padding:0 20px; font-size: 13px;">Salvar</button>
-                </div>
+                <div style="display:flex; gap:10px;"><input type="text" id="nome-baba-input" placeholder="Ex: Baba dos Amigos" style="margin-bottom:0; padding: 10px;"><button onclick="salvarNomeBaba()" style="width:auto; padding:0 20px; font-size: 13px;">Salvar</button></div>
             </div>
 
-            <!-- CONFIGURAÇÃO DE JOGADORES POR TIME -->
             <div class="card" style="padding: 15px; margin-bottom: 15px;">
                 <h3 style="font-size: 14px; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom: 10px;">⚽ Tamanho das Equipes</h3>
-                <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Defina o total de jogadores por time em quadra <strong>(já incluindo o goleiro)</strong>:</p>
-                <div style="display:flex; gap:10px;">
-                    <input type="number" id="jogadores-por-time-input" min="3" max="15" value="7" style="margin-bottom:0; padding: 10px; font-weight: 700;">
-                    <button onclick="salvarJogadoresPorTime()" style="width:auto; padding:0 20px; font-size: 13px;">Salvar</button>
-                </div>
+                <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Jogadores por time <strong>(incluindo goleiro)</strong>:</p>
+                <div style="display:flex; gap:10px;"><input type="number" id="jogadores-por-time-input" min="3" max="15" value="7" style="margin-bottom:0; padding: 10px; font-weight: 700;"><button onclick="salvarJogadoresPorTime()" style="width:auto; padding:0 20px; font-size: 13px;">Salvar</button></div>
             </div>
 
-            <div class="card" style="padding: 15px; margin-bottom: 15px;">
-                <h3 style="font-size: 14px; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom: 10px;">👤 Dados de Acesso</h3>
-                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 5px;">E-mail cadastrado:</p>
-                <strong id="organizer-email-label" style="font-size: 14px; color: var(--dark); display: block; margin-bottom: 5px;">...</strong>
-            </div>
-            
             <div class="card" style="padding: 15px; margin-bottom: 15px;">
                 <h3 style="font-size: 14px; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom: 10px;">🔒 Segurança</h3>
                 <div style="margin-bottom: 0;">
@@ -397,34 +322,30 @@
                 </div>
             </div>
             
-            <!-- BOTÃO ZERAR TEMPORADA -->
             <div class="card" style="border-color: var(--warning); padding: 15px; margin-bottom: 15px;">
                 <h3 style="font-size: 14px; margin-top:0; color: var(--warning); border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom: 10px;">⚠️ Nova Temporada</h3>
-                <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 10px;">Apaga todo o histórico de partidas, súmulas, estatísticas e finanças. <strong>O Elenco de jogadores será mantido.</strong></p>
+                <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 10px;">Apaga todo o histórico de partidas, súmulas e finanças. <strong>O Elenco de jogadores será mantido.</strong></p>
                 <button onclick="zerarHistoricoAdmin()" style="background: var(--warning); color: white; padding: 10px; font-size: 13px;">Zerar Todo o Histórico</button>
             </div>
 
             <div class="card" style="border-color: var(--danger); padding: 15px; margin-bottom: 15px;">
                 <h3 style="font-size: 14px; margin-top:0; color: var(--danger); border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom: 10px;">Sessão</h3>
-                <button onclick="fazerLogout()" style="background: var(--danger); padding: 10px; font-size: 13px;">Sair da Conta neste dispositivo</button>
+                <button onclick="fazerLogout()" style="background: var(--danger); padding: 10px; font-size: 13px;">Sair da Conta</button>
             </div>
 
-            <!-- Assinatura Simples para a aba do Organizador -->
-            <div class="dev-signature" style="border-top: none; padding-top: 0;">
-                Desenvolvido por <strong>Renan Barbosa</strong>
-            </div>
+            <div class="dev-signature" style="border-top: none; padding-top: 0;">Desenvolvido por <strong>Renan Barbosa</strong></div>
         </div>
 
         <!-- ABA: MASTER ADMIN -->
         <div id="view-admin" class="page-view master-only">
             <h2 style="text-align: left; font-size:20px; margin-bottom: 20px;">Painel Master (Gestão de Assinaturas)</h2>
             <div class="card">
-                <p style="font-size: 13px; color: var(--text-muted); margin-top: -5px; margin-bottom: 15px;">Gerencie a autorização e a data de expiração da mensalidade de cada grupo/organizador.</p>
+                <p style="font-size: 13px; color: var(--text-muted); margin-top: -5px; margin-bottom: 15px;">Gerencie a autorização e a data de expiração da mensalidade.</p>
                 <div id="lista-organizadores-admin">Carregando usuários...</div>
             </div>
         </div>
 
-        <!-- MODAL SELEÇÃO DE GOL -->
+        <!-- MODAIS DA SÚMULA -->
         <div id="modal-gol" class="modal-overlay" style="display:none;">
             <div class="modal-content">
                 <h3 id="titulo-modal-gol">Quem fez o gol?</h3>
@@ -433,15 +354,24 @@
             </div>
         </div>
 
-        <!-- NOVO MODAL AJUSTE MANUAL DE GOLS AQUI -->
         <div id="modal-ajuste-manual" class="modal-overlay" style="display:none;">
             <div class="modal-content">
                 <h3 style="margin-bottom: 5px;">⚙️ Ajuste de Artilharia</h3>
-                <p style="font-size:12px; color:var(--text-muted); text-align:center; margin-bottom:15px; margin-top:0;">Adicione (+1) ou remova (-1) gols da artilharia individual sem afetar placares de jogos.</p>
+                <p style="font-size:12px; color:var(--text-muted); text-align:center; margin-bottom:15px; margin-top:0;">Adicione ou remova gols manuais.</p>
                 <select id="select-jogador-ajuste" style="margin-bottom: 15px; font-weight:bold;"></select>
-                <input type="number" id="input-gols-ajuste" placeholder="Quantidade (ex: 2 ou -1)" value="1" style="font-size: 18px; font-weight:bold; text-align:center;">
+                <input type="number" id="input-gols-ajuste" placeholder="Qtd (ex: 2 ou -1)" value="1" style="font-size: 18px; font-weight:bold; text-align:center;">
                 <button onclick="salvarAjusteManual()" style="margin-bottom:10px; background:var(--supabase);">Confirmar Ajuste</button>
                 <button onclick="fecharModalAjuste()" style="background:white; color:var(--dark); border:1px solid var(--border);">Cancelar</button>
+            </div>
+        </div>
+
+        <div id="modal-lesao" class="modal-overlay" style="display:none;">
+            <div class="modal-content">
+                <h3 style="margin-bottom: 5px; color:var(--danger);">🚑 Departamento Médico</h3>
+                <p style="font-size:12px; color:var(--text-muted); text-align:center; margin-bottom:15px; margin-top:0;">Retire um machucado do time. Ele virará reserva e não será Coringa.</p>
+                <select id="select-jogador-lesao" style="margin-bottom: 15px; font-weight:bold;"></select>
+                <button onclick="salvarLesao()" style="margin-bottom:10px; background:var(--danger);">Enviar para o DM</button>
+                <button onclick="fecharModalLesao()" style="background:white; color:var(--dark); border:1px solid var(--border);">Cancelar</button>
             </div>
         </div>
 
