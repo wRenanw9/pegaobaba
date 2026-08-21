@@ -11,14 +11,14 @@ const coresTimes = ["Vermelho", "Azul", "Amarelo", "Verde", "Branco", "Preto", "
 const emojisTimes = ["🔴", "🔵", "🟡", "🟢", "⚪", "⚫", "🟣", "🟠"];
 const posMap = { "Atacante": "ATA", "Meia": "MEI", "Lateral": "LAT", "Zagueiro": "ZAG", "Goleiro": "GOL", "Linha": "LIN" };
 
-window.timesSorteadosObjs = []; window.reservasSorteados = []; window.partidaSalva = true; window.jogosDaRodada = []; window.filaEquipes = []; window.custosDaRodada = []; window.despesasMensaisGlobais = [];
-window.isModoPublico = false; window.dataPartidaAtual = null; window.partidaAtualId = null; window.codigoAcessoAtual = null; window.golsTempA = []; window.golsTempB = [];
-window.coringasAtivos = {}; // NOVO: Armazena os coringas da partida atual por Time ID
-
 function getCorHex(corBase) {
     const map = { "Vermelho": "#ef4444", "Azul": "#3b82f6", "Amarelo": "#d97706", "Verde": "#10b981", "Branco": "#64748b", "Preto": "#0f172a", "Roxo": "#8b5cf6", "Laranja": "#f97316" };
     return map[corBase] || "#4f46e5";
 }
+
+window.timesSorteadosObjs = []; window.reservasSorteados = []; window.partidaSalva = true; window.jogosDaRodada = []; window.filaEquipes = []; window.custosDaRodada = []; window.despesasMensaisGlobais = [];
+window.isModoPublico = false; window.dataPartidaAtual = null; window.partidaAtualId = null; window.codigoAcessoAtual = null; window.golsTempA = []; window.golsTempB = [];
+window.coringasAtivos = {}; // NOVO: Armazena os coringas da partida atual
 
 window.onload = async function() {
     if(typeof supabaseUrl === 'undefined' || typeof supabaseKey === 'undefined') { alert("Erro crítico: config.js ausente."); return; }
@@ -65,6 +65,7 @@ function carregarEstadoCompleto() {
         window.timesSorteadosObjs = state.timesSorteadosObjs || []; window.reservasSorteados = state.reservasSorteados || []; window.jogosDaRodada = state.jogosDaRodada || []; window.filaEquipes = state.filaEquipes || [];
         window.partidaSalva = state.partidaSalva !== undefined ? state.partidaSalva : true; window.custosDaRodada = state.custosDaRodada || []; window.despesasMensaisGlobais = state.despesasMensaisGlobais || [];
         window.dataPartidaAtual = state.dataPartidaAtual || null; window.partidaAtualId = state.partidaAtualId || null; window.codigoAcessoAtual = state.codigoAcessoAtual || null;
+        
         window.golsTempA = state.golsTempA || []; window.golsTempB = state.golsTempB || []; window.coringasAtivos = state.coringasAtivos || {};
 
         if (state.valorMensalistaAtual) document.getElementById('valor-mensalista').value = state.valorMensalistaAtual;
@@ -76,6 +77,7 @@ function carregarEstadoCompleto() {
                 let btnSum = document.getElementById('btn-ir-placares'); if(btnSum) { btnSum.style.display = 'block'; btnSum.innerText = window.partidaSalva ? "📝 Ver Súmula Anterior" : "📝 Preencher Súmula"; }
                 iniciarOuvinteRealtime(window.partidaAtualId);
             }
+            
             document.getElementById('resultado').innerHTML = ""; 
             window.timesSorteadosObjs.forEach((t) => {
                 let emoji = emojisTimes[coresTimes.indexOf(t.corBase)] || '⚽'; let corHex = getCorHex(t.corBase);
@@ -84,9 +86,10 @@ function carregarEstadoCompleto() {
                 document.getElementById('resultado').innerHTML += html + `</ul></div>`;
             });
             if (window.reservasSorteados && window.reservasSorteados.length > 0) {
-                let html = `<div class="team team-reservas"><h3 style="padding:5px; font-size:15px;">Reservas (Inativos)</h3><ul>`;
+                let html = `<div class="team team-reservas"><h3 style="padding:5px; font-size:15px;">Reservas / DM</h3><ul>`;
                 window.reservasSorteados.forEach(j => html += `<li><strong>${j.nome}</strong> ${j.isDM ? '<span style="color:var(--danger); font-size:11px; font-weight:bold;">[DM]</span>' : ''}</li>`); document.getElementById('resultado').innerHTML += html + `</ul></div>`;
             }
+            
             setTimeout(() => renderizarSumula(), 50);
         }
     }
@@ -313,6 +316,8 @@ async function checarPartidaAtivaAdmin() {
     if (!error && partidas && partidas.length > 0) {
         let p = partidas[0];
         if (p.created_at && (Date.now() - new Date(p.created_at).getTime()) <= 518400000) { 
+            
+            // PROTEÇÃO DA MEMÓRIA: Se for a mesma partida, não reseta as variáveis locais
             if (window.partidaAtualId === p.id && window.timesSorteadosObjs.length > 0) {
                 if (document.getElementById('view-placares').classList.contains('active')) renderizarSumula();
                 if (document.getElementById('view-estatisticas').classList.contains('active')) renderizarPainelDoDia();
@@ -614,7 +619,11 @@ async function sortearTimes(presentesBrutos, isAppend) {
                 const posicoes = ["Zagueiro", "Lateral", "Meia", "Atacante", "Linha"]; const grupos = {}; posicoes.forEach(p => grupos[p] = []);
                 linhaChunk.forEach(j => { if (grupos[j.posicao]) grupos[j.posicao].push(j); else grupos["Linha"].push(j); });
                 
-                posicoes.forEach(p => grupos[p].sort((a, b) => (Number(b.nivel) || 3) - (Number(a.nivel) || 3)));
+                posicoes.forEach(p => grupos[p].sort((a, b) => {
+                    if (a.tipo === 'Mensalista' && b.tipo !== 'Mensalista') return -1;
+                    if (a.tipo !== 'Mensalista' && b.tipo === 'Mensalista') return 1;
+                    return (Number(b.nivel) || 3) - (Number(a.nivel) || 3);
+                }));
                 
                 posicoes.forEach(pos => {
                     grupos[pos].forEach(jogador => {
@@ -685,7 +694,11 @@ async function sortearTimes(presentesBrutos, isAppend) {
         
         if (isAppend) renderizarSumula();
         
-    } catch (e) { alert("Ocorreu um erro ao gerar os times. Verifique sua conexão e tente novamente."); document.getElementById('resultado').innerHTML = ""; }
+    } catch (e) {
+        console.error("Erro no sorteio:", e);
+        alert("Ocorreu um erro ao gerar os times. Verifique sua conexão e tente novamente.");
+        document.getElementById('resultado').innerHTML = ""; 
+    }
 }
 
 async function criarPartidaInicialNoBanco() {
@@ -702,16 +715,19 @@ async function criarPartidaInicialNoBanco() {
             codigo_acesso: codigoAleatorio, nome_baba: currentProfile ? currentProfile.nome_baba : "", escudo_url: currentProfile ? currentProfile.escudo_url : "", user_id: currentUser.id
         }]).select();
 
-        if (errP) return alert("Erro de Conexão: " + errP.message);
+        if (errP) {
+            console.error(errP); alert("Erro de Conexão com o Banco de Dados: Não foi possível criar a partida no servidor. (" + errP.message + ")"); return;
+        }
         
-        if (pData && pData.length > 0) { window.partidaAtualId = pData[0].id; window.codigoAcessoAtual = codigoAleatorio; } 
-        else {
+        if (pData && pData.length > 0) {
+            window.partidaAtualId = pData[0].id; window.codigoAcessoAtual = codigoAleatorio;
+        } else {
             const { data: pFetch } = await db.from('partidas').select('id').eq('codigo_acesso', codigoAleatorio).single();
             if (pFetch) { window.partidaAtualId = pFetch.id; window.codigoAcessoAtual = codigoAleatorio; }
         }
         
         iniciarOuvinteRealtime(window.partidaAtualId); exibirBoxCodigoSorteio(window.codigoAcessoAtual);
-    } catch(err) { alert("Falha crítica ao tentar salvar a partida."); }
+    } catch(err) { console.error("Erro ao gerar partida:", err.message); alert("Falha crítica ao tentar salvar a partida."); }
 }
 
 function gerarTextoWhatsAppEscalacao() {
@@ -868,10 +884,11 @@ function renderizarEscalacaoPublicaSumula() {
         t.jogadores.forEach(j => { let posAbbr = posMap[j.posicao] || j.posicao; html += `<li><strong>${j.nome}</strong> ${j.posicao!=='Linha'?`<span class="badge badge-posicao" style="display:inline-block; min-width:32px; text-align:center; font-size:9px;">${posAbbr}</span>`:''}</li>`; }); containerEscalacao.innerHTML += html + `</ul></div>`;
     });
     if (window.reservasSorteados && window.reservasSorteados.length > 0) {
-        let html = `<div class="team team-reservas"><h3 style="padding:5px; font-size:15px;">Reservas (Inativos)</h3><ul>`; window.reservasSorteados.forEach(j => html += `<li><strong>${j.nome}</strong> ${j.isDM ? '<span style="color:var(--danger); font-size:11px; font-weight:bold;">[DM]</span>' : ''}</li>`); containerEscalacao.innerHTML += html + `</ul></div>`;
+        let html = `<div class="team team-reservas"><h3 style="padding:5px; font-size:15px;">Reservas / DM</h3><ul>`; window.reservasSorteados.forEach(j => html += `<li><strong>${j.nome}</strong> ${j.isDM ? '<span style="color:var(--danger); font-size:11px; font-weight:bold;">[DM]</span>' : ''}</li>`); containerEscalacao.innerHTML += html + `</ul></div>`;
     }
 }
 
+// === NOVO: ATUALIZADOR VISUAL DOS CORINGAS NA SÚMULA ===
 function atualizarCoringasUI() {
     let placarArena = document.getElementById('painel-placar-arena');
     if(placarArena && placarArena.style.display === 'none') return;
@@ -888,14 +905,13 @@ function atualizarCoringasUI() {
         let container = document.getElementById('status-coringa-' + lado.toLowerCase());
 
         if(time && container) {
-            let qtdAtual = time.jogadores.length;
             let coringas = (window.coringasAtivos && window.coringasAtivos[id]) ? window.coringasAtivos[id] : [];
-            qtdAtual += coringas.length;
+            let qtdAtual = time.jogadores.length + coringas.length;
 
             let html = '';
-            if(coringas.length > 0) { html += `<div style="font-size:10px; color:#93c5fd; margin-bottom:5px; text-transform:uppercase; font-weight:bold;">🎭 Coringas: ${coringas.map(c=>c.jogador.nome).join(', ')}</div>`; }
+            if(coringas.length > 0) { html += `<div style="font-size:10px; color:var(--primary); margin-bottom:5px; text-transform:uppercase; font-weight:bold;">🎭 Coringas: ${coringas.map(c=>c.jogador.nome).join(', ')}</div>`; }
             if(qtdAtual < tamanhoIdeal && !window.partidaSalva && !window.isModoPublico) {
-                html += `<button onclick="sortearCoringasArena('${lado}')" style="background:#4338ca; border:1px dashed white; border-radius:6px; color:white; font-size:11px; padding:6px; margin-bottom:10px; cursor:pointer;">🎭 Completar Time</button>`;
+                html += `<button onclick="sortearCoringasArena('${lado}')" style="background:transparent; border:1px dashed var(--primary); border-radius:6px; color:var(--primary); font-size:11px; padding:6px; margin-bottom:10px; cursor:pointer; width:100%;">🎭 Completar Time</button>`;
             }
             container.innerHTML = html;
         }
@@ -971,7 +987,7 @@ async function adicionarJogoNaSumula() {
     }
 
     if (idLoser !== null && window.coringasAtivos) {
-        delete window.coringasAtivos[idLoser];
+        delete window.coringasAtivos[idLoser]; // Perdedor sempre perde os coringas
         if (window.coringasAtivos[idWinner] && window.coringasAtivos[idWinner].length > 0) {
             let nextAdversarioId = window.filaEquipes[1]; 
             let coringasWin = window.coringasAtivos[idWinner];
@@ -983,7 +999,7 @@ async function adicionarJogoNaSumula() {
                 window.coringasAtivos[idWinner] = coringasWin.filter(c => c.timeOriginalId !== nextAdversarioId);
             }
 
-            if(window.coringasAtivos[idWinner].length > 0) {
+            if(window.coringasAtivos[idWinner] && window.coringasAtivos[idWinner].length > 0) {
                 if(confirm(`O time vencedor continuará em quadra com Coringas.\n\nDeseja realizar um RODÍZIO e remover os coringas atuais para dar chance a outros da fila?\n\n[OK] = Remover e rodar\n[Cancelar] = Manter os mesmos`)) {
                     delete window.coringasAtivos[idWinner];
                 }
@@ -1026,6 +1042,10 @@ function salvarLesao() {
 
     alert(`🚑 ${jogador.nome} foi movido para o DM (Reserva) e não será sorteado como Coringa.`);
     fecharModalLesao(); salvarEstadoCompleto(); renderizarEscalacaoPublicaSumula(); atualizarCoringasUI();
+    
+    for(let key in window.coringasAtivos) {
+        window.coringasAtivos[key] = window.coringasAtivos[key].filter(c => c.jogador.id !== jogador.id);
+    }
 }
 
 // === FUNÇÕES DO ALGORITMO DO CORINGA JUSTO (NOVO) ===
@@ -1042,8 +1062,8 @@ function sortearCoringasArena(lado) {
     if(faltam <= 0) return alert("Este time já está completo!");
 
     let coringasAtuaisAdv = window.coringasAtivos[idAdversario] || [];
-    let notaAdv = timeAdv.jogadores.reduce((acc, j) => acc + (Number(j.nivel)||3), 0) + coringasAtuaisAdv.reduce((acc, j) => acc + (Number(j.jogador.nivel)||3), 0);
-    let notaInc = timeInc.jogadores.reduce((acc, j) => acc + (Number(j.nivel)||3), 0) + coringasAtuaisInc.reduce((acc, j) => acc + (Number(j.jogador.nivel)||3), 0);
+    let notaAdv = timeAdv.jogadores.reduce((acc, j) => acc + (Number(j.nivel)||3), 0) + coringasAtuaisAdv.reduce((acc, c) => acc + (Number(c.jogador.nivel)||3), 0);
+    let notaInc = timeInc.jogadores.reduce((acc, j) => acc + (Number(j.nivel)||3), 0) + coringasAtuaisInc.reduce((acc, c) => acc + (Number(c.jogador.nivel)||3), 0);
     let alvo = notaAdv - notaInc;
 
     let elegiveis = [];
