@@ -36,6 +36,7 @@
             
             <button onclick="fazerLogin()" style="margin-bottom: 5px; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.3);">Entrar no Painel</button>
             
+            <!-- Linha Divisória Elegante -->
             <div class="auth-divider">OU</div>
             
             <button onclick="criarConta()" style="background: white; color: var(--dark); border: 1px solid var(--border);">Criar Nova Conta</button>
@@ -49,7 +50,7 @@
             <button onclick="acessarModoPublico()" style="background: var(--dark);">Ver Súmula e Painel</button>
         </div>
 
-        <!-- Assinatura do Desenvolvedor (CTA) -->
+        <!-- Assinatura do Desenvolvedor (CTA) na Tela Inicial -->
         <div class="dev-signature">
             <p class="cta-title">Quer adicionar este sistema ao seu baba?</p>
             <p class="cta-desc">Entre em contato e profissionalize a sua resenha!</p>
@@ -191,7 +192,10 @@
                     </div>
 
                     <h3 style="font-size: 15px; margin-bottom: 10px;">Jogos Registrados (<span id="qtd-jogos-reg">0</span>):</h3>
-                    <div id="lista-jogos-registrados" style="margin-bottom: 25px;"></div>
+                    <div id="lista-jogos-registrados" style="margin-bottom: 15px;"></div>
+                    
+                    <!-- BOTÃO AJUSTE MANUAL DE GOLS AQUI -->
+                    <button class="btn-acao-outline hidden-public" style="width:100%; margin-bottom: 25px; text-align:center; display:block;" onclick="abrirModalAjuste()">⚙️ Ajuste Manual de Gols</button>
 
                     <!-- ESCALAÇÃO DOS TIMES -->
                     <h3 style="font-size: 15px; margin-bottom: 10px; border-top: 1px solid var(--border); padding-top: 20px;">🛡️ Escalação das Equipes</h3>
@@ -426,6 +430,18 @@
                 <h3 id="titulo-modal-gol">Quem fez o gol?</h3>
                 <div id="lista-jogadores-gol" style="display:flex; flex-direction:column; gap:8px; max-height: 55vh; overflow-y: auto; margin-bottom: 15px; padding-right: 5px;"></div>
                 <button onclick="fecharModalGol()" style="background:white; color:var(--dark); border:1px solid var(--border); padding: 12px; border-radius: 8px; font-weight: 600; width:100%;">Cancelar</button>
+            </div>
+        </div>
+
+        <!-- NOVO MODAL AJUSTE MANUAL DE GOLS AQUI -->
+        <div id="modal-ajuste-manual" class="modal-overlay" style="display:none;">
+            <div class="modal-content">
+                <h3 style="margin-bottom: 5px;">⚙️ Ajuste de Artilharia</h3>
+                <p style="font-size:12px; color:var(--text-muted); text-align:center; margin-bottom:15px; margin-top:0;">Adicione (+1) ou remova (-1) gols da artilharia individual sem afetar placares de jogos.</p>
+                <select id="select-jogador-ajuste" style="margin-bottom: 15px; font-weight:bold;"></select>
+                <input type="number" id="input-gols-ajuste" placeholder="Quantidade (ex: 2 ou -1)" value="1" style="font-size: 18px; font-weight:bold; text-align:center;">
+                <button onclick="salvarAjusteManual()" style="margin-bottom:10px; background:var(--supabase);">Confirmar Ajuste</button>
+                <button onclick="fecharModalAjuste()" style="background:white; color:var(--dark); border:1px solid var(--border);">Cancelar</button>
             </div>
         </div>
 
