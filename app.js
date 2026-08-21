@@ -464,26 +464,19 @@ function iniciarSorteioComSuspense() {
     if (presentes.length < 2) return alert("Adicione pelo menos 2 atletas na lista de Prontos.");
     
     let isAppend = false;
-    // INTELIGÊNCIA: Se já há times e a partida NÃO foi encerrada, pergunta se quer apenas adicionar os novos.
     if (window.timesSorteadosObjs.length > 0 && !window.partidaSalva) {
         let jogadoresSemTime = presentes.filter(p => !window.timesSorteadosObjs.some(t => t.jogadores.some(tj => tj.id === p.id)));
         if (jogadoresSemTime.length === 0) {
             if(!confirm("Todos os presentes já estão em quadra.\n\nDeseja APAGAR TUDO e refazer o sorteio do zero?")) return;
         } else {
             if(confirm(`Você tem ${jogadoresSemTime.length} jogador(es) que acabaram de chegar e não estão nos times.\n\nDeseja criar TIME(S) NOVO(S) apenas com eles (mantendo o jogo atual rodando)?\n\n[OK] = Criar apenas o time dos atrasados\n[CANCELAR] = Apagar tudo e misturar todo mundo de novo`)) {
-                isAppend = true;
-                presentes = jogadoresSemTime; // Passa a sortear apenas os novos
-                
-                // Trata o caso de chegar apenas 1 cara atrasado
+                isAppend = true; presentes = jogadoresSemTime; 
                 if(presentes.length < 2) {
                     alert("Como só chegou 1 jogador, não é possível formar um time novo. Ele foi adicionado automaticamente à lista de Reservas!");
-                    window.reservasSorteados.push(...presentes);
-                    salvarEstadoCompleto(); renderizarSumula(); renderizarEscalacaoPublicaSumula();
-                    return;
+                    window.reservasSorteados.push(...presentes); salvarEstadoCompleto(); renderizarSumula(); renderizarEscalacaoPublicaSumula();
+                    return; 
                 }
-            } else {
-                if(!confirm("Tem certeza que deseja APAGAR os times atuais e misturar todo mundo de novo? (Isso não apaga os jogos que já aconteceram hoje).")) return;
-            }
+            } else { if(!confirm("Tem certeza que deseja APAGAR os times atuais e misturar todo mundo de novo? (Isso não apaga os jogos que já aconteceram hoje).")) return; }
         }
     }
 
@@ -494,83 +487,106 @@ function iniciarSorteioComSuspense() {
 }
 
 async function sortearTimes(presentesBrutos, isAppend) {
-    if (!isAppend && supabaseChannel) { db.removeChannel(supabaseChannel); supabaseChannel = null; }
-    
-    let modo = document.getElementById('modo-sorteio').value; let priorizarOrdem = document.getElementById('priorizar-ordem').checked;
-    let incluiGoleiros = (modo === '14' || modo === 'todos');
-    window.dataPartidaAtual = new Date().toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
-
-    let jogadoresValidos = presentesBrutos; let reservasNovas = [];
-    if (!incluiGoleiros) { reservasNovas.push(...presentesBrutos.filter(j => j.posicao === 'Goleiro')); jogadoresValidos = presentesBrutos.filter(j => j.posicao !== 'Goleiro'); }
-
-    let tamanhoIdeal = currentProfile && currentProfile.jogadores_por_time ? parseInt(currentProfile.jogadores_por_time) : 7;
-    let maxTitulares = jogadoresValidos.length;
-    if (modo === '12') maxTitulares = 12; else if (modo === '14') maxTitulares = 14;
-
-    let titulares = jogadoresValidos.slice(0, maxTitulares); reservasNovas.push(...jogadoresValidos.slice(maxTitulares));
-    let timesNovos = []; let tamanhoPartida = tamanhoIdeal * 2; 
-
-    if (!priorizarOrdem && (modo === 'todos' || modo === 'todos_sem_goleiro')) {
-        let qtdTimesGlobais = Math.ceil(titulares.length / tamanhoIdeal); if (qtdTimesGlobais < 2 && titulares.length >= 2) qtdTimesGlobais = 2; 
-        if (qtdTimesGlobais > 0) tamanhoPartida = titulares.length;
-    }
-
-    const getSomaNotas = (time) => time.reduce((acc, j) => acc + (Number(j.nivel) || 3), 0);
-    const getQtdPosicao = (time, pos) => time.filter(j => j.posicao === pos).length;
-    
-    for (let i = 0; i < titulares.length; i += tamanhoPartida) {
-        let chunk = titulares.slice(i, i + tamanhoPartida); let numTimesNoChunk;
-        if (modo === '12' || modo === '14') numTimesNoChunk = 2; else { if (!priorizarOrdem) { numTimesNoChunk = Math.ceil(titulares.length / tamanhoIdeal); if (numTimesNoChunk < 2) numTimesNoChunk = 2; } else numTimesNoChunk = Math.ceil(chunk.length / tamanhoIdeal); }
-        if (numTimesNoChunk === 0) continue;
+    try {
+        if (!isAppend && supabaseChannel) { db.removeChannel(supabaseChannel); supabaseChannel = null; }
         
-        let goleirosChunk = embaralhar(chunk.filter(j => j.posicao === 'Goleiro')); let linhaChunk = embaralhar(chunk.filter(j => j.posicao !== 'Goleiro'));
-        let timesLocais = Array.from({ length: numTimesNoChunk }, () => []);
-        if (incluiGoleiros) { for (let t = 0; t < numTimesNoChunk; t++) { if (goleirosChunk.length > 0) timesLocais[t].push(goleirosChunk.shift()); } reservasNovas.push(...goleirosChunk); }
+        let modo = document.getElementById('modo-sorteio').value; let priorizarOrdem = document.getElementById('priorizar-ordem').checked;
+        let incluiGoleiros = (modo === '14' || modo === 'todos');
+        window.dataPartidaAtual = new Date().toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
 
-        const posicoes = ["Zagueiro", "Lateral", "Meia", "Atacante", "Linha"]; const grupos = {}; posicoes.forEach(p => grupos[p] = []);
-        linhaChunk.forEach(j => { if (grupos[j.posicao]) grupos[j.posicao].push(j); else grupos["Linha"].push(j); });
-        posicoes.forEach(p => grupos[p].sort((a, b) => (Number(b.nivel) || 3) - (Number(a.nivel) || 3)));
+        let jogadoresValidos = presentesBrutos; let reservasNovas = [];
+        if (!incluiGoleiros) { reservasNovas.push(...presentesBrutos.filter(j => j.posicao === 'Goleiro')); jogadoresValidos = presentesBrutos.filter(j => j.posicao !== 'Goleiro'); }
+
+        let tamanhoIdeal = currentProfile && currentProfile.jogadores_por_time ? parseInt(currentProfile.jogadores_por_time) : 7;
+        let maxTitulares = jogadoresValidos.length;
+        if (modo === '12') maxTitulares = 12; else if (modo === '14') maxTitulares = 14;
+
+        let titulares = jogadoresValidos.slice(0, maxTitulares); reservasNovas.push(...jogadoresValidos.slice(maxTitulares));
+        let timesNovos = []; let tamanhoPartida = tamanhoIdeal * 2; 
+
+        if (!priorizarOrdem && (modo === 'todos' || modo === 'todos_sem_goleiro')) {
+            let qtdTimesGlobais = Math.ceil(titulares.length / tamanhoIdeal); if (qtdTimesGlobais < 2 && titulares.length >= 2) qtdTimesGlobais = 2; 
+            if (qtdTimesGlobais > 0) tamanhoPartida = titulares.length;
+        }
+
+        const getSomaNotas = (time) => time.reduce((acc, j) => acc + (Number(j.nivel) || 3), 0);
+        const getQtdPosicao = (time, pos) => time.filter(j => j.posicao === pos).length;
         
-        posicoes.forEach(pos => {
-            grupos[pos].forEach(jogador => {
-                let minTam = Math.min(...timesLocais.map(t => t.length)); let elegiveis = timesLocais.filter(t => t.length === minTam);
-                let minPos = Math.min(...elegiveis.map(t => getQtdPosicao(t, pos))); let menosPos = elegiveis.filter(t => getQtdPosicao(t, pos) === minPos);
-                menosPos.sort((a, b) => getSomaNotas(a) - getSomaNotas(b)); 
-                
-                let menorNota = getSomaNotas(menosPos[0]); let timesEmpatados = menosPos.filter(t => getSomaNotas(t) === menorNota);
-                let timeEscolhido = timesEmpatados.length > 1 ? timesEmpatados[Math.floor(Math.random() * timesEmpatados.length)] : menosPos[0];
-                timeEscolhido.push(jogador);
+        for (let i = 0; i < titulares.length; i += tamanhoPartida) {
+            let chunk = titulares.slice(i, i + tamanhoPartida); let numTimesNoChunk;
+            if (modo === '12' || modo === '14') numTimesNoChunk = 2; else { if (!priorizarOrdem) { numTimesNoChunk = Math.ceil(titulares.length / tamanhoIdeal); if (numTimesNoChunk < 2) numTimesNoChunk = 2; } else numTimesNoChunk = Math.ceil(chunk.length / tamanhoIdeal); }
+            if (numTimesNoChunk === 0) continue;
+            
+            let goleirosChunk = embaralhar(chunk.filter(j => j.posicao === 'Goleiro')); let linhaChunk = embaralhar(chunk.filter(j => j.posicao !== 'Goleiro'));
+            let timesLocais = Array.from({ length: numTimesNoChunk }, () => []);
+            if (incluiGoleiros) { for (let t = 0; t < numTimesNoChunk; t++) { if (goleirosChunk.length > 0) timesLocais[t].push(goleirosChunk.shift()); } reservasNovas.push(...goleirosChunk); }
+
+            const posicoes = ["Zagueiro", "Lateral", "Meia", "Atacante", "Linha"]; const grupos = {}; posicoes.forEach(p => grupos[p] = []);
+            linhaChunk.forEach(j => { if (grupos[j.posicao]) grupos[j.posicao].push(j); else grupos["Linha"].push(j); });
+            posicoes.forEach(p => grupos[p].sort((a, b) => (Number(b.nivel) || 3) - (Number(a.nivel) || 3)));
+            
+            posicoes.forEach(pos => {
+                grupos[pos].forEach(jogador => {
+                    let minTam = Math.min(...timesLocais.map(t => t.length)); let elegiveis = timesLocais.filter(t => t.length === minTam);
+                    let minPos = Math.min(...elegiveis.map(t => getQtdPosicao(t, pos))); let menosPos = elegiveis.filter(t => getQtdPosicao(t, pos) === minPos);
+                    menosPos.sort((a, b) => getSomaNotas(a) - getSomaNotas(b)); 
+                    
+                    let menorNota = getSomaNotas(menosPos[0]); let timesEmpatados = menosPos.filter(t => getSomaNotas(t) === menorNota);
+                    let timeEscolhido = timesEmpatados.length > 1 ? timesEmpatados[Math.floor(Math.random() * timesEmpatados.length)] : menosPos[0];
+                    timeEscolhido.push(jogador);
+                });
             });
+            timesNovos.push(...timesLocais);
+        }
+
+        if (!isAppend) {
+            window.timesSorteadosObjs = []; window.reservasSorteados = []; window.partidaSalva = false; window.partidaSalvaManual = false; 
+            window.jogosDaRodada = []; window.filaEquipes = []; window.golsTempA = []; window.golsTempB = []; window.partidaAtualId = null; window.codigoAcessoAtual = null;
+        }
+
+        let offsetId = isAppend ? window.timesSorteadosObjs.length : 0;
+        timesNovos.forEach((timeArr, idx) => {
+            let globalIdx = idx + offsetId; let cor = coresTimes[globalIdx % coresTimes.length];
+            window.timesSorteadosObjs.push({ id: globalIdx, corBase: cor, nome: cor, jogadores: timeArr });
+            if(isAppend) window.filaEquipes.push(globalIdx); 
         });
-        timesNovos.push(...timesLocais);
-    }
+        
+        if (!isAppend) window.filaEquipes = window.timesSorteadosObjs.map(t => t.id);
+        window.reservasSorteados.push(...reservasNovas);
 
-    if (!isAppend) {
-        window.timesSorteadosObjs = []; window.reservasSorteados = []; window.partidaSalva = false; window.partidaSalvaManual = false; 
-        window.jogosDaRodada = []; window.filaEquipes = []; window.golsTempA = []; window.golsTempB = [];
-        window.partidaAtualId = null; window.codigoAcessoAtual = null;
-    }
+        try { atualizarFinanceiro(); } catch(e) { console.error("Erro interno no financeiro", e); }
+        
+        if (isAppend) {
+            let qJogadores = 0; window.timesSorteadosObjs.forEach(t => qJogadores += t.jogadores.length); if (window.reservasSorteados) qJogadores += window.reservasSorteados.length;
+            await db.from('partidas').update({ times_json: window.timesSorteadosObjs, fila_json: window.filaEquipes, quantidade_jogadores: qJogadores }).eq('id', window.partidaAtualId);
+        } else {
+            await criarPartidaInicialNoBanco(); 
+        }
+        
+        try { salvarEstadoCompleto(); } catch(e) { console.error("Erro interno ao salvar localStorage", e); }
+        
+        // RENDERIZAÇÃO DOS TIMES NA TELA PARA NÃO PARECER QUE TRAVOU
+        document.getElementById('resultado').innerHTML = ""; 
+        window.timesSorteadosObjs.forEach((t) => {
+            let emoji = emojisTimes[coresTimes.indexOf(t.corBase)] || '⚽'; let corHex = getCorHex(t.corBase);
+            let html = `<div class="team" style="border-top-color: ${corHex};"><div style="display:flex; align-items:center; gap:5px; margin-bottom:10px;"><span style="font-size:18px;">${emoji}</span><input type="text" value="${t.nome}" onchange="atualizarNomeTime(${t.id}, this.value)" class="input-nome-time" placeholder="Nome do Time" style="color: ${corHex};" ${window.isModoPublico ? 'disabled' : ''}></div><ul>`;
+            t.jogadores.forEach(j => { let posAbbr = posMap[j.posicao] || j.posicao; html += `<li><strong>${j.nome}</strong> ${j.posicao!=='Linha'?`<span class="badge badge-posicao" style="display:inline-block; min-width:32px; text-align:center; font-size:9px;">${posAbbr}</span>`:''}</li>`; }); 
+            document.getElementById('resultado').innerHTML += html + `</ul></div>`;
+        });
+        if (window.reservasSorteados && window.reservasSorteados.length > 0) {
+            let html = `<div class="team team-reservas"><h3 style="padding:5px; font-size:15px;">Reservas</h3><ul>`;
+            window.reservasSorteados.forEach(j => html += `<li><strong>${j.nome}</strong></li>`); document.getElementById('resultado').innerHTML += html + `</ul></div>`;
+        }
 
-    let offsetId = isAppend ? window.timesSorteadosObjs.length : 0;
-    timesNovos.forEach((timeArr, idx) => {
-        let globalIdx = idx + offsetId; let cor = coresTimes[globalIdx % coresTimes.length];
-        window.timesSorteadosObjs.push({ id: globalIdx, corBase: cor, nome: cor, jogadores: timeArr });
-        if(isAppend) window.filaEquipes.push(globalIdx); // Coloca os atrasados no fim da fila
-    });
-    
-    if (!isAppend) window.filaEquipes = window.timesSorteadosObjs.map(t => t.id);
-    window.reservasSorteados.push(...reservasNovas);
-
-    atualizarFinanceiro(); 
-    
-    if (isAppend) {
-        // Atualiza a partida atual sem resetar tudo
-        let qJogadores = 0; window.timesSorteadosObjs.forEach(t => qJogadores += t.jogadores.length); if (window.reservasSorteados) qJogadores += window.reservasSorteados.length;
-        await db.from('partidas').update({ times_json: window.timesSorteadosObjs, fila_json: window.filaEquipes, quantidade_jogadores: qJogadores }).eq('id', window.partidaAtualId);
-        salvarEstadoCompleto(); document.getElementById('resultado').innerHTML = ""; renderizarSumula();
-    } else {
-        await criarPartidaInicialNoBanco(); salvarEstadoCompleto();
-        document.getElementById('resultado').innerHTML = ""; let btnSum = document.getElementById('btn-ir-placares'); if(btnSum) { btnSum.style.display = 'block'; btnSum.innerText = "📝 Preencher Súmula"; }
+        let btnSum = document.getElementById('btn-ir-placares'); 
+        if(btnSum) { btnSum.style.display = 'block'; btnSum.innerText = "📝 Preencher Súmula"; }
+        
+        if (isAppend) renderizarSumula();
+        
+    } catch (e) {
+        console.error("Erro no sorteio:", e);
+        alert("Ocorreu um erro ao gerar os times. Verifique sua conexão e tente novamente.");
+        document.getElementById('resultado').innerHTML = ""; 
     }
 }
 
@@ -583,21 +599,35 @@ async function criarPartidaInicialNoBanco() {
         let qJogadoresEmQuadra = 0; window.timesSorteadosObjs.forEach(t => qJogadoresEmQuadra += t.jogadores.length); if (window.reservasSorteados) qJogadoresEmQuadra += window.reservasSorteados.length;
         
         const { data: pData, error: errP } = await db.from('partidas').insert([{ 
-            quantidade_jogadores: qJogadoresEmQuadra, renda_convidados: 0, valor_por_convidado: valorConv, valor_por_mensalista: valorMens, custos_json: window.custosDaRodada,
-            artilheiros_json: {}, jogos_json: [], times_json: window.timesSorteadosObjs, fila_json: window.filaEquipes, codigo_acesso: codigoAleatorio,
-            nome_baba: currentProfile ? currentProfile.nome_baba : "", escudo_url: currentProfile ? currentProfile.escudo_url : "", user_id: currentUser.id
+            quantidade_jogadores: qJogadoresEmQuadra, renda_convidados: 0, valor_por_convidado: valorConv, valor_por_mensalista: valorMens,
+            custos_json: window.custosDaRodada, artilheiros_json: {}, jogos_json: [], times_json: window.timesSorteadosObjs, fila_json: window.filaEquipes,
+            codigo_acesso: codigoAleatorio, nome_baba: currentProfile ? currentProfile.nome_baba : "", escudo_url: currentProfile ? currentProfile.escudo_url : "", user_id: currentUser.id
         }]).select();
 
-        if (errP) throw errP;
-        window.partidaAtualId = pData[0].id; window.codigoAcessoAtual = codigoAleatorio;
+        if (errP) {
+            console.error(errP); alert("Erro de Conexão com o Banco de Dados: Não foi possível criar a partida no servidor. (" + errP.message + ")"); return;
+        }
+        
+        if (pData && pData.length > 0) {
+            window.partidaAtualId = pData[0].id; window.codigoAcessoAtual = codigoAleatorio;
+        } else {
+            const { data: pFetch } = await db.from('partidas').select('id').eq('codigo_acesso', codigoAleatorio).single();
+            if (pFetch) { window.partidaAtualId = pFetch.id; window.codigoAcessoAtual = codigoAleatorio; }
+        }
+        
         iniciarOuvinteRealtime(window.partidaAtualId); exibirBoxCodigoSorteio(window.codigoAcessoAtual);
-    } catch(err) { console.error("Erro ao gerar partida automática:", err.message); }
+    } catch(err) { console.error("Erro ao gerar partida:", err.message); alert("Falha crítica ao tentar salvar a partida."); }
 }
 
 function gerarTextoWhatsAppEscalacao() {
     let texto = "🏆 *Escalação dos Times - Pega o Baba* ⚽\n\n";
-    window.timesSorteadosObjs.forEach(t => { texto += `*${t.nome}*:\n`; t.jogadores.forEach(j => { let posAbbr = posMap[j.posicao] || j.posicao; texto += `• ${j.nome} ${j.posicao !== 'Linha' ? '('+posAbbr+')' : ''}\n`; }); texto += "\n"; });
-    if (window.reservasSorteados && window.reservasSorteados.length > 0) { texto += `*Reservas*:\n`; window.reservasSorteados.forEach(j => { texto += `• ${j.nome}\n`; }); texto += "\n"; }
+    window.timesSorteadosObjs.forEach(t => {
+        texto += `*${t.nome}*:\n`;
+        t.jogadores.forEach(j => { let posAbbr = posMap[j.posicao] || j.posicao; texto += `• ${j.nome} ${j.posicao !== 'Linha' ? '('+posAbbr+')' : ''}\n`; }); texto += "\n";
+    });
+    if (window.reservasSorteados && window.reservasSorteados.length > 0) {
+        texto += `*Reservas*:\n`; window.reservasSorteados.forEach(j => { texto += `• ${j.nome}\n`; }); texto += "\n";
+    }
     if(window.codigoAcessoAtual) { let link = `https://pegaobaba.vercel.app?code=${window.codigoAcessoAtual}`; texto += `🔗 Acompanhe o placar ao vivo: ${link}`; }
     return encodeURIComponent(texto);
 }
@@ -757,6 +787,7 @@ function atualizarSelectsEquipes() {
 
 function limparGolsTemp(lado) { if(lado === 'A') window.golsTempA = []; else window.golsTempB = []; atualizarPlacarTempUI(); salvarEstadoCompleto(); }
 
+// FUNÇÕES DO MODAL NORMAL DE GOL DE PARTIDA
 function abrirModalGol(lado) {
     const selTimeId = parseInt(document.getElementById(lado === 'A' ? 'sumula_equipe_a' : 'sumula_equipe_b').value); const timeObj = window.timesSorteadosObjs.find(t => t.id === selTimeId);
     const containerJogadores = document.getElementById('lista-jogadores-gol'); containerJogadores.innerHTML = ''; document.getElementById('titulo-modal-gol').innerText = `Gol do(a) ${timeObj.nome}`;
@@ -770,6 +801,7 @@ function abrirModalGol(lado) {
 function fecharModalGol() { document.getElementById('modal-gol').style.display = 'none'; }
 function registrarGol(lado, nomeJogador) { if(lado === 'A') window.golsTempA.push(nomeJogador); else window.golsTempB.push(nomeJogador); fecharModalGol(); atualizarPlacarTempUI(); salvarEstadoCompleto(); }
 function removerGolTemp(lado, index) { if(lado === 'A') window.golsTempA.splice(index, 1); else window.golsTempB.splice(index, 1); atualizarPlacarTempUI(); salvarEstadoCompleto(); }
+
 function atualizarPlacarTempUI() {
     document.getElementById('placar-num-a').innerText = window.golsTempA.length; document.getElementById('placar-num-b').innerText = window.golsTempB.length;
     let htmlA = ''; window.golsTempA.forEach((nome, i) => htmlA += `<div class="item-gol-arena">${nome} <span class="remover-gol-btn-arena" onclick="removerGolTemp('A', ${i})">x</span></div>`); document.getElementById('lista-gols-a').innerHTML = htmlA || '<span style="opacity:0.5;">Nenhum gol</span>';
@@ -811,7 +843,7 @@ function removerJogo(index) {
     window.jogosDaRodada.splice(index, 1); atualizarListaJogosDaRodada(); salvarEstadoCompleto();
 }
 
-// === FUNÇÕES DE AJUSTE MANUAL DE GOLS ===
+// === FUNÇÕES DE AJUSTE MANUAL DE GOLS (NOVO) ===
 function abrirModalAjuste() {
     const sel = document.getElementById('select-jogador-ajuste');
     sel.innerHTML = '<option value="">Selecione o Jogador</option>';
@@ -820,6 +852,7 @@ function abrirModalAjuste() {
     document.getElementById('input-gols-ajuste').value = "1";
     document.getElementById('modal-ajuste-manual').style.display = 'flex';
 }
+
 function fecharModalAjuste() { document.getElementById('modal-ajuste-manual').style.display = 'none'; }
 
 async function salvarAjusteManual() {
@@ -984,7 +1017,7 @@ async function carregarEstatisticasGerais() {
 }
 
 async function salvarPartidaComPlacares() {
-    if(!window.partidaAtualId) return alert("Nenhuma partida ativa para encerrar.");
+    if(!window.partidaAtualId) return alert("Erro: Nenhuma partida ativa encontrada no banco de dados. Por favor, volte em 'Sorteio' e gere as equipes novamente.");
     if(!confirm("Deseja encerrar o baba de hoje e computar a presença de todos os jogadores?")) return;
     
     const btn = document.getElementById('btn-encerrar-baba'); btn.innerText = "Sincronizando Servidor..."; btn.disabled = true;
@@ -1005,6 +1038,7 @@ async function salvarPartidaComPlacares() {
             renda_convidados: convidadosPagantes, valor_por_convidado: valorConv, valor_por_mensalista: valorMens, custos_json: window.custosDaRodada,
             artilheiros_json: artilheiros, jogos_json: window.jogosDaRodada, times_json: window.timesSorteadosObjs, fila_json: window.filaEquipes
         }).eq('id', window.partidaAtualId);
+        
         if(errP) throw errP;
 
         await db.from('presencas').delete().eq('partida_id', window.partidaAtualId);
@@ -1025,5 +1059,5 @@ async function salvarPartidaComPlacares() {
         carregarElencoDaNuvem(); gerarRelatorioMensal();
 
         btn.innerText = "✅ Baba Encerrado e Salvo com Sucesso!"; alert("Baba finalizado com sucesso!");
-    } catch(err) { alert("Erro: " + err.message); btn.innerText = "Tentar Novamente"; btn.disabled = false; }
+    } catch(err) { alert("Erro de comunicação com o banco: " + err.message); btn.innerText = "Tentar Novamente"; btn.disabled = false; }
 }
