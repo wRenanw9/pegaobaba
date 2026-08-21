@@ -11,16 +11,16 @@ const coresTimes = ["Vermelho", "Azul", "Amarelo", "Verde", "Branco", "Preto", "
 const emojisTimes = ["🔴", "🔵", "🟡", "🟢", "⚪", "⚫", "🟣", "🟠"];
 const posMap = { "Atacante": "ATA", "Meia": "MEI", "Lateral": "LAT", "Zagueiro": "ZAG", "Goleiro": "GOL", "Linha": "LIN" };
 
+window.timesSorteadosObjs = []; window.reservasSorteados = []; window.partidaSalva = true; window.jogosDaRodada = []; window.filaEquipes = []; window.custosDaRodada = []; window.despesasMensaisGlobais = [];
+window.isModoPublico = false; window.dataPartidaAtual = null; window.partidaAtualId = null; window.codigoAcessoAtual = null; window.golsTempA = []; window.golsTempB = [];
+window.coringasAtivos = {}; 
+
 function getCorHex(corBase) {
     const map = { "Vermelho": "#ef4444", "Azul": "#3b82f6", "Amarelo": "#d97706", "Verde": "#10b981", "Branco": "#64748b", "Preto": "#0f172a", "Roxo": "#8b5cf6", "Laranja": "#f97316" };
     return map[corBase] || "#4f46e5";
 }
 
-window.timesSorteadosObjs = []; window.reservasSorteados = []; window.partidaSalva = true; window.jogosDaRodada = []; window.filaEquipes = []; window.custosDaRodada = []; window.despesasMensaisGlobais = [];
-window.isModoPublico = false; window.dataPartidaAtual = null; window.partidaAtualId = null; window.codigoAcessoAtual = null; window.golsTempA = []; window.golsTempB = [];
-window.coringasAtivos = {}; 
-
-// --- INICIALIZAÇÃO ACELERADA E BLINDADA ---
+// --- INICIALIZAÇÃO ACELERADA E ÚNICA (CORRIGIDA) ---
 function inicializarApp() {
     try {
         if(typeof supabaseUrl === 'undefined' || typeof supabaseKey === 'undefined') { alert("Erro crítico: Arquivo config.js ausente ou com chaves inválidas."); return; }
@@ -64,12 +64,14 @@ function iniciarOuvinteRealtime(partidaId) {
 
 function salvarEstadoCompleto() {
     if(window.isModoPublico) return;
-    localStorage.setItem('baba_full_state', JSON.stringify({
-        timesSorteadosObjs: window.timesSorteadosObjs, reservasSorteados: window.reservasSorteados, jogosDaRodada: window.jogosDaRodada, filaEquipes: window.filaEquipes, partidaSalva: window.partidaSalva,
-        custosDaRodada: window.custosDaRodada, despesasMensaisGlobais: window.despesasMensaisGlobais, dataPartidaAtual: window.dataPartidaAtual, partidaAtualId: window.partidaAtualId,
-        codigoAcessoAtual: window.codigoAcessoAtual, valorMensalistaAtual: document.getElementById('valor-mensalista').value, valorConvidadoAtual: document.getElementById('valor-convidado').value,
-        golsTempA: window.golsTempA, golsTempB: window.golsTempB, coringasAtivos: window.coringasAtivos
-    }));
+    try {
+        localStorage.setItem('baba_full_state', JSON.stringify({
+            timesSorteadosObjs: window.timesSorteadosObjs, reservasSorteados: window.reservasSorteados, jogosDaRodada: window.jogosDaRodada, filaEquipes: window.filaEquipes, partidaSalva: window.partidaSalva,
+            custosDaRodada: window.custosDaRodada, despesasMensaisGlobais: window.despesasMensaisGlobais, dataPartidaAtual: window.dataPartidaAtual, partidaAtualId: window.partidaAtualId,
+            codigoAcessoAtual: window.codigoAcessoAtual, valorMensalistaAtual: document.getElementById('valor-mensalista').value, valorConvidadoAtual: document.getElementById('valor-convidado').value,
+            golsTempA: window.golsTempA, golsTempB: window.golsTempB, coringasAtivos: window.coringasAtivos
+        }));
+    } catch(err) { console.error("Falha ao salvar no celular", err); }
 }
 
 function carregarEstadoCompleto() {
@@ -661,7 +663,11 @@ async function sortearTimes(presentesBrutos, isAppend) {
                 const posicoes = ["Zagueiro", "Lateral", "Meia", "Atacante", "Linha"]; const grupos = {}; posicoes.forEach(p => grupos[p] = []);
                 linhaChunk.forEach(j => { if (grupos[j.posicao]) grupos[j.posicao].push(j); else grupos["Linha"].push(j); });
                 
-                posicoes.forEach(p => grupos[p].sort((a, b) => (Number(b.nivel) || 3) - (Number(a.nivel) || 3)));
+                posicoes.forEach(p => grupos[p].sort((a, b) => {
+                    if (a.tipo === 'Mensalista' && b.tipo !== 'Mensalista') return -1;
+                    if (a.tipo !== 'Mensalista' && b.tipo === 'Mensalista') return 1;
+                    return (Number(b.nivel) || 3) - (Number(a.nivel) || 3);
+                }));
                 
                 posicoes.forEach(pos => {
                     grupos[pos].forEach(jogador => {
@@ -922,7 +928,7 @@ function renderizarEscalacaoPublicaSumula() {
         t.jogadores.forEach(j => { let posAbbr = posMap[j.posicao] || j.posicao; html += `<li><strong>${j.nome}</strong> ${j.posicao!=='Linha'?`<span class="badge badge-posicao" style="display:inline-block; min-width:32px; text-align:center; font-size:9px;">${posAbbr}</span>`:''}</li>`; }); containerEscalacao.innerHTML += html + `</ul></div>`;
     });
     if (window.reservasSorteados && window.reservasSorteados.length > 0) {
-        let html = `<div class="team team-reservas"><h3 style="padding:5px; font-size:15px;">Reservas / DM</h3><ul>`; window.reservasSorteados.forEach(j => html += `<li><strong>${j.nome}</strong> ${j.isDM ? '<span style="color:var(--danger); font-size:11px; font-weight:bold;">[DM]</span>' : ''}</li>`); containerEscalacao.innerHTML += html + `</ul></div>`;
+        let html = `<div class="team team-reservas"><h3 style="padding:5px; font-size:15px;">Reservas (Inativos)</h3><ul>`; window.reservasSorteados.forEach(j => html += `<li><strong>${j.nome}</strong> ${j.isDM ? '<span style="color:var(--danger); font-size:11px; font-weight:bold;">[DM]</span>' : ''}</li>`); containerEscalacao.innerHTML += html + `</ul></div>`;
     }
 }
 
@@ -983,7 +989,6 @@ function abrirModalGol(lado) {
     containerJogadores.innerHTML += `<button class="btn-jogador-gol" style="background:#fee2e2; color:var(--danger); border-color:var(--danger);" onclick="registrarGol('${lado}', 'Gol Contra')">⚠️ Gol Contra</button>`;
     document.getElementById('modal-gol').style.display = 'flex';
 }
-
 function fecharModalGol() { document.getElementById('modal-gol').style.display = 'none'; }
 function registrarGol(lado, nomeJogador) { if(lado === 'A') window.golsTempA.push(nomeJogador); else window.golsTempB.push(nomeJogador); fecharModalGol(); atualizarPlacarTempUI(); salvarEstadoCompleto(); }
 function removerGolTemp(lado, index) { if(lado === 'A') window.golsTempA.splice(index, 1); else window.golsTempB.splice(index, 1); atualizarPlacarTempUI(); salvarEstadoCompleto(); }
@@ -993,7 +998,6 @@ function atualizarPlacarTempUI() {
     let htmlA = ''; window.golsTempA.forEach((nome, i) => htmlA += `<div class="item-gol-arena">${nome} <span class="remover-gol-btn-arena" onclick="removerGolTemp('A', ${i})">x</span></div>`); document.getElementById('lista-gols-a').innerHTML = htmlA || '<span style="opacity:0.5;">Nenhum gol</span>';
     let htmlB = ''; window.golsTempB.forEach((nome, i) => htmlB += `<div class="item-gol-arena">${nome} <span class="remover-gol-btn-arena" onclick="removerGolTemp('B', ${i})">x</span></div>`); document.getElementById('lista-gols-b').innerHTML = htmlB || '<span style="opacity:0.5;">Nenhum gol</span>';
 }
-
 function formatarGolsResumo(golsArray) { if(!golsArray || golsArray.length === 0) return ''; let contagem = {}; golsArray.forEach(g => { contagem[g] = (contagem[g] || 0) + 1; }); return Object.entries(contagem).map(([nome, qtd]) => qtd > 1 ? `${nome} (${qtd})` : nome).join(', '); }
 
 async function adicionarJogoNaSumula() {
