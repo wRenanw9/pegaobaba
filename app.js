@@ -505,7 +505,9 @@ async function sortearTimes(presentesBrutos, isAppend) {
         let timesNovos = []; let tamanhoPartida = tamanhoIdeal * 2; 
 
         if (!priorizarOrdem && (modo === 'todos' || modo === 'todos_sem_goleiro')) {
-            let qtdTimesGlobais = Math.ceil(titulares.length / tamanhoIdeal); if (qtdTimesGlobais < 2 && titulares.length >= 2) qtdTimesGlobais = 2; 
+            let qtdTimesGlobais = Math.ceil(titulares.length / tamanhoIdeal); 
+            // CORREÇÃO: Não forçar 2 times se for apenas uma adição de atrasados (isAppend)
+            if (!isAppend && qtdTimesGlobais < 2 && titulares.length >= 2) qtdTimesGlobais = 2; 
             if (qtdTimesGlobais > 0) tamanhoPartida = titulares.length;
         }
 
@@ -514,7 +516,21 @@ async function sortearTimes(presentesBrutos, isAppend) {
         
         for (let i = 0; i < titulares.length; i += tamanhoPartida) {
             let chunk = titulares.slice(i, i + tamanhoPartida); let numTimesNoChunk;
-            if (modo === '12' || modo === '14') numTimesNoChunk = 2; else { if (!priorizarOrdem) { numTimesNoChunk = Math.ceil(titulares.length / tamanhoIdeal); if (numTimesNoChunk < 2) numTimesNoChunk = 2; } else numTimesNoChunk = Math.ceil(chunk.length / tamanhoIdeal); }
+            
+            // CORREÇÃO DO BUG DOS ATRASADOS:
+            if (isAppend) {
+                numTimesNoChunk = Math.max(1, Math.ceil(chunk.length / tamanhoIdeal));
+            } else if (modo === '12' || modo === '14') {
+                numTimesNoChunk = 2; 
+            } else { 
+                if (!priorizarOrdem) { 
+                    numTimesNoChunk = Math.ceil(titulares.length / tamanhoIdeal); 
+                    if (numTimesNoChunk < 2) numTimesNoChunk = 2; 
+                } else { 
+                    numTimesNoChunk = Math.ceil(chunk.length / tamanhoIdeal); 
+                } 
+            }
+            
             if (numTimesNoChunk === 0) continue;
             
             let goleirosChunk = embaralhar(chunk.filter(j => j.posicao === 'Goleiro')); let linhaChunk = embaralhar(chunk.filter(j => j.posicao !== 'Goleiro'));
@@ -1014,6 +1030,47 @@ async function carregarEstatisticasGerais() {
     const bodyRanking = document.getElementById('body-ranking-anual'); let rankArr = Object.entries(rankingAnual).sort((a,b) => { if(b[1].gols !== a[1].gols) return b[1].gols - a[1].gols; return b[1].presencas - a[1].presencas; });
     if(rankArr.length === 0) bodyRanking.innerHTML = '<tr><td colspan="3" style="color:var(--text-muted);">Sem histórico no ano.</td></tr>';
     else { bodyRanking.innerHTML = ''; rankArr.forEach((r, i) => { let ic = i===0?'🌟':'👤'; bodyRanking.innerHTML += `<tr><td>${ic} <strong>${r[0]}</strong></td><td style="font-weight:700; color:var(--primary);">${r[1].gols}</td><td style="color:var(--text-muted);">${r[1].presencas}</td></tr>`; }); }
+}
+
+function atualizarFinanceiro() {
+    if(window.isModoPublico) return;
+    gerarRelatorioMensal(); salvarEstadoCompleto();
+}
+
+async function adicionarCusto() {
+    let desc = document.getElementById('desc-custo').value; let val = parseFloat(document.getElementById('valor-custo').value) || 0;
+    let tipo = document.getElementById('tipo-custo').value; let operacao = document.getElementById('operacao-movimentacao').value; let dataInput = document.getElementById('data-custo').value;
+
+    if(!desc || val <= 0) return alert("Preencha descrição e valor válido.");
+
+    if(!dataInput) { let tzoffset = (new Date()).getTimezoneOffset() * 60000; dataInput = (new Date(Date.now() - tzoffset)).toISOString().split('T')[0]; }
+
+    let novaDespesa = { id: Date.now(), desc: desc, valor: val, tipo: tipo, operacao: operacao, data: tipo === 'mensal' ? dataInput.substring(0, 7) : dataInput };
+
+    window.despesasMensaisGlobais.push(novaDespesa);
+
+    if(currentUser) {
+        const btn = document.querySelector('button[onclick="adicionarCusto()"]'); let txtOrigin = btn.innerText; btn.innerText = "Salvando..."; btn.disabled = true;
+        const { error } = await db.from('profiles').update({ despesas_mensais_json: window.despesasMensaisGlobais }).eq('id', currentUser.id);
+        btn.innerText = txtOrigin; btn.disabled = false;
+        if (error) { alert("Erro ao salvar movimentação: " + error.message); window.despesasMensaisGlobais.pop(); } 
+        else { document.getElementById('desc-custo').value = ''; document.getElementById('valor-custo').value = ''; document.getElementById('data-custo').value = ''; gerarRelatorioMensal(); }
+    }
+}
+        
+async function removerCusto(idUnico, indexArrayFallback) { 
+    if(!confirm("Deseja realmente apagar esta movimentação do Livro Caixa?")) return;
+    let indexReal = window.despesasMensaisGlobais.findIndex(c => c.id === idUnico);
+    if (indexReal === -1) indexReal = indexArrayFallback;
+    if (indexReal === -1 || indexReal === undefined) return alert("Erro: Movimentação não encontrada.");
+
+    let removido = window.despesasMensaisGlobais.splice(indexReal, 1)[0];
+
+    if(currentUser) {
+        const { error } = await db.from('profiles').update({ despesas_mensais_json: window.despesasMensaisGlobais }).eq('id', currentUser.id);
+        if(error) { alert("Erro ao remover do banco: " + error.message); window.despesasMensaisGlobais.splice(indexReal, 0, removido); } 
+        else { gerarRelatorioMensal(); }
+    }
 }
 
 async function salvarPartidaComPlacares() {
