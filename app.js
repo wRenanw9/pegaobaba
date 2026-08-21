@@ -53,7 +53,7 @@ function salvarEstadoCompleto() {
         timesSorteadosObjs: window.timesSorteadosObjs, reservasSorteados: window.reservasSorteados, jogosDaRodada: window.jogosDaRodada, filaEquipes: window.filaEquipes, partidaSalva: window.partidaSalva,
         custosDaRodada: window.custosDaRodada, despesasMensaisGlobais: window.despesasMensaisGlobais, dataPartidaAtual: window.dataPartidaAtual, partidaAtualId: window.partidaAtualId,
         codigoAcessoAtual: window.codigoAcessoAtual, valorMensalistaAtual: document.getElementById('valor-mensalista').value, valorConvidadoAtual: document.getElementById('valor-convidado').value,
-        golsTempA: window.golsTempA, golsTempB: window.golsTempB // NOVO: Salva os gols temporários na memória
+        golsTempA: window.golsTempA, golsTempB: window.golsTempB
     }));
 }
 
@@ -77,7 +77,6 @@ function carregarEstadoCompleto() {
                 iniciarOuvinteRealtime(window.partidaAtualId);
             }
             
-            // NOVO: Renderiza a tela de Sorteio imediatamente a partir do celular (sem piscar a tela)
             document.getElementById('resultado').innerHTML = ""; 
             window.timesSorteadosObjs.forEach((t) => {
                 let emoji = emojisTimes[coresTimes.indexOf(t.corBase)] || '⚽'; let corHex = getCorHex(t.corBase);
@@ -90,7 +89,6 @@ function carregarEstadoCompleto() {
                 window.reservasSorteados.forEach(j => html += `<li><strong>${j.nome}</strong></li>`); document.getElementById('resultado').innerHTML += html + `</ul></div>`;
             }
             
-            // Força a renderização imediata dos dados da Súmula do cache local
             setTimeout(() => renderizarSumula(), 50);
         }
     }
@@ -317,10 +315,6 @@ async function checarPartidaAtivaAdmin() {
     if (!error && partidas && partidas.length > 0) {
         let p = partidas[0];
         if (p.created_at && (Date.now() - new Date(p.created_at).getTime()) <= 518400000) { 
-            
-            // --- PROTEÇÃO DO LOCALSTORAGE ---
-            // Se a partida do banco for a mesma que já está carregada no celular (memória),
-            // nós não vamos destruir as variáveis locais! Apenas renderizamos.
             if (window.partidaAtualId === p.id && window.timesSorteadosObjs.length > 0) {
                 if (document.getElementById('view-placares').classList.contains('active')) renderizarSumula();
                 if (document.getElementById('view-estatisticas').classList.contains('active')) renderizarPainelDoDia();
@@ -328,7 +322,6 @@ async function checarPartidaAtivaAdmin() {
                 return;
             }
 
-            // Se for login novo em outro aparelho ou cache vazio, puxa da nuvem normalmente:
             window.partidaAtualId = p.id; window.codigoAcessoAtual = p.codigo_acesso;
             window.jogosDaRodada = safeParse(p.jogos_json) || []; window.custosDaRodada = safeParse(p.custos_json) || [];
             window.timesSorteadosObjs = safeParse(p.times_json) || []; window.filaEquipes = safeParse(p.fila_json) || [];
@@ -538,11 +531,8 @@ async function sortearTimes(presentesBrutos, isAppend) {
         
         // --- FASE 1: PREENCHER TIMES INCOMPLETOS (SÓ QUANDO for isAppend) ---
         if (isAppend) {
-            jogadoresLivres.sort((a, b) => {
-                if (a.tipo === 'Mensalista' && b.tipo !== 'Mensalista') return -1;
-                if (a.tipo !== 'Mensalista' && b.tipo === 'Mensalista') return 1;
-                return (Number(b.nivel) || 3) - (Number(a.nivel) || 3);
-            });
+            // Garante que na hora de completar os buracos o melhor jogador entre primeiro
+            jogadoresLivres.sort((a, b) => (Number(b.nivel) || 3) - (Number(a.nivel) || 3));
             
             let incompletos = window.timesSorteadosObjs.filter(t => t.jogadores.length < tamanhoIdeal);
             
@@ -629,11 +619,8 @@ async function sortearTimes(presentesBrutos, isAppend) {
                 const posicoes = ["Zagueiro", "Lateral", "Meia", "Atacante", "Linha"]; const grupos = {}; posicoes.forEach(p => grupos[p] = []);
                 linhaChunk.forEach(j => { if (grupos[j.posicao]) grupos[j.posicao].push(j); else grupos["Linha"].push(j); });
                 
-                posicoes.forEach(p => grupos[p].sort((a, b) => {
-                    if (a.tipo === 'Mensalista' && b.tipo !== 'Mensalista') return -1;
-                    if (a.tipo !== 'Mensalista' && b.tipo === 'Mensalista') return 1;
-                    return (Number(b.nivel) || 3) - (Number(a.nivel) || 3);
-                }));
+                // CRUCIAL: Distribui os melhores primeiro sempre!
+                posicoes.forEach(p => grupos[p].sort((a, b) => (Number(b.nivel) || 3) - (Number(a.nivel) || 3)));
                 
                 posicoes.forEach(pos => {
                     grupos[pos].forEach(jogador => {
@@ -645,15 +632,16 @@ async function sortearTimes(presentesBrutos, isAppend) {
                         let minPos = Math.min(...elegiveis.map(t => getQtdPosicao(t, pos))); 
                         let menosPos = elegiveis.filter(t => getQtdPosicao(t, pos) === minPos);
                         
+                        // O CÓDIGO DA JUSTIÇA PERFEITA
                         menosPos.sort((a, b) => {
                             let scoreA = getSomaNotas(a); let scoreB = getSomaNotas(b);
-                            let indexA = timesLocais.indexOf(a); let indexB = timesLocais.indexOf(b);
+                            if (scoreA !== scoreB) return scoreA - scoreB; // 1º Equilíbrio Técnico Sempre
                             
+                            // Se as notas forem iguais, aplica a regra do convidado
+                            let indexA = timesLocais.indexOf(a); let indexB = timesLocais.indexOf(b);
                             if (jogador.tipo === 'Convidado') {
-                                if (indexA !== indexB) return indexB - indexA; 
-                                return scoreA - scoreB;
+                                return indexB - indexA; 
                             } else {
-                                if (scoreA !== scoreB) return scoreA - scoreB; 
                                 return indexA - indexB; 
                             }
                         }); 
@@ -693,6 +681,7 @@ async function sortearTimes(presentesBrutos, isAppend) {
         
         try { salvarEstadoCompleto(); } catch(e) { console.error("Erro interno ao salvar localStorage", e); }
         
+        // RENDERIZAÇÃO
         document.getElementById('resultado').innerHTML = ""; 
         window.timesSorteadosObjs.forEach((t) => {
             let emoji = emojisTimes[coresTimes.indexOf(t.corBase)] || '⚽'; let corHex = getCorHex(t.corBase);
