@@ -193,6 +193,17 @@
                     <h3 style="font-size: 15px; margin-bottom: 10px;">Jogos Registrados (<span id="qtd-jogos-reg">0</span>):</h3>
                     <div id="lista-jogos-registrados" style="margin-bottom: 25px;"></div>
 
+                    <!-- AJUSTE MANUAL DE ARTILHARIA -->
+                    <div id="box-ajuste-manual" class="hidden-public" style="background: var(--light); padding: 15px; border-radius: 12px; border: 1px dashed var(--primary); margin-bottom: 25px;">
+                        <h3 style="font-size: 14px; margin-top: 0; margin-bottom: 8px;">⚽ Ajuste Manual de Gols</h3>
+                        <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px;">Adicione gols para jogadores que não entraram na súmula oficial (ou use negativo para remover).</p>
+                        <div style="display: flex; gap: 8px;">
+                            <select id="select-jogador-manual" style="flex: 2; margin-bottom: 0; padding: 10px; font-size: 13px;"></select>
+                            <input type="number" id="qtd-gols-manual" value="1" style="flex: 1; margin-bottom: 0; padding: 10px; font-size: 13px; text-align: center;">
+                            <button onclick="adicionarGolManual()" style="flex: 1; padding: 10px; font-size: 13px; background: var(--dark);">Lançar</button>
+                        </div>
+                    </div>
+
                     <!-- ESCALAÇÃO DOS TIMES -->
                     <h3 style="font-size: 15px; margin-bottom: 10px; border-top: 1px solid var(--border); padding-top: 20px;">🛡️ Escalação das Equipes</h3>
                     <div id="lista-escalacao-publica" class="team-container" style="margin-top: 0; margin-bottom: 25px;"></div>
@@ -201,7 +212,7 @@
                 </div>
             </div>
 
-            <!-- Assinatura do Desenvolvedor (Vitrine Pública) na Súmula -->
+            <!-- Assinatura do Desenvolvedor (Vitrine Pública) -->
             <div class="dev-signature card public-only" style="border: 1px solid var(--border); box-shadow: none; padding: 20px;">
                 <p class="cta-title">Quer ter este sistema no seu baba?</p>
                 <p class="cta-desc">Entre em contato e profissionalize a sua resenha!</p>
@@ -262,7 +273,6 @@
                 </div>
             </div>
 
-            <!-- Assinatura do Desenvolvedor (Vitrine Pública) nas Estatísticas -->
             <div class="dev-signature card public-only" style="border: 1px solid var(--border); box-shadow: none; padding: 20px; margin-top: 20px;">
                 <p class="cta-title">Quer ter este sistema no seu baba?</p>
                 <p class="cta-desc">Entre em contato e profissionalize a sua resenha!</p>
@@ -294,7 +304,6 @@
             <!-- LANÇAR NOVA DESPESA / ENTRADA EXTRA -->
             <div class="card hidden-public no-print" style="margin-bottom:15px; padding: 15px;">
                 <h3 style="font-size: 14px; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom: 12px;">💸 Lançar Movimentação</h3>
-                
                 <div style="display: flex; gap: 8px; margin-bottom: 8px;">
                     <select id="operacao-movimentacao" style="flex:1; margin:0; padding:10px; font-size:13px; font-weight:bold;">
                         <option value="saida">🔴 Saída (-)</option>
@@ -302,7 +311,6 @@
                     </select>
                     <input type="text" id="desc-custo" placeholder="Ex: Juiz, Água, Saldo Extra" style="flex:2; margin:0; padding:10px; font-size:13px;">
                 </div>
-                
                 <div style="display: flex; gap: 8px; margin-bottom: 12px; align-items: flex-end;">
                     <div style="flex: 1;">
                         <label style="font-size: 10px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">Valor:</label>
@@ -405,7 +413,6 @@
                 <button onclick="fazerLogout()" style="background: var(--danger); padding: 10px; font-size: 13px;">Sair da Conta neste dispositivo</button>
             </div>
 
-            <!-- Assinatura Simples para a aba do Organizador -->
             <div class="dev-signature" style="border-top: none; padding-top: 0;">
                 Desenvolvido por <strong>Renan Barbosa</strong>
             </div>
