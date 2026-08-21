@@ -52,7 +52,8 @@ function salvarEstadoCompleto() {
     localStorage.setItem('baba_full_state', JSON.stringify({
         timesSorteadosObjs: window.timesSorteadosObjs, reservasSorteados: window.reservasSorteados, jogosDaRodada: window.jogosDaRodada, filaEquipes: window.filaEquipes, partidaSalva: window.partidaSalva,
         custosDaRodada: window.custosDaRodada, despesasMensaisGlobais: window.despesasMensaisGlobais, dataPartidaAtual: window.dataPartidaAtual, partidaAtualId: window.partidaAtualId,
-        codigoAcessoAtual: window.codigoAcessoAtual, valorMensalistaAtual: document.getElementById('valor-mensalista').value, valorConvidadoAtual: document.getElementById('valor-convidado').value
+        codigoAcessoAtual: window.codigoAcessoAtual, valorMensalistaAtual: document.getElementById('valor-mensalista').value, valorConvidadoAtual: document.getElementById('valor-convidado').value,
+        golsTempA: window.golsTempA, golsTempB: window.golsTempB // NOVO: Salva os gols temporários na memória
     }));
 }
 
@@ -63,12 +64,34 @@ function carregarEstadoCompleto() {
         window.timesSorteadosObjs = state.timesSorteadosObjs || []; window.reservasSorteados = state.reservasSorteados || []; window.jogosDaRodada = state.jogosDaRodada || []; window.filaEquipes = state.filaEquipes || [];
         window.partidaSalva = state.partidaSalva !== undefined ? state.partidaSalva : true; window.custosDaRodada = state.custosDaRodada || []; window.despesasMensaisGlobais = state.despesasMensaisGlobais || [];
         window.dataPartidaAtual = state.dataPartidaAtual || null; window.partidaAtualId = state.partidaAtualId || null; window.codigoAcessoAtual = state.codigoAcessoAtual || null;
+        
+        window.golsTempA = state.golsTempA || []; window.golsTempB = state.golsTempB || [];
+
         if (state.valorMensalistaAtual) document.getElementById('valor-mensalista').value = state.valorMensalistaAtual;
         if (state.valorConvidadoAtual) document.getElementById('valor-convidado').value = state.valorConvidadoAtual;
-        if(window.timesSorteadosObjs.length > 0 && window.codigoAcessoAtual) {
-            exibirBoxCodigoSorteio(window.codigoAcessoAtual);
-            let btnSum = document.getElementById('btn-ir-placares'); if(btnSum) { btnSum.style.display = 'block'; btnSum.innerText = window.partidaSalva ? "📝 Ver Súmula Anterior" : "📝 Preencher Súmula"; }
-            iniciarOuvinteRealtime(window.partidaAtualId);
+        
+        if(window.timesSorteadosObjs.length > 0) {
+            if(window.codigoAcessoAtual) {
+                exibirBoxCodigoSorteio(window.codigoAcessoAtual);
+                let btnSum = document.getElementById('btn-ir-placares'); if(btnSum) { btnSum.style.display = 'block'; btnSum.innerText = window.partidaSalva ? "📝 Ver Súmula Anterior" : "📝 Preencher Súmula"; }
+                iniciarOuvinteRealtime(window.partidaAtualId);
+            }
+            
+            // NOVO: Renderiza a tela de Sorteio imediatamente a partir do celular (sem piscar a tela)
+            document.getElementById('resultado').innerHTML = ""; 
+            window.timesSorteadosObjs.forEach((t) => {
+                let emoji = emojisTimes[coresTimes.indexOf(t.corBase)] || '⚽'; let corHex = getCorHex(t.corBase);
+                let html = `<div class="team" style="border-top-color: ${corHex};"><div style="display:flex; align-items:center; gap:5px; margin-bottom:10px;"><span style="font-size:18px;">${emoji}</span><input type="text" value="${t.nome}" onchange="atualizarNomeTime(${t.id}, this.value)" class="input-nome-time" placeholder="Nome do Time" style="color: ${corHex};" ${window.isModoPublico ? 'disabled' : ''}></div><ul>`;
+                t.jogadores.forEach(j => { let posAbbr = posMap[j.posicao] || j.posicao; html += `<li><strong>${j.nome}</strong> ${j.posicao!=='Linha'?`<span class="badge badge-posicao" style="display:inline-block; min-width:32px; text-align:center; font-size:9px;">${posAbbr}</span>`:''}</li>`; }); 
+                document.getElementById('resultado').innerHTML += html + `</ul></div>`;
+            });
+            if (window.reservasSorteados && window.reservasSorteados.length > 0) {
+                let html = `<div class="team team-reservas"><h3 style="padding:5px; font-size:15px;">Reservas</h3><ul>`;
+                window.reservasSorteados.forEach(j => html += `<li><strong>${j.nome}</strong></li>`); document.getElementById('resultado').innerHTML += html + `</ul></div>`;
+            }
+            
+            // Força a renderização imediata dos dados da Súmula do cache local
+            setTimeout(() => renderizarSumula(), 50);
         }
     }
 }
@@ -294,6 +317,18 @@ async function checarPartidaAtivaAdmin() {
     if (!error && partidas && partidas.length > 0) {
         let p = partidas[0];
         if (p.created_at && (Date.now() - new Date(p.created_at).getTime()) <= 518400000) { 
+            
+            // --- PROTEÇÃO DO LOCALSTORAGE ---
+            // Se a partida do banco for a mesma que já está carregada no celular (memória),
+            // nós não vamos destruir as variáveis locais! Apenas renderizamos.
+            if (window.partidaAtualId === p.id && window.timesSorteadosObjs.length > 0) {
+                if (document.getElementById('view-placares').classList.contains('active')) renderizarSumula();
+                if (document.getElementById('view-estatisticas').classList.contains('active')) renderizarPainelDoDia();
+                if (document.getElementById('view-financeiro').classList.contains('active')) atualizarFinanceiro();
+                return;
+            }
+
+            // Se for login novo em outro aparelho ou cache vazio, puxa da nuvem normalmente:
             window.partidaAtualId = p.id; window.codigoAcessoAtual = p.codigo_acesso;
             window.jogosDaRodada = safeParse(p.jogos_json) || []; window.custosDaRodada = safeParse(p.custos_json) || [];
             window.timesSorteadosObjs = safeParse(p.times_json) || []; window.filaEquipes = safeParse(p.fila_json) || [];
@@ -594,7 +629,6 @@ async function sortearTimes(presentesBrutos, isAppend) {
                 const posicoes = ["Zagueiro", "Lateral", "Meia", "Atacante", "Linha"]; const grupos = {}; posicoes.forEach(p => grupos[p] = []);
                 linhaChunk.forEach(j => { if (grupos[j.posicao]) grupos[j.posicao].push(j); else grupos["Linha"].push(j); });
                 
-                // Prioridade de Mensalista na distribuição
                 posicoes.forEach(p => grupos[p].sort((a, b) => {
                     if (a.tipo === 'Mensalista' && b.tipo !== 'Mensalista') return -1;
                     if (a.tipo !== 'Mensalista' && b.tipo === 'Mensalista') return 1;
@@ -616,11 +650,11 @@ async function sortearTimes(presentesBrutos, isAppend) {
                             let indexA = timesLocais.indexOf(a); let indexB = timesLocais.indexOf(b);
                             
                             if (jogador.tipo === 'Convidado') {
-                                if (indexA !== indexB) return indexB - indexA; // Convidado prefere os últimos times
+                                if (indexA !== indexB) return indexB - indexA; 
                                 return scoreA - scoreB;
                             } else {
-                                if (scoreA !== scoreB) return scoreA - scoreB; // Mensalista prioriza o equilíbrio
-                                return indexA - indexB; // Empate técnico: Mensalista vai pro primeiro time
+                                if (scoreA !== scoreB) return scoreA - scoreB; 
+                                return indexA - indexB; 
                             }
                         }); 
                         
@@ -659,7 +693,6 @@ async function sortearTimes(presentesBrutos, isAppend) {
         
         try { salvarEstadoCompleto(); } catch(e) { console.error("Erro interno ao salvar localStorage", e); }
         
-        // RENDERIZAÇÃO
         document.getElementById('resultado').innerHTML = ""; 
         window.timesSorteadosObjs.forEach((t) => {
             let emoji = emojisTimes[coresTimes.indexOf(t.corBase)] || '⚽'; let corHex = getCorHex(t.corBase);
