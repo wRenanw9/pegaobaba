@@ -149,23 +149,19 @@ async function fazerLogin() {
 }
 
 async function checarPerfilEValidade(user) {
-    try {
-        let { data: profile, error } = await db.from('profiles').select('*').eq('id', user.id).single();
-        if (error || !profile) {
-            const { data: newProfile, error: insertError } = await db.from('profiles').insert([{ id: user.id, email: user.email, is_authorized: false, is_admin: false, nome_baba: "", jogadores_por_time: 7, despesas_mensais_json: [] }]).select().single();
-            if (insertError || !newProfile) { await db.auth.signOut(); alert("Erro ao carregar ou criar perfil."); mostrarLogin(); return; }
-            profile = newProfile;
-        }
-        if (!profile.is_authorized) { await db.auth.signOut(); alert("Conta não autorizada."); mostrarLogin(); return; }
-        if (!profile.is_admin && profile.subscription_expires_at) {
-            if (profile.subscription_expires_at < new Date().toISOString().substring(0, 10)) {
-                await db.auth.signOut(); alert(`Assinatura venceu em ${profile.subscription_expires_at.split('-').reverse().join('/')}.`); mostrarLogin(); return;
-            }
-        }
-        currentProfile = profile; window.despesasMensaisGlobais = safeParse(profile.despesas_mensais_json) || []; mostrarApp();
-    } catch(err) {
-        let msg = document.getElementById('auth-msg'); if(msg) msg.innerText = "Erro no perfil: " + err.message;
+    let { data: profile, error } = await db.from('profiles').select('*').eq('id', user.id).single();
+    if (error || !profile) {
+        const { data: newProfile, error: insertError } = await db.from('profiles').insert([{ id: user.id, email: user.email, is_authorized: false, is_admin: false, nome_baba: "", jogadores_por_time: 7, despesas_mensais_json: [] }]).select().single();
+        if (insertError || !newProfile) { await db.auth.signOut(); alert("Erro ao carregar ou criar perfil."); mostrarLogin(); return; }
+        profile = newProfile;
     }
+    if (!profile.is_authorized) { await db.auth.signOut(); alert("Conta não autorizada."); mostrarLogin(); return; }
+    if (!profile.is_admin && profile.subscription_expires_at) {
+        if (profile.subscription_expires_at < new Date().toISOString().substring(0, 10)) {
+            await db.auth.signOut(); alert(`Assinatura venceu em ${profile.subscription_expires_at.split('-').reverse().join('/')}.`); mostrarLogin(); return;
+        }
+    }
+    currentProfile = profile; window.despesasMensaisGlobais = safeParse(profile.despesas_mensais_json) || []; mostrarApp();
 }
 
 async function fazerLogout() { 
@@ -199,7 +195,6 @@ function mostrarApp() {
             let pEsc = document.getElementById('preview-escudo'); if(pEsc) pEsc.style.display = 'none'; 
         }
         
-        // A PROTEÇÃO QUE FALTAVA (Evita o curto-circuito)
         let orgEmail = document.getElementById('organizer-email-label'); 
         if(orgEmail && currentUser) orgEmail.innerText = currentUser.email; 
         
@@ -524,7 +519,6 @@ function atualizarListas() {
     if(listaElenco) listaElenco.innerHTML = ""; if(listaAguardando) listaAguardando.innerHTML = ""; if(listaPresentes) listaPresentes.innerHTML = "";
     let presentes = []; const mesKey = new Date().toISOString().substring(0, 7);
     
-    // CORREÇÃO CRUCIAL: Previne erro se o nome do jogador estiver em branco/nulo no banco
     let todosOrdenados = [...jogadores].sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
     
     todosOrdenados.forEach((j) => {
@@ -965,23 +959,26 @@ function atualizarFilaUI() {
 function renderizarEscalacaoPublicaSumula() {
     const containerEscalacao = document.getElementById('lista-escalacao-publica'); if(!containerEscalacao) return;
     containerEscalacao.innerHTML = "";
+    let tamanhoIdeal = currentProfile && currentProfile.jogadores_por_time ? parseInt(currentProfile.jogadores_por_time) : 7;
+            
     window.timesSorteadosObjs.forEach((t) => {
         let emoji = emojisTimes[coresTimes.indexOf(t.corBase)] || '⚽'; let corHex = getCorHex(t.corBase);
-        
+        let coringasTime = (window.coringasAtivos && window.coringasAtivos[t.id]) ? window.coringasAtivos[t.id] : [];
+        let qtdAtual = t.jogadores.length + coringasTime.length;
+                
         let html = `<div class="team" style="border-top-color: ${corHex}; position:relative;"><div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;"><div style="display:flex; align-items:center; gap:5px;"><span style="font-size:18px;">${emoji}</span><input type="text" value="${t.nome}" onchange="atualizarNomeTime(${t.id}, this.value)" class="input-nome-time" placeholder="Nome do Time" style="color: ${corHex}; width:auto;" ${window.isModoPublico ? 'disabled' : ''}></div>`;
         
         if(!window.isModoPublico && !window.partidaSalva) {
             let btnCoringaHtml = `<button onclick="sortearCoringasFila(${t.id})" class="btn-coringa-fila" style="background:var(--primary); color:white; border:none; padding:4px 8px; border-radius:4px; font-size:11px; cursor:pointer; font-weight:bold;">🎭 Coringa</button>`;
-            
             let indexFila = window.filaEquipes.indexOf(t.id);
-            if(indexFila > 1 || window.filaEquipes.length === 0) {
+            
+            if((indexFila > 1 || window.filaEquipes.length === 0) && qtdAtual < tamanhoIdeal) {
                 html += btnCoringaHtml;
             }
         }
         
         html += `</div>`;
         
-        let coringasTime = (window.coringasAtivos && window.coringasAtivos[t.id]) ? window.coringasAtivos[t.id] : [];
         if(coringasTime.length > 0) {
             html += `<div style="background:#e0e7ff; padding:6px; border-radius:4px; margin-bottom:8px; font-size:11px; color:var(--primary); font-weight:600;">🎭 Coringa(s): ${coringasTime.map(c=>c.jogador.nome).join(', ')}</div>`;
         }
@@ -1012,16 +1009,22 @@ function atualizarSelectsEquipes() {
 function limparGolsTemp(lado) { if(lado === 'A') window.golsTempA = []; else window.golsTempB = []; atualizarPlacarTempUI(); salvarEstadoCompleto(); }
 
 function abrirModalGol(lado) {
-    let selEq = document.getElementById(lado === 'A' ? 'sumula_equipe_a' : 'sumula_equipe_b'); if(!selEq) return;
-    const selTimeId = parseInt(selEq.value); const timeObj = window.timesSorteadosObjs.find(t => t.id === selTimeId);
-    const containerJogadores = document.getElementById('lista-jogadores-gol'); if(!containerJogadores) return;
-    containerJogadores.innerHTML = ''; 
-    let titMod = document.getElementById('titulo-modal-gol'); if(titMod) titMod.innerText = `Gol do(a) ${timeObj.nome}`;
+    let selEq = document.getElementById(lado === 'A' ? 'sumula_equipe_a' : 'sumula_equipe_b'); 
+    if(!selEq) return alert("Erro: Caixa de equipe não encontrada na tela.");
+    const selTimeId = parseInt(selEq.value); 
+    if(isNaN(selTimeId)) return alert("Nenhuma equipe em quadra! Gere o sorteio primeiro.");
+    const timeObj = window.timesSorteadosObjs.find(t => t.id === selTimeId);
+    if(!timeObj) return alert("Erro: Equipe não encontrada na memória do jogo.");
     
-    if(timeObj) {
-        let jogadoresTime = [...timeObj.jogadores].sort((a,b) => (a.nome||"").localeCompare(b.nome||""));
-        jogadoresTime.forEach(j => { containerJogadores.innerHTML += `<button class="btn-jogador-gol" onclick="registrarGol('${lado}', '${j.nome}')">⚽ ${j.nome}</button>`; });
-    }
+    const containerJogadores = document.getElementById('lista-jogadores-gol'); 
+    if(!containerJogadores) return alert("Lista de jogadores do modal não encontrada.");
+    containerJogadores.innerHTML = ''; 
+    
+    let titMod = document.getElementById('titulo-modal-gol'); 
+    if(titMod) titMod.innerText = `Gol do(a) ${timeObj.nome}`;
+    
+    let jogadoresTime = [...timeObj.jogadores].sort((a,b) => (a.nome||"").localeCompare(b.nome||""));
+    jogadoresTime.forEach(j => { containerJogadores.innerHTML += `<button class="btn-jogador-gol" onclick="registrarGol('${lado}', '${j.nome}')">⚽ ${j.nome}</button>`; });
 
     if(window.coringasAtivos && window.coringasAtivos[selTimeId]) {
         window.coringasAtivos[selTimeId].forEach(c => {
@@ -1030,8 +1033,12 @@ function abrirModalGol(lado) {
     }
 
     containerJogadores.innerHTML += `<button class="btn-jogador-gol" style="background:#fee2e2; color:var(--danger); border-color:var(--danger);" onclick="registrarGol('${lado}', 'Gol Contra')">⚠️ Gol Contra</button>`;
-    let modGol = document.getElementById('modal-gol'); if(modGol) modGol.style.display = 'flex';
+    
+    let modGol = document.getElementById('modal-gol'); 
+    if(modGol) modGol.style.display = 'flex';
+    else alert("Janela do Gol não encontrada no HTML!");
 }
+
 function fecharModalGol() { let modGol = document.getElementById('modal-gol'); if(modGol) modGol.style.display = 'none'; }
 function registrarGol(lado, nomeJogador) { if(lado === 'A') window.golsTempA.push(nomeJogador); else window.golsTempB.push(nomeJogador); fecharModalGol(); atualizarPlacarTempUI(); salvarEstadoCompleto(); }
 function removerGolTemp(lado, index) { if(lado === 'A') window.golsTempA.splice(index, 1); else window.golsTempB.splice(index, 1); atualizarPlacarTempUI(); salvarEstadoCompleto(); }
@@ -1120,9 +1127,9 @@ function removerJogo(index) {
     window.jogosDaRodada.splice(index, 1); atualizarListaJogosDaRodada(); salvarEstadoCompleto();
 }
 
-// === FUNÇÕES DE DM / LESÃO ===
 function abrirModalLesao() {
-    const sel = document.getElementById('select-jogador-lesao'); if(!sel) return;
+    const sel = document.getElementById('select-jogador-lesao'); 
+    if(!sel) return alert("Erro de HTML: Caixa de seleção não encontrada.");
     sel.innerHTML = '<option value="">Selecione o Jogador</option>';
     window.timesSorteadosObjs.forEach(t => {
         let optgroup = document.createElement('optgroup');
@@ -1130,7 +1137,9 @@ function abrirModalLesao() {
         t.jogadores.forEach(j => { let option = document.createElement('option'); option.value = JSON.stringify({timeId: t.id, jogadorId: j.id}); option.innerText = j.nome; optgroup.appendChild(option); });
         sel.appendChild(optgroup);
     });
-    let modLesao = document.getElementById('modal-lesao'); if(modLesao) modLesao.style.display = 'flex';
+    let modLesao = document.getElementById('modal-lesao'); 
+    if(modLesao) modLesao.style.display = 'flex';
+    else alert("Janela de Lesão não encontrada no HTML.");
 }
 function fecharModalLesao() { let modLesao = document.getElementById('modal-lesao'); if(modLesao) modLesao.style.display = 'none'; }
 
@@ -1155,7 +1164,6 @@ function salvarLesao() {
     }
 }
 
-// === ALGORITMO DO CORINGA PELA MÉDIA DO BABA ===
 function sortearCoringasFila(idTimeIncompleto) {
     let timeInc = window.timesSorteadosObjs.find(t => t.id === idTimeIncompleto);
     let tamanhoIdeal = currentProfile && currentProfile.jogadores_por_time ? parseInt(currentProfile.jogadores_por_time) : 7;
@@ -1220,12 +1228,15 @@ function sortearCoringasFila(idTimeIncompleto) {
 }
 
 function abrirModalAjuste() {
-    const sel = document.getElementById('select-jogador-ajuste'); if(!sel) return;
+    const sel = document.getElementById('select-jogador-ajuste'); 
+    if(!sel) return alert("Erro de HTML: Caixa de seleção não encontrada.");
     sel.innerHTML = '<option value="">Selecione o Jogador</option>';
     let todosOrdem = [...jogadores].sort((a,b) => (a.nome||"").localeCompare(b.nome||""));
     todosOrdem.forEach(j => { sel.innerHTML += `<option value="${j.nome}">${j.nome}</option>`; });
     let inpG = document.getElementById('input-gols-ajuste'); if(inpG) inpG.value = "1";
-    let modAj = document.getElementById('modal-ajuste-manual'); if(modAj) modAj.style.display = 'flex';
+    let modAj = document.getElementById('modal-ajuste-manual'); 
+    if(modAj) modAj.style.display = 'flex';
+    else alert("Janela de Ajuste de Gols não encontrada no HTML!");
 }
 
 function fecharModalAjuste() { let modAj = document.getElementById('modal-ajuste-manual'); if(modAj) modAj.style.display = 'none'; }
