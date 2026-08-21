@@ -960,6 +960,12 @@ function renderizarEscalacaoPublicaSumula() {
     const containerEscalacao = document.getElementById('lista-escalacao-publica'); if(!containerEscalacao) return;
     containerEscalacao.innerHTML = "";
     let tamanhoIdeal = currentProfile && currentProfile.jogadores_por_time ? parseInt(currentProfile.jogadores_por_time) : 7;
+    
+    // CORREÇÃO 2: Cria um "radar" para saber quem está atuando como Coringa hoje
+    let coringasEmprestadosIds = [];
+    for(let key in window.coringasAtivos) {
+        window.coringasAtivos[key].forEach(c => coringasEmprestadosIds.push(c.jogador.id));
+    }
             
     window.timesSorteadosObjs.forEach((t) => {
         let emoji = emojisTimes[coresTimes.indexOf(t.corBase)] || '⚽'; let corHex = getCorHex(t.corBase);
@@ -968,11 +974,11 @@ function renderizarEscalacaoPublicaSumula() {
                 
         let html = `<div class="team" style="border-top-color: ${corHex}; position:relative;"><div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;"><div style="display:flex; align-items:center; gap:5px;"><span style="font-size:18px;">${emoji}</span><input type="text" value="${t.nome}" onchange="atualizarNomeTime(${t.id}, this.value)" class="input-nome-time" placeholder="Nome do Time" style="color: ${corHex}; width:auto;" ${window.isModoPublico ? 'disabled' : ''}></div>`;
         
+        // CORREÇÃO 3: Botão de coringa livre para TODOS os times incompletos
         if(!window.isModoPublico && !window.partidaSalva) {
             let btnCoringaHtml = `<button onclick="sortearCoringasFila(${t.id})" class="btn-coringa-fila" style="background:var(--primary); color:white; border:none; padding:4px 8px; border-radius:4px; font-size:11px; cursor:pointer; font-weight:bold;">🎭 Coringa</button>`;
-            let indexFila = window.filaEquipes.indexOf(t.id);
             
-            if((indexFila > 1 || window.filaEquipes.length === 0) && qtdAtual < tamanhoIdeal) {
+            if(qtdAtual < tamanhoIdeal) {
                 html += btnCoringaHtml;
             }
         }
@@ -984,7 +990,13 @@ function renderizarEscalacaoPublicaSumula() {
         }
 
         html += `<ul>`;
-        t.jogadores.forEach(j => { let posAbbr = posMap[j.posicao] || j.posicao; html += `<li><strong>${j.nome}</strong> ${j.posicao!=='Linha'?`<span class="badge badge-posicao" style="display:inline-block; min-width:32px; text-align:center; font-size:9px;">${posAbbr}</span>`:''}</li>`; }); 
+        t.jogadores.forEach(j => { 
+            // CORREÇÃO 2: Esconde o jogador se ele estiver ajudando outro time (efeito clone evitado)
+            if(coringasEmprestadosIds.includes(j.id)) return;
+            
+            let posAbbr = posMap[j.posicao] || j.posicao; 
+            html += `<li><strong>${j.nome}</strong> ${j.posicao!=='Linha'?`<span class="badge badge-posicao" style="display:inline-block; min-width:32px; text-align:center; font-size:9px;">${posAbbr}</span>`:''}</li>`; 
+        }); 
         containerEscalacao.innerHTML += html + `</ul></div>`;
     });
     
@@ -1008,7 +1020,30 @@ function atualizarSelectsEquipes() {
 
 function limparGolsTemp(lado) { if(lado === 'A') window.golsTempA = []; else window.golsTempB = []; atualizarPlacarTempUI(); salvarEstadoCompleto(); }
 
+// CORREÇÃO 1: Função Trava de Árbitro
+function checarTimesCompletosParaJogo() {
+    if(window.filaEquipes.length < 2) return true;
+    let idA = window.filaEquipes[0]; let idB = window.filaEquipes[1];
+    let tA = window.timesSorteadosObjs.find(t=>t.id===idA);
+    let tB = window.timesSorteadosObjs.find(t=>t.id===idB);
+    if(!tA || !tB) return true;
+    
+    let tamanhoIdeal = currentProfile && currentProfile.jogadores_por_time ? parseInt(currentProfile.jogadores_por_time) : 7;
+    let qA = tA.jogadores.length + (window.coringasAtivos[idA] ? window.coringasAtivos[idA].length : 0);
+    let qB = tB.jogadores.length + (window.coringasAtivos[idB] ? window.coringasAtivos[idB].length : 0);
+    
+    if (qA < tamanhoIdeal || qB < tamanhoIdeal) {
+        let nomes = [];
+        if(qA < tamanhoIdeal) nomes.push(tA.nome);
+        if(qB < tamanhoIdeal) nomes.push(tB.nome);
+        return confirm(`⚠️ PARTIDA BLOQUEADA!\n\nA equipe ${nomes.join(' e ')} está incompleta.\n\nRole a tela para baixo e clique no botão "🎭 Coringa" para completar o time antes da bola rolar.\n\n(Se realmente não houver mais ninguém de fora para ajudar, clique em "OK" para forçar o jogo incompleto, ou "Cancelar" para ir sortear).`);
+    }
+    return true;
+}
+
 function abrirModalGol(lado) {
+    if (!checarTimesCompletosParaJogo()) return; // TRAVA DE ÁRBITRO
+    
     let selEq = document.getElementById(lado === 'A' ? 'sumula_equipe_a' : 'sumula_equipe_b'); 
     if(!selEq) return alert("Erro: Caixa de equipe não encontrada na tela.");
     const selTimeId = parseInt(selEq.value); 
@@ -1054,6 +1089,8 @@ function atualizarPlacarTempUI() {
 function formatarGolsResumo(golsArray) { if(!golsArray || golsArray.length === 0) return ''; let contagem = {}; golsArray.forEach(g => { contagem[g] = (contagem[g] || 0) + 1; }); return Object.entries(contagem).map(([nome, qtd]) => qtd > 1 ? `${nome} (${qtd})` : nome).join(', '); }
 
 async function adicionarJogoNaSumula() {
+    if (!checarTimesCompletosParaJogo()) return; // TRAVA DE ÁRBITRO
+    
     let selA = document.getElementById('sumula_equipe_a'); let selB = document.getElementById('sumula_equipe_b');
     if(!selA || !selB) return;
     let idA = parseInt(selA.value); let idB = parseInt(selB.value);
