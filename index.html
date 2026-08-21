@@ -19,6 +19,7 @@
 </head>
 <body id="body-app">
     
+    <!-- TELA INICIAL (LOGIN) -->
     <div id="auth-container" style="padding: 20px;">
         <div style="text-align: center;">
             <img src="icone.svg" alt="Ícone Pega o Baba" style="width: 70px; height: 70px; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 5px;">
@@ -52,7 +53,9 @@
         </div>
     </div>
 
+    <!-- APLICATIVO PRINCIPAL -->
     <div id="app-container" style="display: none;">
+        
         <div class="top-bar">
             <img id="top-bar-escudo" src="" style="display:none; width:35px; height:35px; border-radius:50%; object-fit:cover; margin-right:10px; border: 1px solid var(--border); background:white;">
             <h1 id="top-bar-title">Pega o Baba</h1>
@@ -63,6 +66,7 @@
             </div>
         </div>
 
+        <!-- ABA 1: ELENCO -->
         <div id="view-elenco" class="page-view organizer-only">
             <div class="card hidden-public" id="card-formulario">
                 <h2 id="titulo-form">Adicionar ao Elenco</h2>
@@ -88,6 +92,7 @@
             </div>
         </div>
 
+        <!-- ABA 2: SORTEIO -->
         <div id="view-sorteio" class="page-view organizer-only active">
             <div class="card hidden-public" style="border: 2px dashed var(--border); background: var(--white);">
                 <h2 style="color: var(--text-muted);">Aguardando Chegada</h2>
@@ -126,6 +131,7 @@
             </div>
         </div>
 
+        <!-- ABA 3: SÚMULA DINÂMICA -->
         <div id="view-placares" class="page-view">
             <div class="card" style="margin-bottom: 20px;">
                 <h2>📝 Súmula de Jogo</h2>
@@ -139,8 +145,10 @@
                 </div>
 
                 <div id="container-sumula" style="display: none;">
+                    
                     <div id="container-status-fila"></div>
 
+                    <!-- PLACAR DE ARENA -->
                     <div class="placar-arena hidden-public" id="painel-placar-arena">
                         <div class="placar-header">
                             <div class="placar-time">
@@ -169,6 +177,7 @@
                     </div>
 
                     <h3 style="font-size: 15px; margin-bottom: 10px; border-top: 1px solid var(--border); padding-top: 20px;">🛡️ Escalação das Equipes</h3>
+                    <!-- AQUI SERÃO RENDERIZADOS OS TIMES E BOTÕES DE CORINGA -->
                     <div id="lista-escalacao-publica" class="team-container" style="margin-top: 0; margin-bottom: 25px;"></div>
 
                     <button class="btn-salvar hidden-public" id="btn-encerrar-baba" onclick="salvarPartidaComPlacares()">✅ Finalizar Baba e Salvar Dados</button>
@@ -183,6 +192,7 @@
             </div>
         </div>
 
+        <!-- ABA 4: ESTATÍSTICAS -->
         <div id="view-estatisticas" class="page-view">
             <h2 style="text-align: left; font-size:20px; margin-bottom: 20px;">Painel de Estatísticas</h2>
             
@@ -238,6 +248,7 @@
             </div>
         </div>
 
+        <!-- ABA 5: CAIXA E RELATÓRIOS -->
         <div id="view-financeiro" class="page-view">
             <h2 class="no-print" style="text-align: left; font-size:20px; margin-bottom: 20px;">Gestão de Caixa</h2>
             <div class="card hidden-public no-print" style="padding: 12px 15px; margin-bottom: 15px;">
@@ -278,6 +289,7 @@
             </div>
         </div>
 
+        <!-- ABA: CONTA -->
         <div id="view-conta" class="page-view organizer-only">
             <h2 style="text-align: left; font-size:20px; margin-bottom: 20px;">Minha Conta</h2>
             
@@ -323,6 +335,7 @@
             <div class="dev-signature" style="border-top: none; padding-top: 0;">Desenvolvido por <strong>Renan Barbosa</strong></div>
         </div>
 
+        <!-- ABA: MASTER ADMIN -->
         <div id="view-admin" class="page-view master-only">
             <h2 style="text-align: left; font-size:20px; margin-bottom: 20px;">Painel Master (Gestão de Assinaturas)</h2>
             <div class="card">
@@ -331,6 +344,43 @@
             </div>
         </div>
 
+        <!-- ============================================== -->
+        <!-- AS JANELAS DE GOL E LESÃO ESTÃO AQUI EMBAIXO!  -->
+        <!-- ============================================== -->
+
+        <!-- MODAL GOL -->
+        <div id="modal-gol" class="modal-overlay" style="display:none;">
+            <div class="modal-content">
+                <h3 id="titulo-modal-gol">Quem fez o gol?</h3>
+                <div id="lista-jogadores-gol" style="display:flex; flex-direction:column; gap:8px; max-height: 55vh; overflow-y: auto; margin-bottom: 15px; padding-right: 5px;"></div>
+                <button onclick="fecharModalGol()" style="background:white; color:var(--dark); border:1px solid var(--border); padding: 12px; border-radius: 8px; font-weight: 600; width:100%;">Cancelar</button>
+            </div>
+        </div>
+
+        <!-- MODAL AJUSTE MANUAL -->
+        <div id="modal-ajuste-manual" class="modal-overlay" style="display:none;">
+            <div class="modal-content">
+                <h3 style="margin-bottom: 5px;">⚙️ Ajuste de Artilharia</h3>
+                <p style="font-size:12px; color:var(--text-muted); text-align:center; margin-bottom:15px; margin-top:0;">Adicione ou remova gols manuais.</p>
+                <select id="select-jogador-ajuste" style="margin-bottom: 15px; font-weight:bold; width: 100%; padding: 10px;"></select>
+                <input type="number" id="input-gols-ajuste" placeholder="Qtd (ex: 2 ou -1)" value="1" style="font-size: 18px; font-weight:bold; text-align:center; width: 100%; margin-bottom: 15px;">
+                <button onclick="salvarAjusteManual()" style="margin-bottom:10px; background:var(--supabase); width: 100%;">Confirmar Ajuste</button>
+                <button onclick="fecharModalAjuste()" style="background:white; color:var(--dark); border:1px solid var(--border); width: 100%;">Cancelar</button>
+            </div>
+        </div>
+
+        <!-- MODAL LESÃO -->
+        <div id="modal-lesao" class="modal-overlay" style="display:none;">
+            <div class="modal-content">
+                <h3 style="margin-bottom: 5px; color:var(--danger);">🚑 Departamento Médico</h3>
+                <p style="font-size:12px; color:var(--text-muted); text-align:center; margin-bottom:15px; margin-top:0;">Retire um machucado do time. Ele virará reserva e não será Coringa.</p>
+                <select id="select-jogador-lesao" style="margin-bottom: 15px; font-weight:bold; width: 100%; padding: 10px;"></select>
+                <button onclick="salvarLesao()" style="margin-bottom:10px; background:var(--danger); width: 100%;">Enviar para o DM</button>
+                <button onclick="fecharModalLesao()" style="background:white; color:var(--dark); border:1px solid var(--border); width: 100%;">Cancelar</button>
+            </div>
+        </div>
+
+        <!-- NAVEGAÇÃO INFERIOR -->
         <nav class="bottom-nav">
             <div class="nav-item hidden-public organizer-only" onclick="mudarAba('view-elenco')" id="nav-elenco">
                 <div class="nav-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></div>
