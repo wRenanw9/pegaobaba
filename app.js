@@ -73,8 +73,8 @@ function carregarEstadoCompleto() {
             
             window.golsTempA = state.golsTempA || []; window.golsTempB = state.golsTempB || []; window.coringasAtivos = state.coringasAtivos || {};
 
-            if (state.valorMensalistaAtual) document.getElementById('valor-mensalista').value = state.valorMensalistaAtual;
-            if (state.valorConvidadoAtual) document.getElementById('valor-convidado').value = state.valorConvidadoAtual;
+            let valMens = document.getElementById('valor-mensalista'); if(valMens && state.valorMensalistaAtual) valMens.value = state.valorMensalistaAtual;
+            let valConv = document.getElementById('valor-convidado'); if(valConv && state.valorConvidadoAtual) valConv.value = state.valorConvidadoAtual;
             
             if(window.timesSorteadosObjs.length > 0) {
                 if(window.codigoAcessoAtual) {
@@ -83,18 +83,20 @@ function carregarEstadoCompleto() {
                     iniciarOuvinteRealtime(window.partidaAtualId);
                 }
                 
-                document.getElementById('resultado').innerHTML = ""; 
-                window.timesSorteadosObjs.forEach((t) => {
-                    let emoji = emojisTimes[coresTimes.indexOf(t.corBase)] || '⚽'; let corHex = getCorHex(t.corBase);
-                    let html = `<div class="team" style="border-top-color: ${corHex};"><div style="display:flex; align-items:center; gap:5px; margin-bottom:10px;"><span style="font-size:18px;">${emoji}</span><input type="text" value="${t.nome}" onchange="atualizarNomeTime(${t.id}, this.value)" class="input-nome-time" placeholder="Nome do Time" style="color: ${corHex};" ${window.isModoPublico ? 'disabled' : ''}></div><ul>`;
-                    t.jogadores.forEach(j => { let posAbbr = posMap[j.posicao] || j.posicao; html += `<li><strong>${j.nome}</strong> ${j.posicao!=='Linha'?`<span class="badge badge-posicao" style="display:inline-block; min-width:32px; text-align:center; font-size:9px;">${posAbbr}</span>`:''}</li>`; }); 
-                    document.getElementById('resultado').innerHTML += html + `</ul></div>`;
-                });
-                if (window.reservasSorteados && window.reservasSorteados.length > 0) {
-                    let html = `<div class="team team-reservas"><h3 style="padding:5px; font-size:15px;">Reservas (Inativos)</h3><ul>`;
-                    window.reservasSorteados.forEach(j => html += `<li><strong>${j.nome}</strong> ${j.isDM ? '<span style="color:var(--danger); font-size:11px; font-weight:bold;">[DM]</span>' : ''}</li>`); document.getElementById('resultado').innerHTML += html + `</ul></div>`;
+                let resDiv = document.getElementById('resultado');
+                if(resDiv) {
+                    resDiv.innerHTML = ""; 
+                    window.timesSorteadosObjs.forEach((t) => {
+                        let emoji = emojisTimes[coresTimes.indexOf(t.corBase)] || '⚽'; let corHex = getCorHex(t.corBase);
+                        let html = `<div class="team" style="border-top-color: ${corHex};"><div style="display:flex; align-items:center; gap:5px; margin-bottom:10px;"><span style="font-size:18px;">${emoji}</span><input type="text" value="${t.nome}" onchange="atualizarNomeTime(${t.id}, this.value)" class="input-nome-time" placeholder="Nome do Time" style="color: ${corHex};" ${window.isModoPublico ? 'disabled' : ''}></div><ul>`;
+                        t.jogadores.forEach(j => { let posAbbr = posMap[j.posicao] || j.posicao; html += `<li><strong>${j.nome}</strong> ${j.posicao!=='Linha'?`<span class="badge badge-posicao" style="display:inline-block; min-width:32px; text-align:center; font-size:9px;">${posAbbr}</span>`:''}</li>`; }); 
+                        resDiv.innerHTML += html + `</ul></div>`;
+                    });
+                    if (window.reservasSorteados && window.reservasSorteados.length > 0) {
+                        let html = `<div class="team team-reservas"><h3 style="padding:5px; font-size:15px;">Reservas (Inativos)</h3><ul>`;
+                        window.reservasSorteados.forEach(j => html += `<li><strong>${j.nome}</strong> ${j.isDM ? '<span style="color:var(--danger); font-size:11px; font-weight:bold;">[DM]</span>' : ''}</li>`); resDiv.innerHTML += html + `</ul></div>`;
+                    }
                 }
-                
                 setTimeout(() => renderizarSumula(), 50);
             }
         } catch(e) { limparEstadoRodada(); }
@@ -115,7 +117,7 @@ function checarReset24h() {
 function mudarAba(viewId) {
     document.querySelectorAll('.page-view').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-    document.getElementById(viewId).classList.add('active');
+    let vId = document.getElementById(viewId); if(vId) vId.classList.add('active');
     let navId = viewId.replace('view-', 'nav-'); if(viewId === 'view-admin') navId = 'nav-admin'; if(viewId === 'view-conta') navId = 'nav-conta';
     let navEl = document.getElementById(navId); if(navEl) navEl.classList.add('active');
     window.scrollTo(0, 0);
@@ -147,19 +149,23 @@ async function fazerLogin() {
 }
 
 async function checarPerfilEValidade(user) {
-    let { data: profile, error } = await db.from('profiles').select('*').eq('id', user.id).single();
-    if (error || !profile) {
-        const { data: newProfile, error: insertError } = await db.from('profiles').insert([{ id: user.id, email: user.email, is_authorized: false, is_admin: false, nome_baba: "", jogadores_por_time: 7, despesas_mensais_json: [] }]).select().single();
-        if (insertError || !newProfile) { await db.auth.signOut(); alert("Erro ao carregar ou criar perfil."); mostrarLogin(); return; }
-        profile = newProfile;
-    }
-    if (!profile.is_authorized) { await db.auth.signOut(); alert("Conta não autorizada."); mostrarLogin(); return; }
-    if (!profile.is_admin && profile.subscription_expires_at) {
-        if (profile.subscription_expires_at < new Date().toISOString().substring(0, 10)) {
-            await db.auth.signOut(); alert(`Assinatura venceu em ${profile.subscription_expires_at.split('-').reverse().join('/')}.`); mostrarLogin(); return;
+    try {
+        let { data: profile, error } = await db.from('profiles').select('*').eq('id', user.id).single();
+        if (error || !profile) {
+            const { data: newProfile, error: insertError } = await db.from('profiles').insert([{ id: user.id, email: user.email, is_authorized: false, is_admin: false, nome_baba: "", jogadores_por_time: 7, despesas_mensais_json: [] }]).select().single();
+            if (insertError || !newProfile) { await db.auth.signOut(); alert("Erro ao carregar ou criar perfil."); mostrarLogin(); return; }
+            profile = newProfile;
         }
+        if (!profile.is_authorized) { await db.auth.signOut(); alert("Conta não autorizada."); mostrarLogin(); return; }
+        if (!profile.is_admin && profile.subscription_expires_at) {
+            if (profile.subscription_expires_at < new Date().toISOString().substring(0, 10)) {
+                await db.auth.signOut(); alert(`Assinatura venceu em ${profile.subscription_expires_at.split('-').reverse().join('/')}.`); mostrarLogin(); return;
+            }
+        }
+        currentProfile = profile; window.despesasMensaisGlobais = safeParse(profile.despesas_mensais_json) || []; mostrarApp();
+    } catch(err) {
+        let msg = document.getElementById('auth-msg'); if(msg) msg.innerText = "Erro no perfil: " + err.message;
     }
-    currentProfile = profile; window.despesasMensaisGlobais = safeParse(profile.despesas_mensais_json) || []; mostrarApp();
 }
 
 async function fazerLogout() { 
@@ -169,28 +175,50 @@ async function fazerLogout() {
 }
 
 function mostrarApp() { 
-    window.isModoPublico = false; document.getElementById('auth-container').style.display = 'none'; document.getElementById('app-container').style.display = 'block'; 
-    document.getElementById('app-container').classList.remove('public-mode'); document.getElementById('btn-sair-publico').style.display = 'none';
+    window.isModoPublico = false; 
+    let authC = document.getElementById('auth-container'); if(authC) authC.style.display = 'none'; 
+    let appC = document.getElementById('app-container'); if(appC) { appC.style.display = 'block'; appC.classList.remove('public-mode'); }
+    let btnSairP = document.getElementById('btn-sair-publico'); if(btnSairP) btnSairP.style.display = 'none';
     
-    if (currentProfile && currentProfile.is_admin) { document.body.classList.add('is-master-admin'); document.getElementById('top-bar-title').innerText = "Painel Master"; mudarAba('view-admin'); } 
-    else {
-        document.body.classList.remove('is-master-admin'); document.getElementById('top-bar-title').innerText = currentProfile.nome_baba || "Pega o Baba";
-        if(currentProfile.nome_baba) document.getElementById('nome-baba-input').value = currentProfile.nome_baba;
-        if(currentProfile.jogadores_por_time) document.getElementById('jogadores-por-time-input').value = currentProfile.jogadores_por_time;
-        if (currentProfile.escudo_url) { document.getElementById('top-bar-escudo').src = currentProfile.escudo_url; document.getElementById('top-bar-escudo').style.display = 'block'; document.getElementById('preview-escudo').src = currentProfile.escudo_url; document.getElementById('preview-escudo').style.display = 'block'; } 
-        else { document.getElementById('top-bar-escudo').style.display = 'none'; document.getElementById('preview-escudo').style.display = 'none'; }
-        document.getElementById('organizer-email-label').innerText = currentUser.email; carregarElencoDaNuvem(); mudarAba('view-sorteio');
+    if (currentProfile && currentProfile.is_admin) { 
+        document.body.classList.add('is-master-admin'); 
+        let title = document.getElementById('top-bar-title'); if(title) title.innerText = "Painel Master"; 
+        mudarAba('view-admin'); 
+    } else {
+        document.body.classList.remove('is-master-admin'); 
+        let title = document.getElementById('top-bar-title'); if(title) title.innerText = currentProfile.nome_baba || "Pega o Baba";
+        
+        let nomeBaba = document.getElementById('nome-baba-input'); if(nomeBaba) nomeBaba.value = currentProfile.nome_baba || "";
+        let jogTime = document.getElementById('jogadores-por-time-input'); if(jogTime) jogTime.value = currentProfile.jogadores_por_time || 7;
+        
+        if (currentProfile.escudo_url) { 
+            let tEsc = document.getElementById('top-bar-escudo'); if(tEsc) { tEsc.src = currentProfile.escudo_url; tEsc.style.display = 'block'; }
+            let pEsc = document.getElementById('preview-escudo'); if(pEsc) { pEsc.src = currentProfile.escudo_url; pEsc.style.display = 'block'; }
+        } else { 
+            let tEsc = document.getElementById('top-bar-escudo'); if(tEsc) tEsc.style.display = 'none'; 
+            let pEsc = document.getElementById('preview-escudo'); if(pEsc) pEsc.style.display = 'none'; 
+        }
+        
+        // A PROTEÇÃO QUE FALTAVA (Evita o curto-circuito)
+        let orgEmail = document.getElementById('organizer-email-label'); 
+        if(orgEmail && currentUser) orgEmail.innerText = currentUser.email; 
+        
+        carregarElencoDaNuvem(); mudarAba('view-sorteio');
     }
 }
 
-function mostrarLogin() { document.body.classList.remove('is-master-admin'); document.getElementById('auth-container').style.display = 'block'; document.getElementById('app-container').style.display = 'none'; }
+function mostrarLogin() { 
+    document.body.classList.remove('is-master-admin'); 
+    let authC = document.getElementById('auth-container'); if(authC) authC.style.display = 'block'; 
+    let appC = document.getElementById('app-container'); if(appC) appC.style.display = 'none'; 
+}
 
 async function salvarNomeBaba() {
     if (!currentUser) return;
     let novoNome = document.getElementById('nome-baba-input').value.trim();
     const { error } = await db.from('profiles').update({ nome_baba: novoNome }).eq('id', currentUser.id);
     if (error) alert("Erro ao salvar nome: " + error.message); 
-    else { alert("✅ Nome do Baba atualizado com sucesso!"); document.getElementById('top-bar-title').innerText = novoNome || "Pega o Baba"; if(currentProfile) currentProfile.nome_baba = novoNome; }
+    else { alert("✅ Nome do Baba atualizado com sucesso!"); let title = document.getElementById('top-bar-title'); if(title) title.innerText = novoNome || "Pega o Baba"; if(currentProfile) currentProfile.nome_baba = novoNome; }
 }
 
 async function salvarJogadoresPorTime() {
@@ -221,7 +249,11 @@ async function salvarEscudoBaba() {
     const { error: errP } = await db.from('profiles').update({ escudo_url: escudoUrl }).eq('id', currentUser.id);
     
     if (errP) alert("Erro ao vincular escudo: " + errP.message); 
-    else { alert("✅ Escudo atualizado!"); if(currentProfile) currentProfile.escudo_url = escudoUrl; document.getElementById('top-bar-escudo').src = escudoUrl; document.getElementById('top-bar-escudo').style.display = 'block'; document.getElementById('preview-escudo').src = escudoUrl; document.getElementById('preview-escudo').style.display = 'block'; }
+    else { 
+        alert("✅ Escudo atualizado!"); if(currentProfile) currentProfile.escudo_url = escudoUrl; 
+        let tEsc = document.getElementById('top-bar-escudo'); if(tEsc) { tEsc.src = escudoUrl; tEsc.style.display = 'block'; } 
+        let pEsc = document.getElementById('preview-escudo'); if(pEsc) { pEsc.src = escudoUrl; pEsc.style.display = 'block'; }
+    }
     btn.innerText = "Fazer Upload da Imagem"; btn.disabled = false; fileInput.value = ""; 
 }
 
@@ -237,19 +269,20 @@ async function zerarHistoricoAdmin() {
     if(!confirm(`⚠️ ATENÇÃO: Isso vai apagar TODAS as partidas, súmulas, caixa e estatísticas.\n\nO seu Elenco de jogadores ficará salvo.\n\nDeseja continuar?`)) return;
     if(!confirm(`Tem certeza absoluta? Essa ação NÃO pode ser desfeita.`)) return;
     try {
-        document.getElementById('status-db').innerText = "Limpando...";
+        let dbStatus = document.getElementById('status-db'); if(dbStatus) dbStatus.innerText = "Limpando...";
         const { data: partidas } = await db.from('partidas').select('id').eq('user_id', currentUser.id);
         if (partidas && partidas.length > 0) { const idsPartidas = partidas.map(p => p.id); await db.from('presencas').delete().in('partida_id', idsPartidas); await db.from('partidas').delete().in('id', idsPartidas); }
         if(confirm(`Deseja zerar também a contabilidade de pagamentos dos Mensalistas?`)) await db.from('jogadores').update({ pagamentos_json: {} }).eq('user_id', currentUser.id);
         localStorage.removeItem('baba_full_state'); localStorage.removeItem('baba_presencas_temp'); localStorage.removeItem('baba_last_reset'); window.despesasMensaisGlobais = [];
         await db.from('profiles').update({ despesas_mensais_json: [] }).eq('id', currentUser.id);
         alert("✅ Histórico zerado!"); window.location.reload();
-    } catch (err) { alert("Erro ao limpar histórico: " + err.message); document.getElementById('status-db').innerText = "Online"; }
+    } catch (err) { alert("Erro ao limpar histórico: " + err.message); let dbStatus = document.getElementById('status-db'); if(dbStatus) dbStatus.innerText = "Online"; }
 }
 
 async function carregarPainelAdmin() {
     if (!currentProfile || !currentProfile.is_admin) return;
-    const container = document.getElementById('lista-organizadores-admin'); container.innerHTML = "Carregando usuários...";
+    const container = document.getElementById('lista-organizadores-admin'); if(!container) return;
+    container.innerHTML = "Carregando usuários...";
     const { data: users, error } = await db.from('profiles').select('*').order('email');
     if (error) { container.innerHTML = "Erro ao carregar usuários."; return; }
     if (!users || users.length === 0) { container.innerHTML = "Nenhum usuário cadastrado."; return; }
@@ -264,16 +297,19 @@ async function carregarPainelAdmin() {
 async function atualizarAdminUser(uid) {
     let isAuth = document.getElementById(`auth-${uid}`).checked; let expDate = document.getElementById(`date-${uid}`).value || null; let msgSpan = document.getElementById(`msg-${uid}`);
     const { error } = await db.from('profiles').update({ is_authorized: isAuth, subscription_expires_at: expDate }).eq('id', uid);
-    if (error) alert("Erro ao atualizar: " + error.message); else { msgSpan.innerText = "Salvo!"; setTimeout(() => { msgSpan.innerText = ""; }, 2000); }
+    if (error) alert("Erro ao atualizar: " + error.message); else { if(msgSpan) msgSpan.innerText = "Salvo!"; setTimeout(() => { if(msgSpan) msgSpan.innerText = ""; }, 2000); }
 }
 
 async function acessarModoPublico() {
-    const codigo = document.getElementById('codigo-baba-input').value.trim().toUpperCase();
+    const codigoInput = document.getElementById('codigo-baba-input'); const codigo = codigoInput ? codigoInput.value.trim().toUpperCase() : "";
     if(!codigo) return alert("Digite um código válido.");
-    document.getElementById('auth-container').style.display = 'none'; document.getElementById('app-container').style.display = 'block';
-    document.getElementById('app-container').classList.add('public-mode'); document.getElementById('btn-sair-publico').style.display = 'block'; window.isModoPublico = true;
     
-    document.getElementById('status-db').innerText = "Buscando Baba...";
+    let authC = document.getElementById('auth-container'); if(authC) authC.style.display = 'none'; 
+    let appC = document.getElementById('app-container'); if(appC) { appC.style.display = 'block'; appC.classList.add('public-mode'); }
+    let btnSairP = document.getElementById('btn-sair-publico'); if(btnSairP) btnSairP.style.display = 'block'; 
+    window.isModoPublico = true;
+    
+    let dbStatus = document.getElementById('status-db'); if(dbStatus) dbStatus.innerText = "Buscando Baba...";
     const { data: partida, error } = await db.from('partidas').select('*').eq('codigo_acesso', codigo).single();
     if(error || !partida) { alert("Baba não encontrado ou código inválido."); sairModoPublico(); return; }
 
@@ -283,15 +319,20 @@ async function acessarModoPublico() {
     }
     if (partida.created_at) { if (new Date().getTime() - new Date(partida.created_at).getTime() > 518400000) { alert(`⚠️ Rodada expirada.`); sairModoPublico(); return; } }
     
-    document.getElementById('top-bar-title').innerText = partida.nome_baba || "Pega o Baba";
-    if (partida.escudo_url) { document.getElementById('top-bar-escudo').src = partida.escudo_url; document.getElementById('top-bar-escudo').style.display = 'block'; } 
-    else document.getElementById('top-bar-escudo').style.display = 'none';
+    let topTitle = document.getElementById('top-bar-title'); if(topTitle) topTitle.innerText = partida.nome_baba || "Pega o Baba";
+    if (partida.escudo_url) { 
+        let tEsc = document.getElementById('top-bar-escudo'); if(tEsc) { tEsc.src = partida.escudo_url; tEsc.style.display = 'block'; } 
+    } else { 
+        let tEsc = document.getElementById('top-bar-escudo'); if(tEsc) tEsc.style.display = 'none'; 
+    }
 
     window.partidaAtualId = partida.id; iniciarOuvinteRealtime(window.partidaAtualId);
-    document.getElementById('status-db').innerText = `Visualizando: ${codigo}`;
+    if(dbStatus) dbStatus.innerText = `Visualizando: ${codigo}`;
     window.custosDaRodada = safeParse(partida.custos_json) || [];
-    if(partida.valor_por_convidado) document.getElementById('valor-convidado').value = partida.valor_por_convidado;
-    if(partida.valor_por_mensalista) document.getElementById('valor-mensalista').value = partida.valor_por_mensalista;
+    
+    let vConv = document.getElementById('valor-convidado'); if(vConv && partida.valor_por_convidado) vConv.value = partida.valor_por_convidado;
+    let vMens = document.getElementById('valor-mensalista'); if(vMens && partida.valor_por_mensalista) vMens.value = partida.valor_por_mensalista;
+    
     if(partida.data_sorteio) { let d = new Date(partida.data_sorteio); window.dataPartidaAtual = !isNaN(d.getTime()) ? d.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}) : partida.data_sorteio; }
     
     if (partida.times_json) window.timesSorteadosObjs = safeParse(partida.times_json) || [];
@@ -307,7 +348,9 @@ function sairModoPublico() { if (supabaseChannel) db.removeChannel(supabaseChann
 
 async function carregarElencoDaNuvem() {
     if (!currentUser) return;
-    document.getElementById('status-db').innerText = "Sincronizando..."; document.getElementById('status-db').style.backgroundColor = "var(--warning)";
+    let dbStatus = document.getElementById('status-db');
+    if(dbStatus) { dbStatus.innerText = "Sincronizando..."; dbStatus.style.backgroundColor = "var(--warning)"; }
+    
     try {
         const { data, error } = await db.from('jogadores').select('*').eq('user_id', currentUser.id).order('nome', { ascending: true });
         if (error) throw error;
@@ -316,11 +359,10 @@ async function carregarElencoDaNuvem() {
         try { estadoLocal = JSON.parse(localStorage.getItem('baba_presencas_temp')) || {}; } catch(e) { localStorage.removeItem('baba_presencas_temp'); }
         
         jogadores = data.map(j => ({ ...j, presente: estadoLocal[j.id]?.presente || false, ordemChegada: estadoLocal[j.id]?.ordemChegada || 0, pagou: estadoLocal[j.id]?.pagou || false, pagamentos_json: safeParse(j.pagamentos_json) || {} }));
-        document.getElementById('status-db').innerText = "Online"; document.getElementById('status-db').style.backgroundColor = "var(--supabase)";
+        if(dbStatus) { dbStatus.innerText = "Online"; dbStatus.style.backgroundColor = "var(--supabase)"; }
         atualizarListas(); atualizarFinanceiro(); await checarPartidaAtivaAdmin();
     } catch(err) {
-        console.error(err);
-        document.getElementById('status-db').innerText = "Off-line"; document.getElementById('status-db').style.backgroundColor = "var(--danger)";
+        if(dbStatus) { dbStatus.innerText = "Off-line"; dbStatus.style.backgroundColor = "var(--danger)"; }
     }
 }
 
@@ -332,10 +374,11 @@ async function checarPartidaAtivaAdmin() {
         if (!error && partidas && partidas.length > 0) {
             let p = partidas[0];
             if (p.created_at && (Date.now() - new Date(p.created_at).getTime()) <= 518400000) { 
+                
                 if (window.partidaAtualId === p.id && window.timesSorteadosObjs.length > 0) {
-                    if (document.getElementById('view-placares').classList.contains('active')) renderizarSumula();
-                    if (document.getElementById('view-estatisticas').classList.contains('active')) renderizarPainelDoDia();
-                    if (document.getElementById('view-financeiro').classList.contains('active')) atualizarFinanceiro();
+                    let vPlac = document.getElementById('view-placares'); if(vPlac && vPlac.classList.contains('active')) renderizarSumula();
+                    let vEst = document.getElementById('view-estatisticas'); if(vEst && vEst.classList.contains('active')) renderizarPainelDoDia();
+                    let vFin = document.getElementById('view-financeiro'); if(vFin && vFin.classList.contains('active')) atualizarFinanceiro();
                     return;
                 }
 
@@ -355,30 +398,46 @@ async function checarPartidaAtivaAdmin() {
                 renderizarSumula(); renderizarPainelDoDia(); atualizarFinanceiro();
             }
         }
-    } catch(e) { console.error("Erro checando partida ativa:", e); }
+    } catch(e) { console.error("Erro checando partida ativa", e); }
 }
 
 function prepararEdicao(indexArray) {
     const j = jogadores[indexArray];
-    document.getElementById('nome').value = j.nome; document.getElementById('tipo').value = j.tipo; document.getElementById('posicao').value = j.posicao; document.getElementById('nivel').value = j.nivel;
-    jogadorEdicaoId = j.id; document.getElementById('titulo-form').innerText = "Editando Jogador"; document.getElementById('card-formulario').classList.add("editando");
-    document.getElementById('btn-adicionar').innerText = "Salvar Alterações"; document.getElementById('btn-cancelar-edicao').style.display = "block"; window.scrollTo({ top: 0, behavior: 'smooth' });
+    let nomeInp = document.getElementById('nome'); if(nomeInp) nomeInp.value = j.nome; 
+    let tipoInp = document.getElementById('tipo'); if(tipoInp) tipoInp.value = j.tipo; 
+    let posInp = document.getElementById('posicao'); if(posInp) posInp.value = j.posicao; 
+    let nivInp = document.getElementById('nivel'); if(nivInp) nivInp.value = j.nivel;
+    jogadorEdicaoId = j.id; 
+    let titForm = document.getElementById('titulo-form'); if(titForm) titForm.innerText = "Editando Jogador"; 
+    let cardForm = document.getElementById('card-formulario'); if(cardForm) cardForm.classList.add("editando");
+    let btnAd = document.getElementById('btn-adicionar'); if(btnAd) btnAd.innerText = "Salvar Alterações"; 
+    let btnCanc = document.getElementById('btn-cancelar-edicao'); if(btnCanc) btnCanc.style.display = "block"; 
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function cancelarEdicao() {
-    jogadorEdicaoId = null; document.getElementById('nome').value = ""; document.getElementById('tipo').value = "Mensalista"; document.getElementById('posicao').value = "Meia"; document.getElementById('nivel').value = "3";
-    document.getElementById('titulo-form').innerText = "Adicionar ao Elenco"; document.getElementById('card-formulario').classList.remove("editando");
-    document.getElementById('btn-adicionar').innerText = "Incluir Jogador"; document.getElementById('btn-cancelar-edicao').style.display = "none";
+    jogadorEdicaoId = null; 
+    let nomeInp = document.getElementById('nome'); if(nomeInp) nomeInp.value = ""; 
+    let tipoInp = document.getElementById('tipo'); if(tipoInp) tipoInp.value = "Mensalista"; 
+    let posInp = document.getElementById('posicao'); if(posInp) posInp.value = "Meia"; 
+    let nivInp = document.getElementById('nivel'); if(nivInp) nivInp.value = "3";
+    let titForm = document.getElementById('titulo-form'); if(titForm) titForm.innerText = "Adicionar ao Elenco"; 
+    let cardForm = document.getElementById('card-formulario'); if(cardForm) cardForm.classList.remove("editando");
+    let btnAd = document.getElementById('btn-adicionar'); if(btnAd) btnAd.innerText = "Incluir Jogador"; 
+    let btnCanc = document.getElementById('btn-cancelar-edicao'); if(btnCanc) btnCanc.style.display = "none";
 }
 
 async function adicionarJogador() {
     if (!currentUser) return;
-    const nomeInput = document.getElementById('nome'); const tipo = document.getElementById('tipo').value; const posicao = document.getElementById('posicao').value; const nivel = parseInt(document.getElementById('nivel').value); 
+    const nomeInput = document.getElementById('nome'); const tipoInp = document.getElementById('tipo'); const posicaoInp = document.getElementById('posicao'); const nivelInp = document.getElementById('nivel');
+    if(!nomeInput || !tipoInp || !posicaoInp || !nivelInp) return;
+    
+    const tipo = tipoInp.value; const posicao = posicaoInp.value; const nivel = parseInt(nivelInp.value); 
     const nome = nomeInput.value.trim().replace(/\s+/g, ' '); if (nome === "") return alert("Preencha o nome.");
     const nomeExiste = jogadores.some(j => { let nomeCadastrado = (j.nome || "").trim().toLowerCase(); return nomeCadastrado === nome.toLowerCase() && j.id !== jogadorEdicaoId; });
     if (nomeExiste) return alert(`⚠️ Já existe um jogador cadastrado com este nome!`);
 
-    const btn = document.getElementById('btn-adicionar'); btn.innerText = "Processando..."; btn.disabled = true;
+    const btn = document.getElementById('btn-adicionar'); if(btn) { btn.innerText = "Processando..."; btn.disabled = true; }
 
     if (jogadorEdicaoId) {
         const { error } = await db.from('jogadores').update({ nome, tipo, posicao, nivel }).eq('id', jogadorEdicaoId);
@@ -392,7 +451,7 @@ async function adicionarJogador() {
         if (!error) { nomeInput.value = ""; nomeInput.focus(); jogadores.push({ ...data[0], presente: false, ordemChegada: 0, pagou: false }); atualizarListas(); } 
         else alert("Erro: " + error.message);
     }
-    btn.innerText = "Incluir Jogador"; btn.disabled = false;
+    if(btn) { btn.innerText = "Incluir Jogador"; btn.disabled = false; }
 }
 
 async function removerJogador(idNuvem, indexArray) { 
@@ -443,17 +502,20 @@ function alternarPagamentoDiaria(indexArray) {
 
 function zerarPresencas() { 
     if(confirm(`Deseja preparar o aplicativo para um NOVO BABA?\n\nIsso vai retirar todos da quadra e zerar as diárias temporárias.\n\n(A Súmula atual continuará salva e visível até você sortear novas equipes)`)) { 
-        jogadores.forEach(j => { j.presente = false; j.ordemChegada = 0; j.pagou = false; }); salvarEstadoLocal(); atualizarListas(); atualizarFinanceiro(); document.getElementById('resultado').innerHTML = ""; 
+        jogadores.forEach(j => { j.presente = false; j.ordemChegada = 0; j.pagou = false; }); salvarEstadoLocal(); atualizarListas(); atualizarFinanceiro(); 
+        let res = document.getElementById('resultado'); if(res) res.innerHTML = ""; 
     } 
 }
 
 function filtrarElencoAdmin() {
-    let termo = document.getElementById('busca-jogador-elenco').value.toLowerCase();
+    let inp = document.getElementById('busca-jogador-elenco'); if(!inp) return;
+    let termo = inp.value.toLowerCase();
     document.querySelectorAll('#lista-elenco-admin .linha-jogador').forEach(linha => { linha.style.display = linha.getAttribute('data-nome').toLowerCase().includes(termo) ? 'grid' : 'none'; });
 }
 
 function filtrarSorteioAusentes() {
-    let termo = document.getElementById('busca-jogador-sorteio').value.toLowerCase();
+    let inp = document.getElementById('busca-jogador-sorteio'); if(!inp) return;
+    let termo = inp.value.toLowerCase();
     document.querySelectorAll('#lista-aguardando .linha-jogador').forEach(linha => { linha.style.display = linha.getAttribute('data-nome').toLowerCase().includes(termo) ? 'grid' : 'none'; });
 }
 
@@ -461,7 +523,9 @@ function atualizarListas() {
     const listaElenco = document.getElementById('lista-elenco-admin'); const listaAguardando = document.getElementById('lista-aguardando'); const listaPresentes = document.getElementById('lista-presentes');
     if(listaElenco) listaElenco.innerHTML = ""; if(listaAguardando) listaAguardando.innerHTML = ""; if(listaPresentes) listaPresentes.innerHTML = "";
     let presentes = []; const mesKey = new Date().toISOString().substring(0, 7);
-    let todosOrdenados = [...jogadores].sort((a, b) => a.nome.localeCompare(b.nome));
+    
+    // CORREÇÃO CRUCIAL: Previne erro se o nome do jogador estiver em branco/nulo no banco
+    let todosOrdenados = [...jogadores].sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
     
     todosOrdenados.forEach((j) => {
         let indexArray = jogadores.findIndex(jog => jog.id === j.id);
@@ -471,18 +535,19 @@ function atualizarListas() {
         let publicDisabled = window.isModoPublico ? "" : clickAction; let cursorStyle = window.isModoPublico ? "" : "cursor: pointer;";
         let tagConvidado = j.tipo === 'Convidado' ? '<span class="badge badge-convidado">C</span>' : '';
         let posAbbr = posMap[j.posicao] || j.posicao; let tagPosicao = (j.posicao !== 'Goleiro' && j.posicao !== 'Linha') ? `<span class="badge badge-posicao" style="display: inline-block; min-width: 28px; text-align: center;">${posAbbr}</span>` : '';
-        
+        let nomeSeguro = j.nome || "Sem Nome";
+
         if(listaElenco) {
             let btnEdicao = `<button class="btn-small btn-acao-outline" onclick="prepararEdicao(${indexArray})">✏️</button>`;
             let btnExcluir = `<button class="btn-small btn-acao-outline" style="color:var(--danger); border-color:var(--danger);" onclick="removerJogador('${j.id}', ${indexArray})">X</button>`;
             let btnMensal = j.tipo === 'Mensalista' ? (isPago ? `<button class="btn-small btn-pagou" onclick="alternarMensalidade('${j.id}', ${indexArray})">Pago</button>` : `<button class="btn-small btn-devendo" onclick="alternarMensalidade('${j.id}', ${indexArray})">Pendente</button>`) : `<span>Diária local</span>`;
-            listaElenco.innerHTML += `<div class="linha-jogador grid-elenco" data-nome="${j.nome}"><div class="col-nome">${tagConvidado} <span style="margin-left: 4px;">${j.nome}</span></div><div class="col-status">${btnMensal}</div><div class="col-acoes">${btnEdicao} ${btnExcluir}</div></div>`;
+            listaElenco.innerHTML += `<div class="linha-jogador grid-elenco" data-nome="${nomeSeguro}"><div class="col-nome">${tagConvidado} <span style="margin-left: 4px;">${nomeSeguro}</span></div><div class="col-status">${btnMensal}</div><div class="col-acoes">${btnEdicao} ${btnExcluir}</div></div>`;
         }
-        if(j.presente) presentes.push({ ...j, indexArray: indexArray });
+        if(j.presente) presentes.push({ ...j, indexArray: indexArray, nome: nomeSeguro });
         else if(listaAguardando) {
             let btnAcoesAguardando = '';
             if (j.tipo === 'Convidado') btnAcoesAguardando += isPago ? `<button class="btn-small btn-pagou" onclick="alternarPagamentoDiaria(${indexArray})">Pago</button>` : `<button class="btn-small btn-devendo" onclick="alternarPagamentoDiaria(${indexArray})">Pendente</button>`;
-            listaAguardando.innerHTML += `<div class="linha-jogador grid-aguardando" data-nome="${j.nome}"><div class="col-nome" style="justify-content: space-between; width: 100%;"><div style="display:flex; align-items:center; gap:5px; overflow:hidden; flex: 1; min-width: 0; ${colorStyle} ${cursorStyle}" ${publicDisabled} title="${isPago ? 'Pago' : 'Pendente - Clique para pagar'}">${tagConvidado} <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block;">${j.nome}</span></div>${tagPosicao ? `<div style="flex-shrink:0; margin-left: 5px;">${tagPosicao}</div>` : ''}</div><div class="col-status">${btnAcoesAguardando}</div><div class="col-acoes"><button class="btn-small btn-presente" onclick="marcarPresenca(${indexArray})">Chegou</button></div></div>`;
+            listaAguardando.innerHTML += `<div class="linha-jogador grid-aguardando" data-nome="${nomeSeguro}"><div class="col-nome" style="justify-content: space-between; width: 100%;"><div style="display:flex; align-items:center; gap:5px; overflow:hidden; flex: 1; min-width: 0; ${colorStyle} ${cursorStyle}" ${publicDisabled} title="${isPago ? 'Pago' : 'Pendente - Clique para pagar'}">${tagConvidado} <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block;">${nomeSeguro}</span></div>${tagPosicao ? `<div style="flex-shrink:0; margin-left: 5px;">${tagPosicao}</div>` : ''}</div><div class="col-status">${btnAcoesAguardando}</div><div class="col-acoes"><button class="btn-small btn-presente" onclick="marcarPresenca(${indexArray})">Chegou</button></div></div>`;
         }
     });
     
@@ -498,9 +563,9 @@ function atualizarListas() {
         if(listaPresentes) listaPresentes.innerHTML += `<div class="linha-jogador grid-prontos"><div class="col-nome" style="justify-content: space-between; width: 100%;"><div style="display:flex; align-items:center; gap:5px; overflow:hidden; flex: 1; min-width: 0; ${colorStyle} ${cursorStyle}" ${publicDisabled} title="${isPago ? 'Pago' : 'Pendente - Clique para pagar'}"><span class="badge" style="background:var(--dark); color:white; flex-shrink:0;">${pos + 1}º</span> ${tagConvidado} <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block;">${j.nome}</span></div>${tagPosicao ? `<div style="flex-shrink:0; margin-left: 5px;">${tagPosicao}</div>` : ''}</div><div class="col-acoes"><button class="btn-small btn-acao-outline hidden-public" style="color:var(--danger); border-color:var(--danger);" onclick="desmarcarPresenca(${j.indexArray})">Retirar</button></div></div>`;
     });
     
-    if(document.getElementById('total-presentes')) document.getElementById('total-presentes').innerText = presentes.length; 
-    if(document.getElementById('total-elenco')) document.getElementById('total-elenco').innerText = jogadores.length;
-    if(document.getElementById('btn-zerar')) document.getElementById('btn-zerar').style.display = "block";
+    let elTotalPres = document.getElementById('total-presentes'); if(elTotalPres) elTotalPres.innerText = presentes.length; 
+    let elTotalElenco = document.getElementById('total-elenco'); if(elTotalElenco) elTotalElenco.innerText = jogadores.length;
+    let btnZerar = document.getElementById('btn-zerar'); if(btnZerar) btnZerar.style.display = "block";
     filtrarElencoAdmin(); filtrarSorteioAusentes();
 }
 
@@ -523,9 +588,9 @@ function iniciarSorteioComSuspense() {
         }
     }
 
-    document.getElementById('btn-ir-placares').style.display = 'none';
+    let btnP = document.getElementById('btn-ir-placares'); if(btnP) btnP.style.display = 'none';
     let boxSorteio = document.getElementById('box-codigo-gerado-sorteio'); if(boxSorteio) { boxSorteio.style.display = 'none'; boxSorteio.innerHTML = ''; }
-    document.getElementById('resultado').innerHTML = `<div style="text-align:center; padding:40px; font-weight:bold; color:var(--primary);">Processando Algoritmo...</div>`;
+    let res = document.getElementById('resultado'); if(res) res.innerHTML = `<div style="text-align:center; padding:40px; font-weight:bold; color:var(--primary);">Processando Algoritmo...</div>`;
     setTimeout(() => { sortearTimes(presentes, isAppend); }, 1500);
 }
 
@@ -533,8 +598,8 @@ async function sortearTimes(presentesBrutos, isAppend) {
     try {
         if (!isAppend && supabaseChannel) { db.removeChannel(supabaseChannel); supabaseChannel = null; }
         
-        let modo = document.getElementById('modo-sorteio').value; 
-        let priorizarOrdem = document.getElementById('priorizar-ordem').checked;
+        let modoSel = document.getElementById('modo-sorteio'); let modo = modoSel ? modoSel.value : 'todos'; 
+        let prioCb = document.getElementById('priorizar-ordem'); let priorizarOrdem = prioCb ? prioCb.checked : false;
         let incluiGoleiros = (modo === '14' || modo === 'todos');
         window.dataPartidaAtual = new Date().toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
 
@@ -692,16 +757,19 @@ async function sortearTimes(presentesBrutos, isAppend) {
         
         try { salvarEstadoCompleto(); } catch(e) {}
         
-        document.getElementById('resultado').innerHTML = ""; 
-        window.timesSorteadosObjs.forEach((t) => {
-            let emoji = emojisTimes[coresTimes.indexOf(t.corBase)] || '⚽'; let corHex = getCorHex(t.corBase);
-            let html = `<div class="team" style="border-top-color: ${corHex};"><div style="display:flex; align-items:center; gap:5px; margin-bottom:10px;"><span style="font-size:18px;">${emoji}</span><input type="text" value="${t.nome}" onchange="atualizarNomeTime(${t.id}, this.value)" class="input-nome-time" placeholder="Nome do Time" style="color: ${corHex};" ${window.isModoPublico ? 'disabled' : ''}></div><ul>`;
-            t.jogadores.forEach(j => { let posAbbr = posMap[j.posicao] || j.posicao; html += `<li><strong>${j.nome}</strong> ${j.posicao!=='Linha'?`<span class="badge badge-posicao" style="display:inline-block; min-width:32px; text-align:center; font-size:9px;">${posAbbr}</span>`:''}</li>`; }); 
-            document.getElementById('resultado').innerHTML += html + `</ul></div>`;
-        });
-        if (window.reservasSorteados && window.reservasSorteados.length > 0) {
-            let html = `<div class="team team-reservas"><h3 style="padding:5px; font-size:15px;">Reservas (Inativos)</h3><ul>`;
-            window.reservasSorteados.forEach(j => html += `<li><strong>${j.nome}</strong> ${j.isDM ? '<span style="color:var(--danger); font-size:11px; font-weight:bold;">[DM]</span>' : ''}</li>`); document.getElementById('resultado').innerHTML += html + `</ul></div>`;
+        let resDiv = document.getElementById('resultado');
+        if(resDiv) {
+            resDiv.innerHTML = ""; 
+            window.timesSorteadosObjs.forEach((t) => {
+                let emoji = emojisTimes[coresTimes.indexOf(t.corBase)] || '⚽'; let corHex = getCorHex(t.corBase);
+                let html = `<div class="team" style="border-top-color: ${corHex};"><div style="display:flex; align-items:center; gap:5px; margin-bottom:10px;"><span style="font-size:18px;">${emoji}</span><input type="text" value="${t.nome}" onchange="atualizarNomeTime(${t.id}, this.value)" class="input-nome-time" placeholder="Nome do Time" style="color: ${corHex};" ${window.isModoPublico ? 'disabled' : ''}></div><ul>`;
+                t.jogadores.forEach(j => { let posAbbr = posMap[j.posicao] || j.posicao; html += `<li><strong>${j.nome}</strong> ${j.posicao!=='Linha'?`<span class="badge badge-posicao" style="display:inline-block; min-width:32px; text-align:center; font-size:9px;">${posAbbr}</span>`:''}</li>`; }); 
+                resDiv.innerHTML += html + `</ul></div>`;
+            });
+            if (window.reservasSorteados && window.reservasSorteados.length > 0) {
+                let html = `<div class="team team-reservas"><h3 style="padding:5px; font-size:15px;">Reservas (Inativos)</h3><ul>`;
+                window.reservasSorteados.forEach(j => html += `<li><strong>${j.nome}</strong> ${j.isDM ? '<span style="color:var(--danger); font-size:11px; font-weight:bold;">[DM]</span>' : ''}</li>`); resDiv.innerHTML += html + `</ul></div>`;
+            }
         }
 
         let btnSum = document.getElementById('btn-ir-placares'); 
@@ -712,7 +780,7 @@ async function sortearTimes(presentesBrutos, isAppend) {
     } catch (e) {
         console.error("Erro no sorteio:", e);
         alert(`Ocorreu um erro ao gerar os times. Verifique sua conexão e tente novamente.`);
-        document.getElementById('resultado').innerHTML = ""; 
+        let res = document.getElementById('resultado'); if(res) res.innerHTML = ""; 
     }
 }
 
@@ -720,7 +788,8 @@ async function criarPartidaInicialNoBanco() {
     try {
         if (currentUser) await db.from('partidas').update({ codigo_acesso: null }).eq('user_id', currentUser.id);
         let codigoAleatorio = Math.random().toString(36).substring(2, 8).toUpperCase();
-        let valorConv = parseFloat(document.getElementById('valor-convidado').value) || 0; let valorMens = parseFloat(document.getElementById('valor-mensalista').value) || 0;
+        let valC = document.getElementById('valor-convidado'); let valorConv = valC ? parseFloat(valC.value) || 0 : 0; 
+        let valM = document.getElementById('valor-mensalista'); let valorMens = valM ? parseFloat(valM.value) || 0 : 0;
         
         let qJogadoresEmQuadra = 0; window.timesSorteadosObjs.forEach(t => qJogadoresEmQuadra += t.jogadores.length); if (window.reservasSorteados) qJogadoresEmQuadra += window.reservasSorteados.length;
         
@@ -761,7 +830,10 @@ function gerarTextoWhatsAppEscalacao() {
 async function gerarRelatorioMensal() {
     let filtroInput = document.getElementById('filtro-mes-relatorio'); let mesKey = filtroInput ? filtroInput.value : "";
     if (!mesKey) { let tzoffset = (new Date()).getTimezoneOffset() * 60000; mesKey = (new Date(Date.now() - tzoffset)).toISOString().substring(0, 7); if(filtroInput) filtroInput.value = mesKey; }
-    let partes = mesKey.split('-'); let valMens = parseFloat(document.getElementById('valor-mensalista').value) || 70;
+    let partes = mesKey.split('-'); 
+    let elMens = document.getElementById('valor-mensalista'); let valMens = elMens ? parseFloat(elMens.value) || 70 : 70;
+    let elConv = document.getElementById('valor-convidado'); let defConv = elConv ? parseFloat(elConv.value) || 25 : 25;
+    
     let partidasDoMes = []; let saldoAnterior = 0; 
     
     if(currentUser) {
@@ -772,7 +844,7 @@ async function gerarRelatorioMensal() {
                 let pMes = dataRef.substring(0, 7);
                 if(pMes === mesKey) partidasDoMes.push(p);
                 else if (pMes < mesKey) {
-                    let vConv = p.valor_por_convidado || parseFloat(document.getElementById('valor-convidado').value) || 25; saldoAnterior += ((p.renda_convidados || 0) * vConv);
+                    let vConv = p.valor_por_convidado || defConv; saldoAnterior += ((p.renda_convidados || 0) * vConv);
                     (p.custos_json || []).forEach(c => { saldoAnterior -= c.valor; });
                 }
             });
@@ -800,7 +872,7 @@ async function gerarRelatorioMensal() {
     let totalConvidados = 0;
     if(partidasDoMes.length > 0) {
         partidasDoMes.forEach((p, idx) => {
-            let vConv = p.valor_por_convidado || parseFloat(document.getElementById('valor-convidado').value) || 25; let qtdConv = p.renda_convidados || 0; let subConv = qtdConv * vConv; totalConvidados += subConv;
+            let vConv = p.valor_por_convidado || defConv; let qtdConv = p.renda_convidados || 0; let subConv = qtdConv * vConv; totalConvidados += subConv;
             let dataF = p.data_sorteio ? p.data_sorteio.split('T')[0].split('-').reverse().join('/') : `Rodada ${idx+1}`; if(qtdConv > 0) html += `<tr><td>Rodada (${dataF}): ${qtdConv} convidados</td><td style="text-align:right;">R$ ${subConv.toFixed(2)}</td></tr>`;
         });
     } else html += `<tr><td colspan="2" style="color:var(--text-muted);">Nenhuma rodada finalizada neste mês.</td></tr>`;
@@ -861,15 +933,15 @@ function renderizarTimesNaTela() {
 
 function atualizarNomeTime(id, novoNome) {
     let time = window.timesSorteadosObjs.find(t => t.id === id); if(time) time.nome = novoNome.trim() || time.corBase;
-    salvarEstadoCompleto(); if (document.getElementById('view-placares').classList.contains('active')) atualizarSelectsEquipes();
+    salvarEstadoCompleto(); let vPlac = document.getElementById('view-placares'); if (vPlac && vPlac.classList.contains('active')) atualizarSelectsEquipes();
 }
 
 function renderizarSumula() {
     const container = document.getElementById('container-sumula'); const aviso = document.getElementById('aviso-sem-sorteio'); const dataLabel = document.getElementById('data-rodada-label'); const instrucoes = document.getElementById('texto-instrucoes-sumula');
     if((!window.timesSorteadosObjs || window.timesSorteadosObjs.length === 0) && window.jogosDaRodada.length === 0) {
-        container.style.display = 'none'; aviso.style.display = 'block'; if(dataLabel) dataLabel.innerText = ""; if(instrucoes) instrucoes.style.display = 'none'; return;
+        if(container) container.style.display = 'none'; if(aviso) aviso.style.display = 'block'; if(dataLabel) dataLabel.innerText = ""; if(instrucoes) instrucoes.style.display = 'none'; return;
     }
-    aviso.style.display = 'none'; container.style.display = 'block';
+    if(aviso) aviso.style.display = 'none'; if(container) container.style.display = 'block';
     if(instrucoes) instrucoes.style.display = window.partidaSalva ? 'none' : 'block';
     if(window.codigoAcessoAtual) exibirBoxCodigoSorteio(window.codigoAcessoAtual);
     if(dataLabel) { let dataExibicao = window.dataPartidaAtual || new Date().toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}); dataLabel.innerText = `📅 Data da Rodada: ${dataExibicao}`; }
@@ -929,8 +1001,9 @@ function atualizarCoringasUI() {
 }
 
 function atualizarSelectsEquipes() {
+    let selA = document.getElementById('sumula_equipe_a'); let selB = document.getElementById('sumula_equipe_b');
+    if(!selA || !selB) return;
     let options = ''; window.timesSorteadosObjs.forEach((t) => { options += `<option value="${t.id}">${t.nome}</option>`; });
-    const selA = document.getElementById('sumula_equipe_a'); const selB = document.getElementById('sumula_equipe_b');
     selA.innerHTML = options; selB.innerHTML = options;
     if (window.filaEquipes.length >= 2) { selA.value = window.filaEquipes[0]; selB.value = window.filaEquipes[1]; }
     atualizarFilaUI();
@@ -939,11 +1012,14 @@ function atualizarSelectsEquipes() {
 function limparGolsTemp(lado) { if(lado === 'A') window.golsTempA = []; else window.golsTempB = []; atualizarPlacarTempUI(); salvarEstadoCompleto(); }
 
 function abrirModalGol(lado) {
-    const selTimeId = parseInt(document.getElementById(lado === 'A' ? 'sumula_equipe_a' : 'sumula_equipe_b').value); const timeObj = window.timesSorteadosObjs.find(t => t.id === selTimeId);
-    const containerJogadores = document.getElementById('lista-jogadores-gol'); containerJogadores.innerHTML = ''; document.getElementById('titulo-modal-gol').innerText = `Gol do(a) ${timeObj.nome}`;
+    let selEq = document.getElementById(lado === 'A' ? 'sumula_equipe_a' : 'sumula_equipe_b'); if(!selEq) return;
+    const selTimeId = parseInt(selEq.value); const timeObj = window.timesSorteadosObjs.find(t => t.id === selTimeId);
+    const containerJogadores = document.getElementById('lista-jogadores-gol'); if(!containerJogadores) return;
+    containerJogadores.innerHTML = ''; 
+    let titMod = document.getElementById('titulo-modal-gol'); if(titMod) titMod.innerText = `Gol do(a) ${timeObj.nome}`;
     
     if(timeObj) {
-        let jogadoresTime = [...timeObj.jogadores].sort((a,b) => a.nome.localeCompare(b.nome));
+        let jogadoresTime = [...timeObj.jogadores].sort((a,b) => (a.nome||"").localeCompare(b.nome||""));
         jogadoresTime.forEach(j => { containerJogadores.innerHTML += `<button class="btn-jogador-gol" onclick="registrarGol('${lado}', '${j.nome}')">⚽ ${j.nome}</button>`; });
     }
 
@@ -954,21 +1030,26 @@ function abrirModalGol(lado) {
     }
 
     containerJogadores.innerHTML += `<button class="btn-jogador-gol" style="background:#fee2e2; color:var(--danger); border-color:var(--danger);" onclick="registrarGol('${lado}', 'Gol Contra')">⚠️ Gol Contra</button>`;
-    document.getElementById('modal-gol').style.display = 'flex';
+    let modGol = document.getElementById('modal-gol'); if(modGol) modGol.style.display = 'flex';
 }
-function fecharModalGol() { document.getElementById('modal-gol').style.display = 'none'; }
+function fecharModalGol() { let modGol = document.getElementById('modal-gol'); if(modGol) modGol.style.display = 'none'; }
 function registrarGol(lado, nomeJogador) { if(lado === 'A') window.golsTempA.push(nomeJogador); else window.golsTempB.push(nomeJogador); fecharModalGol(); atualizarPlacarTempUI(); salvarEstadoCompleto(); }
 function removerGolTemp(lado, index) { if(lado === 'A') window.golsTempA.splice(index, 1); else window.golsTempB.splice(index, 1); atualizarPlacarTempUI(); salvarEstadoCompleto(); }
 
 function atualizarPlacarTempUI() {
-    document.getElementById('placar-num-a').innerText = window.golsTempA.length; document.getElementById('placar-num-b').innerText = window.golsTempB.length;
-    let htmlA = ''; window.golsTempA.forEach((nome, i) => htmlA += `<div class="item-gol-arena">${nome} <span class="remover-gol-btn-arena" onclick="removerGolTemp('A', ${i})">x</span></div>`); document.getElementById('lista-gols-a').innerHTML = htmlA || '<span style="opacity:0.5;">Nenhum gol</span>';
-    let htmlB = ''; window.golsTempB.forEach((nome, i) => htmlB += `<div class="item-gol-arena">${nome} <span class="remover-gol-btn-arena" onclick="removerGolTemp('B', ${i})">x</span></div>`); document.getElementById('lista-gols-b').innerHTML = htmlB || '<span style="opacity:0.5;">Nenhum gol</span>';
+    let placA = document.getElementById('placar-num-a'); if(placA) placA.innerText = window.golsTempA.length; 
+    let placB = document.getElementById('placar-num-b'); if(placB) placB.innerText = window.golsTempB.length;
+    let htmlA = ''; window.golsTempA.forEach((nome, i) => htmlA += `<div class="item-gol-arena">${nome} <span class="remover-gol-btn-arena" onclick="removerGolTemp('A', ${i})">x</span></div>`); 
+    let listA = document.getElementById('lista-gols-a'); if(listA) listA.innerHTML = htmlA || '<span style="opacity:0.5;">Nenhum gol</span>';
+    let htmlB = ''; window.golsTempB.forEach((nome, i) => htmlB += `<div class="item-gol-arena">${nome} <span class="remover-gol-btn-arena" onclick="removerGolTemp('B', ${i})">x</span></div>`); 
+    let listB = document.getElementById('lista-gols-b'); if(listB) listB.innerHTML = htmlB || '<span style="opacity:0.5;">Nenhum gol</span>';
 }
 function formatarGolsResumo(golsArray) { if(!golsArray || golsArray.length === 0) return ''; let contagem = {}; golsArray.forEach(g => { contagem[g] = (contagem[g] || 0) + 1; }); return Object.entries(contagem).map(([nome, qtd]) => qtd > 1 ? `${nome} (${qtd})` : nome).join(', '); }
 
 async function adicionarJogoNaSumula() {
-    let idA = parseInt(document.getElementById('sumula_equipe_a').value); let idB = parseInt(document.getElementById('sumula_equipe_b').value);
+    let selA = document.getElementById('sumula_equipe_a'); let selB = document.getElementById('sumula_equipe_b');
+    if(!selA || !selB) return;
+    let idA = parseInt(selA.value); let idB = parseInt(selB.value);
     if(idA === idB) return alert("As equipes devem ser diferentes!");
     let gaList = [...window.golsTempA]; let gbList = [...window.golsTempB]; let ga = gaList.length; let gb = gbList.length;
     let nomeA = window.timesSorteadosObjs.find(t=>t.id === idA).nome; let nomeB = window.timesSorteadosObjs.find(t=>t.id === idB).nome;
@@ -1039,8 +1120,9 @@ function removerJogo(index) {
     window.jogosDaRodada.splice(index, 1); atualizarListaJogosDaRodada(); salvarEstadoCompleto();
 }
 
+// === FUNÇÕES DE DM / LESÃO ===
 function abrirModalLesao() {
-    const sel = document.getElementById('select-jogador-lesao');
+    const sel = document.getElementById('select-jogador-lesao'); if(!sel) return;
     sel.innerHTML = '<option value="">Selecione o Jogador</option>';
     window.timesSorteadosObjs.forEach(t => {
         let optgroup = document.createElement('optgroup');
@@ -1048,12 +1130,13 @@ function abrirModalLesao() {
         t.jogadores.forEach(j => { let option = document.createElement('option'); option.value = JSON.stringify({timeId: t.id, jogadorId: j.id}); option.innerText = j.nome; optgroup.appendChild(option); });
         sel.appendChild(optgroup);
     });
-    document.getElementById('modal-lesao').style.display = 'flex';
+    let modLesao = document.getElementById('modal-lesao'); if(modLesao) modLesao.style.display = 'flex';
 }
-function fecharModalLesao() { document.getElementById('modal-lesao').style.display = 'none'; }
+function fecharModalLesao() { let modLesao = document.getElementById('modal-lesao'); if(modLesao) modLesao.style.display = 'none'; }
 
 function salvarLesao() {
-    let val = document.getElementById('select-jogador-lesao').value;
+    let selLesao = document.getElementById('select-jogador-lesao'); if(!selLesao) return;
+    let val = selLesao.value;
     if(!val) return alert("Selecione um jogador.");
     let data = JSON.parse(val);
     let time = window.timesSorteadosObjs.find(t => t.id === data.timeId);
@@ -1072,6 +1155,7 @@ function salvarLesao() {
     }
 }
 
+// === ALGORITMO DO CORINGA PELA MÉDIA DO BABA ===
 function sortearCoringasFila(idTimeIncompleto) {
     let timeInc = window.timesSorteadosObjs.find(t => t.id === idTimeIncompleto);
     let tamanhoIdeal = currentProfile && currentProfile.jogadores_por_time ? parseInt(currentProfile.jogadores_por_time) : 7;
@@ -1136,19 +1220,19 @@ function sortearCoringasFila(idTimeIncompleto) {
 }
 
 function abrirModalAjuste() {
-    const sel = document.getElementById('select-jogador-ajuste');
+    const sel = document.getElementById('select-jogador-ajuste'); if(!sel) return;
     sel.innerHTML = '<option value="">Selecione o Jogador</option>';
-    let todosOrdem = [...jogadores].sort((a,b) => a.nome.localeCompare(b.nome));
+    let todosOrdem = [...jogadores].sort((a,b) => (a.nome||"").localeCompare(b.nome||""));
     todosOrdem.forEach(j => { sel.innerHTML += `<option value="${j.nome}">${j.nome}</option>`; });
-    document.getElementById('input-gols-ajuste').value = "1";
-    document.getElementById('modal-ajuste-manual').style.display = 'flex';
+    let inpG = document.getElementById('input-gols-ajuste'); if(inpG) inpG.value = "1";
+    let modAj = document.getElementById('modal-ajuste-manual'); if(modAj) modAj.style.display = 'flex';
 }
 
-function fecharModalAjuste() { document.getElementById('modal-ajuste-manual').style.display = 'none'; }
+function fecharModalAjuste() { let modAj = document.getElementById('modal-ajuste-manual'); if(modAj) modAj.style.display = 'none'; }
 
 async function salvarAjusteManual() {
-    let nome = document.getElementById('select-jogador-ajuste').value;
-    let gols = parseInt(document.getElementById('input-gols-ajuste').value);
+    let selAj = document.getElementById('select-jogador-ajuste'); let nome = selAj ? selAj.value : "";
+    let inpG = document.getElementById('input-gols-ajuste'); let gols = inpG ? parseInt(inpG.value) : 0;
     if(!nome || isNaN(gols)) return alert("Preencha o jogador e a quantidade.");
     
     window.jogosDaRodada.push({ tipo: 'ajuste', jogador: nome, gols: gols });
@@ -1170,7 +1254,8 @@ async function salvarAjusteManual() {
 function atualizarListaJogosDaRodada() {
     const painelArena = document.getElementById('painel-placar-arena'); if(painelArena) painelArena.style.display = window.partidaSalva ? 'none' : 'block';
     const btnEncerrar = document.getElementById('btn-encerrar-baba'); if(btnEncerrar) btnEncerrar.style.display = window.partidaSalva ? 'none' : 'block';
-    const lista = document.getElementById('lista-jogos-registrados'); lista.innerHTML = ''; document.getElementById('qtd-jogos-reg').innerText = window.jogosDaRodada.length;
+    const lista = document.getElementById('lista-jogos-registrados'); if(!lista) return;
+    let qtdReg = document.getElementById('qtd-jogos-reg'); if(qtdReg) qtdReg.innerText = window.jogosDaRodada.length;
     
     if(window.jogosDaRodada.length === 0) { lista.innerHTML = '<p style="color:var(--text-muted); font-size:13px; text-align:center;">Nenhum jogo confirmado</p>'; return; }
     
@@ -1216,25 +1301,29 @@ function renderizarPainelDoDiaComJogos(jogosArr, dataStr) {
 
     let dataExibicao = window.dataPartidaAtual || new Date().toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
     if (dataStr) { let d = new Date(dataStr); dataExibicao = !isNaN(d.getTime()) ? d.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}) : dataStr; }
-    let tituloClass = document.getElementById('titulo-classificacao-dia'); let tituloArts = document.getElementById('titulo-artilheiros-dia');
-    if (tituloClass) tituloClass.innerText = `🏆 Classificação do dia (${dataExibicao})`; if (tituloArts) tituloArts.innerText = `⚽ Artilheiros do dia (${dataExibicao})`;
+    let tituloClass = document.getElementById('titulo-classificacao-dia'); if(tituloClass) tituloClass.innerText = `🏆 Classificação do dia (${dataExibicao})`; 
+    let tituloArts = document.getElementById('titulo-artilheiros-dia'); if (tituloArts) tituloArts.innerText = `⚽ Artilheiros do dia (${dataExibicao})`;
 
     const bodyClass = document.getElementById('body-classificacao');
-    if(rankTimes.length === 0) { bodyClass.innerHTML = '<tr><td colspan="7" style="color:var(--text-muted);">Sem jogos hoje.</td></tr>'; } 
-    else {
-        bodyClass.innerHTML = '';
-        rankTimes.forEach((r, i) => {
-            let t = r[1]; let sg = t.gp - t.gc; let ic = i===0?'🏆 ':'';
-            bodyClass.innerHTML += `<tr><td style="font-weight:700;">${ic}${r[0]}</td><td style="font-weight:700; color:var(--primary);">${t.pts}</td><td>${t.j}</td><td>${t.v}</td><td>${t.e}</td><td>${t.d}</td><td>${sg > 0 ? '+'+sg : sg}</td></tr>`;
-        });
+    if(bodyClass) {
+        if(rankTimes.length === 0) { bodyClass.innerHTML = '<tr><td colspan="7" style="color:var(--text-muted);">Sem jogos hoje.</td></tr>'; } 
+        else {
+            bodyClass.innerHTML = '';
+            rankTimes.forEach((r, i) => {
+                let t = r[1]; let sg = t.gp - t.gc; let ic = i===0?'🏆 ':'';
+                bodyClass.innerHTML += `<tr><td style="font-weight:700;">${ic}${r[0]}</td><td style="font-weight:700; color:var(--primary);">${t.pts}</td><td>${t.j}</td><td>${t.v}</td><td>${t.e}</td><td>${t.d}</td><td>${sg > 0 ? '+'+sg : sg}</td></tr>`;
+            });
+        }
     }
 
     const bodyArts = document.getElementById('body-artilheiros-painel');
-    let arts = Object.entries(artilheiros).sort((a,b) => b[1] - a[1]);
-    if(arts.length === 0) { bodyArts.innerHTML = '<tr><td colspan="2" style="color:var(--text-muted);">Nenhum gol lançado.</td></tr>'; }
-    else {
-        bodyArts.innerHTML = '';
-        arts.forEach((a, i) => { let ic = i===0?'🥇':(i===1?'🥈':(i===2?'🥉':'⚽')); bodyArts.innerHTML += `<tr><td>${ic} <strong>${a[0]}</strong></td><td>${a[1]}</td></tr>`; });
+    if(bodyArts) {
+        let arts = Object.entries(artilheiros).sort((a,b) => b[1] - a[1]);
+        if(arts.length === 0) { bodyArts.innerHTML = '<tr><td colspan="2" style="color:var(--text-muted);">Nenhum gol lançado.</td></tr>'; }
+        else {
+            bodyArts.innerHTML = '';
+            arts.forEach((a, i) => { let ic = i===0?'🥇':(i===1?'🥈':(i===2?'🥉':'⚽')); bodyArts.innerHTML += `<tr><td>${ic} <strong>${a[0]}</strong></td><td>${a[1]}</td></tr>`; });
+        }
     }
 }
 
@@ -1266,7 +1355,9 @@ async function carregarEstatisticasGerais() {
     try {
         let hoje = new Date(); let mesAtual = hoje.getMonth(); let anoAtual = hoje.getFullYear();
         const startOfYear = new Date(anoAtual, 0, 1).toISOString();
-        document.getElementById('label-mes-atual').innerText = hoje.toLocaleString('pt-BR', { month: 'long' }); document.getElementById('label-ano-atual').innerText = anoAtual;
+        let lMes = document.getElementById('label-mes-atual'); if(lMes) lMes.innerText = hoje.toLocaleString('pt-BR', { month: 'long' }); 
+        let lAno = document.getElementById('label-ano-atual'); if(lAno) lAno.innerText = anoAtual;
+        
         const { data: partidas } = await db.from('partidas').select('id, data_sorteio, artilheiros_json').gte('data_sorteio', startOfYear).eq('user_id', currentUser.id);
         const { data: presencas } = await db.from('presencas').select('partida_id, jogadores(nome, tipo, user_id)');
 
@@ -1301,13 +1392,19 @@ async function carregarEstatisticasGerais() {
             });
         }
 
-        const bodyArtsMes = document.getElementById('body-artilharia-mes'); let artsMesArr = Object.entries(artilhariaMes).sort((a,b) => b[1] - a[1]);
-        if(artsMesArr.length === 0) bodyArtsMes.innerHTML = '<tr><td colspan="2" style="color:var(--text-muted);">Sem histórico neste mês.</td></tr>';
-        else { bodyArtsMes.innerHTML = ''; artsMesArr.forEach((a, i) => { let ic = i===0?'🔥':'⚽'; bodyArtsMes.innerHTML += `<tr><td>${ic} <strong>${a[0]}</strong></td><td>${a[1]}</td></tr>`; }); }
+        const bodyArtsMes = document.getElementById('body-artilharia-mes'); 
+        if(bodyArtsMes) {
+            let artsMesArr = Object.entries(artilhariaMes).sort((a,b) => b[1] - a[1]);
+            if(artsMesArr.length === 0) bodyArtsMes.innerHTML = '<tr><td colspan="2" style="color:var(--text-muted);">Sem histórico neste mês.</td></tr>';
+            else { bodyArtsMes.innerHTML = ''; artsMesArr.forEach((a, i) => { let ic = i===0?'🔥':'⚽'; bodyArtsMes.innerHTML += `<tr><td>${ic} <strong>${a[0]}</strong></td><td>${a[1]}</td></tr>`; }); }
+        }
 
-        const bodyRanking = document.getElementById('body-ranking-anual'); let rankArr = Object.entries(rankingAnual).sort((a,b) => { if(b[1].gols !== a[1].gols) return b[1].gols - a[1].gols; return b[1].presencas - a[1].presencas; });
-        if(rankArr.length === 0) bodyRanking.innerHTML = '<tr><td colspan="3" style="color:var(--text-muted);">Sem histórico no ano.</td></tr>';
-        else { bodyRanking.innerHTML = ''; rankArr.forEach((r, i) => { let ic = i===0?'🌟':'👤'; bodyRanking.innerHTML += `<tr><td>${ic} <strong>${r[0]}</strong></td><td style="font-weight:700; color:var(--primary);">${r[1].gols}</td><td style="color:var(--text-muted);">${r[1].presencas}</td></tr>`; }); }
+        const bodyRanking = document.getElementById('body-ranking-anual'); 
+        if(bodyRanking) {
+            let rankArr = Object.entries(rankingAnual).sort((a,b) => { if(b[1].gols !== a[1].gols) return b[1].gols - a[1].gols; return b[1].presencas - a[1].presencas; });
+            if(rankArr.length === 0) bodyRanking.innerHTML = '<tr><td colspan="3" style="color:var(--text-muted);">Sem histórico no ano.</td></tr>';
+            else { bodyRanking.innerHTML = ''; rankArr.forEach((r, i) => { let ic = i===0?'🌟':'👤'; bodyRanking.innerHTML += `<tr><td>${ic} <strong>${r[0]}</strong></td><td style="font-weight:700; color:var(--primary);">${r[1].gols}</td><td style="color:var(--text-muted);">${r[1].presencas}</td></tr>`; }); }
+        }
     } catch(e) {}
 }
 
@@ -1317,8 +1414,11 @@ function atualizarFinanceiro() {
 }
 
 async function adicionarCusto() {
-    let desc = document.getElementById('desc-custo').value; let val = parseFloat(document.getElementById('valor-custo').value) || 0;
-    let tipo = document.getElementById('tipo-custo').value; let operacao = document.getElementById('operacao-movimentacao').value; let dataInput = document.getElementById('data-custo').value;
+    let elDesc = document.getElementById('desc-custo'); let desc = elDesc ? elDesc.value : ""; 
+    let elVal = document.getElementById('valor-custo'); let val = elVal ? parseFloat(elVal.value) || 0 : 0;
+    let elTipo = document.getElementById('tipo-custo'); let tipo = elTipo ? elTipo.value : "diario"; 
+    let elOp = document.getElementById('operacao-movimentacao'); let operacao = elOp ? elOp.value : "saida"; 
+    let elData = document.getElementById('data-custo'); let dataInput = elData ? elData.value : "";
 
     if(!desc || val <= 0) return alert("Preencha descrição e valor válido.");
 
@@ -1330,17 +1430,17 @@ async function adicionarCusto() {
 
     if(currentUser) {
         try {
-            const btn = document.querySelector('button[onclick="adicionarCusto()"]'); let txtOrigin = btn.innerText; btn.innerText = "Salvando..."; btn.disabled = true;
+            const btn = document.querySelector('button[onclick="adicionarCusto()"]'); let txtOrigin = ""; if(btn) { txtOrigin = btn.innerText; btn.innerText = "Salvando..."; btn.disabled = true; }
             const { error } = await db.from('profiles').update({ despesas_mensais_json: window.despesasMensaisGlobais }).eq('id', currentUser.id);
-            btn.innerText = txtOrigin; btn.disabled = false;
+            if(btn) { btn.innerText = txtOrigin; btn.disabled = false; }
             if (error) { alert("Erro ao salvar movimentação: " + error.message); window.despesasMensaisGlobais.pop(); } 
-            else { document.getElementById('desc-custo').value = ''; document.getElementById('valor-custo').value = ''; document.getElementById('data-custo').value = ''; gerarRelatorioMensal(); }
+            else { if(elDesc) elDesc.value = ''; if(elVal) elVal.value = ''; if(elData) elData.value = ''; gerarRelatorioMensal(); }
         } catch(e) {}
     }
 }
         
 async function removerCusto(idUnico, indexArrayFallback) { 
-    if(!confirm("Deseja realmente apagar esta movimentação do Livro Caixa?")) return;
+    if(!confirm(`Deseja realmente apagar esta movimentação do Livro Caixa?`)) return;
     let indexReal = window.despesasMensaisGlobais.findIndex(c => c.id === idUnico);
     if (indexReal === -1) indexReal = indexArrayFallback;
     if (indexReal === -1 || indexReal === undefined) return alert("Erro: Movimentação não encontrada.");
@@ -1360,7 +1460,7 @@ async function salvarPartidaComPlacares() {
     if(!window.partidaAtualId) return alert("Erro: Nenhuma partida ativa encontrada no banco de dados. Por favor, volte em 'Sorteio' e gere as equipes novamente.");
     if(!confirm(`Deseja encerrar o baba de hoje e computar a presença de todos os jogadores?`)) return;
     
-    const btn = document.getElementById('btn-encerrar-baba'); btn.innerText = "Sincronizando Servidor..."; btn.disabled = true;
+    const btn = document.getElementById('btn-encerrar-baba'); if(btn) { btn.innerText = "Sincronizando Servidor..."; btn.disabled = true; }
     try {
         let artilheiros = {};
         window.jogosDaRodada.forEach(jogo => {
@@ -1371,7 +1471,8 @@ async function salvarPartidaComPlacares() {
             }
         });
         let presentesPagantes = jogadores.filter(j => j.presente && j.pagou && j.tipo === 'Convidado'); let convidadosPagantes = presentesPagantes.length;
-        let valorConv = parseFloat(document.getElementById('valor-convidado').value) || 0; let valorMens = parseFloat(document.getElementById('valor-mensalista').value) || 0;
+        let vConv = document.getElementById('valor-convidado'); let valorConv = vConv ? parseFloat(vConv.value) || 0 : 0; 
+        let vMens = document.getElementById('valor-mensalista'); let valorMens = vMens ? parseFloat(vMens.value) || 0 : 0;
 
         window.filaEquipes = [];
         const { error: errP } = await db.from('partidas').update({ 
@@ -1398,6 +1499,6 @@ async function salvarPartidaComPlacares() {
 
         carregarElencoDaNuvem(); gerarRelatorioMensal();
 
-        btn.innerText = "✅ Baba Encerrado e Salvo com Sucesso!"; alert("Baba finalizado com sucesso!");
-    } catch(err) { alert("Erro de comunicação com o banco: " + err.message); btn.innerText = "Tentar Novamente"; btn.disabled = false; }
+        if(btn) btn.innerText = "✅ Baba Encerrado e Salvo com Sucesso!"; alert("Baba finalizado com sucesso!");
+    } catch(err) { alert("Erro de comunicação com o banco: " + err.message); if(btn) { btn.innerText = "Tentar Novamente"; btn.disabled = false; } }
 }
