@@ -471,7 +471,7 @@ function iniciarSorteioComSuspense() {
         } else {
             if(confirm(`Você tem ${jogadoresSemTime.length} jogador(es) que acabaram de chegar e não estão nos times.\n\nDeseja PREENCHER os times com eles (mantendo o jogo atual rodando)?\n\n[OK] = Adicionar os atrasados aos times\n[CANCELAR] = Apagar tudo e misturar todo mundo de novo`)) {
                 isAppend = true; presentes = jogadoresSemTime; 
-                if(presentes.length === 0) return; // Segurança extra
+                if(presentes.length === 0) return; 
             } else { if(!confirm("Tem certeza que deseja APAGAR os times atuais e misturar todo mundo de novo? (Isso não apaga os jogos que já aconteceram hoje).")) return; }
         }
     }
@@ -491,7 +491,7 @@ async function sortearTimes(presentesBrutos, isAppend) {
         let incluiGoleiros = (modo === '14' || modo === 'todos');
         window.dataPartidaAtual = new Date().toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
 
-        let jogadoresLivres = [...presentesBrutos];
+        let jogadoresLivres = [...presentesBrutos]; 
         let reservasNovas = [];
         
         if (!incluiGoleiros) { 
@@ -501,18 +501,19 @@ async function sortearTimes(presentesBrutos, isAppend) {
 
         let tamanhoIdeal = currentProfile && currentProfile.jogadores_por_time ? parseInt(currentProfile.jogadores_por_time) : 7;
         
-        // --- NOVO: FASE 1 - PREENCHER TIMES INCOMPLETOS (SÓ QUANDO for isAppend) ---
+        // --- FASE 1: PREENCHER TIMES INCOMPLETOS (SÓ QUANDO for isAppend) ---
         if (isAppend) {
-            // Ordena os que chegaram do melhor pro pior para distribuir melhor
-            jogadoresLivres.sort((a, b) => (Number(b.nivel) || 3) - (Number(a.nivel) || 3));
+            jogadoresLivres.sort((a, b) => {
+                if (a.tipo === 'Mensalista' && b.tipo !== 'Mensalista') return -1;
+                if (a.tipo !== 'Mensalista' && b.tipo === 'Mensalista') return 1;
+                return (Number(b.nivel) || 3) - (Number(a.nivel) || 3);
+            });
             
             let incompletos = window.timesSorteadosObjs.filter(t => t.jogadores.length < tamanhoIdeal);
             
             while (jogadoresLivres.length > 0 && incompletos.length > 0) {
                 incompletos.sort((a, b) => {
-                    // Preenche quem tem menos jogadores primeiro
                     if (a.jogadores.length !== b.jogadores.length) return a.jogadores.length - b.jogadores.length;
-                    // Desempate: o time mais fraco recebe o jogador
                     let scoreA = a.jogadores.reduce((acc, j) => acc + (Number(j.nivel) || 3), 0);
                     let scoreB = b.jogadores.reduce((acc, j) => acc + (Number(j.nivel) || 3), 0);
                     return scoreA - scoreB;
@@ -521,62 +522,55 @@ async function sortearTimes(presentesBrutos, isAppend) {
                 let timeAlvo = incompletos[0];
                 let jogador = jogadoresLivres.shift();
                 timeAlvo.jogadores.push(jogador);
-                
-                // Atualiza a lista de incompletos a cada inserção
                 incompletos = window.timesSorteadosObjs.filter(t => t.jogadores.length < tamanhoIdeal);
             }
         }
 
         // --- FASE 2: CRIAR NOVOS TIMES COM A SOBRA ---
         let titulares = [];
+        let maxTitulares = jogadoresLivres.length;
+        if (modo === '12') maxTitulares = 12; else if (modo === '14') maxTitulares = 14;
+
         if (isAppend && (modo === '12' || modo === '14')) {
-            // Se for modo fixo (2 times apenas) e já estiverem cheios, a sobra vai direto pra reserva
             reservasNovas.push(...jogadoresLivres);
         } else if (!isAppend) {
-            let maxTitulares = jogadoresLivres.length;
-            if (modo === '12') maxTitulares = 12; else if (modo === '14') maxTitulares = 14;
             titulares = jogadoresLivres.slice(0, maxTitulares); 
             reservasNovas.push(...jogadoresLivres.slice(maxTitulares));
         } else {
-            // isAppend && modo === 'todos' -> sobrou jogador depois de preencher, cria time novo!
             titulares = jogadoresLivres;
         }
 
         let timesNovos = []; 
-        let tamanhoPartida = tamanhoIdeal * 2; 
-
+        
         if (titulares.length > 0) {
-            if (!priorizarOrdem && (modo === 'todos' || modo === 'todos_sem_goleiro')) {
-                let qtdTimesGlobais = Math.ceil(titulares.length / tamanhoIdeal); 
-                if (!isAppend && qtdTimesGlobais < 2 && titulares.length >= 2) qtdTimesGlobais = 2; 
-                if (qtdTimesGlobais > 0) tamanhoPartida = titulares.length;
+            let tamanhoPartida;
+            if (priorizarOrdem) {
+                tamanhoPartida = tamanhoIdeal;
+            } else {
+                tamanhoPartida = (modo === '12' || modo === '14') ? maxTitulares : titulares.length;
             }
 
             const getSomaNotas = (time) => time.reduce((acc, j) => acc + (Number(j.nivel) || 3), 0);
             const getQtdPosicao = (time, pos) => time.filter(j => j.posicao === pos).length;
             
             for (let i = 0; i < titulares.length; i += tamanhoPartida) {
-                let chunk = titulares.slice(i, i + tamanhoPartida); let numTimesNoChunk;
+                let chunk = titulares.slice(i, i + tamanhoPartida); 
+                let numTimesNoChunk;
                 
-                if (isAppend) {
+                if (priorizarOrdem || isAppend) {
                     numTimesNoChunk = Math.max(1, Math.ceil(chunk.length / tamanhoIdeal));
                 } else if (modo === '12' || modo === '14') {
                     numTimesNoChunk = 2; 
                 } else { 
-                    if (!priorizarOrdem) { 
-                        numTimesNoChunk = Math.ceil(titulares.length / tamanhoIdeal); 
-                        if (numTimesNoChunk < 2) numTimesNoChunk = 2; 
-                    } else { 
-                        numTimesNoChunk = Math.ceil(chunk.length / tamanhoIdeal); 
-                    } 
+                    numTimesNoChunk = Math.ceil(chunk.length / tamanhoIdeal); 
+                    if (numTimesNoChunk < 2 && titulares.length >= 2) numTimesNoChunk = 2; 
                 }
                 
                 if (numTimesNoChunk === 0) continue;
 
-                // --- NOVO: Cálculo de capacidade alvo para o "Copo Cheio" (Fill Target) ---
                 let capacities = [];
                 let remaining = chunk.length;
-                if (modo === '12' || modo === '14') {
+                if (!priorizarOrdem && (modo === '12' || modo === '14')) {
                     let half = Math.ceil(chunk.length / 2); capacities = [half, chunk.length - half];
                 } else {
                     for (let k = 0; k < numTimesNoChunk; k++) {
@@ -586,7 +580,8 @@ async function sortearTimes(presentesBrutos, isAppend) {
                     }
                 }
                 
-                let goleirosChunk = embaralhar(chunk.filter(j => j.posicao === 'Goleiro')); let linhaChunk = embaralhar(chunk.filter(j => j.posicao !== 'Goleiro'));
+                let goleirosChunk = embaralhar(chunk.filter(j => j.posicao === 'Goleiro')); 
+                let linhaChunk = embaralhar(chunk.filter(j => j.posicao !== 'Goleiro'));
                 let timesLocais = Array.from({ length: numTimesNoChunk }, () => []);
                 
                 if (incluiGoleiros) { 
@@ -598,7 +593,13 @@ async function sortearTimes(presentesBrutos, isAppend) {
 
                 const posicoes = ["Zagueiro", "Lateral", "Meia", "Atacante", "Linha"]; const grupos = {}; posicoes.forEach(p => grupos[p] = []);
                 linhaChunk.forEach(j => { if (grupos[j.posicao]) grupos[j.posicao].push(j); else grupos["Linha"].push(j); });
-                posicoes.forEach(p => grupos[p].sort((a, b) => (Number(b.nivel) || 3) - (Number(a.nivel) || 3)));
+                
+                // Prioridade de Mensalista na distribuição
+                posicoes.forEach(p => grupos[p].sort((a, b) => {
+                    if (a.tipo === 'Mensalista' && b.tipo !== 'Mensalista') return -1;
+                    if (a.tipo !== 'Mensalista' && b.tipo === 'Mensalista') return 1;
+                    return (Number(b.nivel) || 3) - (Number(a.nivel) || 3);
+                }));
                 
                 posicoes.forEach(pos => {
                     grupos[pos].forEach(jogador => {
@@ -609,19 +610,28 @@ async function sortearTimes(presentesBrutos, isAppend) {
                         let elegiveis = elegiveisParaReceber.filter(t => t.length === minTam);
                         let minPos = Math.min(...elegiveis.map(t => getQtdPosicao(t, pos))); 
                         let menosPos = elegiveis.filter(t => getQtdPosicao(t, pos) === minPos);
-                        menosPos.sort((a, b) => getSomaNotas(a) - getSomaNotas(b)); 
                         
-                        let menorNota = getSomaNotas(menosPos[0]); 
-                        let timesEmpatados = menosPos.filter(t => getSomaNotas(t) === menorNota);
-                        let timeEscolhido = timesEmpatados.length > 1 ? timesEmpatados[Math.floor(Math.random() * timesEmpatados.length)] : menosPos[0];
-                        timeEscolhido.push(jogador);
+                        menosPos.sort((a, b) => {
+                            let scoreA = getSomaNotas(a); let scoreB = getSomaNotas(b);
+                            let indexA = timesLocais.indexOf(a); let indexB = timesLocais.indexOf(b);
+                            
+                            if (jogador.tipo === 'Convidado') {
+                                if (indexA !== indexB) return indexB - indexA; // Convidado prefere os últimos times
+                                return scoreA - scoreB;
+                            } else {
+                                if (scoreA !== scoreB) return scoreA - scoreB; // Mensalista prioriza o equilíbrio
+                                return indexA - indexB; // Empate técnico: Mensalista vai pro primeiro time
+                            }
+                        }); 
+                        
+                        menosPos[0].push(jogador);
                     });
                 });
                 
                 timesLocais = timesLocais.filter(t => t.length > 0);
                 timesNovos.push(...timesLocais);
             }
-        } // end if (titulares.length > 0)
+        }
 
         if (!isAppend) {
             window.timesSorteadosObjs = []; window.reservasSorteados = []; window.partidaSalva = false; window.partidaSalvaManual = false; 
@@ -649,7 +659,7 @@ async function sortearTimes(presentesBrutos, isAppend) {
         
         try { salvarEstadoCompleto(); } catch(e) { console.error("Erro interno ao salvar localStorage", e); }
         
-        // RENDERIZAÇÃO DOS TIMES NA TELA PARA NÃO PARECER QUE TRAVOU
+        // RENDERIZAÇÃO
         document.getElementById('resultado').innerHTML = ""; 
         window.timesSorteadosObjs.forEach((t) => {
             let emoji = emojisTimes[coresTimes.indexOf(t.corBase)] || '⚽'; let corHex = getCorHex(t.corBase);
