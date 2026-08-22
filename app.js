@@ -6,6 +6,47 @@ function safeParse(data) {
     return data;
 }
 
+// --- FUNÇÕES DE ALERTA PROFISSIONAIS (MODAIS) ---
+function customConfirm(title, text, primaryText, secondaryText, primaryColor = 'var(--primary)') {
+    return new Promise((resolve) => {
+        document.getElementById('modal-confirm-title').innerText = title;
+        document.getElementById('modal-confirm-title').style.color = primaryColor;
+        document.getElementById('modal-confirm-text').innerHTML = text;
+        
+        let btnP = document.getElementById('modal-confirm-btn-primary');
+        btnP.innerText = primaryText;
+        btnP.style.background = primaryColor;
+        btnP.onclick = () => { document.getElementById('modal-confirm-custom').style.display = 'none'; resolve(true); };
+        
+        let btnS = document.getElementById('modal-confirm-btn-secondary');
+        btnS.innerText = secondaryText;
+        btnS.style.color = 'var(--dark)';
+        btnS.style.border = '1px solid var(--border)';
+        btnS.style.display = 'block';
+        btnS.onclick = () => { document.getElementById('modal-confirm-custom').style.display = 'none'; resolve(false); };
+        
+        document.getElementById('modal-confirm-custom').style.display = 'flex';
+    });
+}
+
+function customAlert(title, text, btnText="Entendi", primaryColor='var(--primary)') {
+    return new Promise((resolve) => {
+        document.getElementById('modal-confirm-title').innerText = title;
+        document.getElementById('modal-confirm-title').style.color = primaryColor;
+        document.getElementById('modal-confirm-text').innerHTML = text;
+        
+        let btnP = document.getElementById('modal-confirm-btn-primary');
+        btnP.innerText = btnText;
+        btnP.style.background = primaryColor;
+        btnP.onclick = () => { document.getElementById('modal-confirm-custom').style.display = 'none'; resolve(true); };
+        
+        let btnS = document.getElementById('modal-confirm-btn-secondary');
+        btnS.style.display = 'none'; 
+        
+        document.getElementById('modal-confirm-custom').style.display = 'flex';
+    });
+}
+
 let db; let jogadores = []; let jogadorEdicaoId = null; let currentProfile = null; let currentUser = null; let supabaseChannel = null;
 const coresTimes = ["Vermelho", "Azul", "Amarelo", "Verde", "Branco", "Preto", "Roxo", "Laranja"];
 const emojisTimes = ["🔴", "🔵", "🟡", "🟢", "⚪", "⚫", "🟣", "🟠"];
@@ -36,12 +77,18 @@ function iniciarOuvinteRealtime(partidaId) {
     supabaseChannel = db.channel('public:partidas:' + partidaId).on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'partidas', filter: `id=eq.${partidaId}` }, payload => {
         const novaPartida = payload.new;
         if (novaPartida) {
-            if (window.isModoPublico && !novaPartida.codigo_acesso) { alert("O organizador iniciou um novo baba. Este placar foi desativado."); sairModoPublico(); return; }
+            if (window.isModoPublico && !novaPartida.codigo_acesso) { customAlert("Fim de Jogo", "O organizador iniciou um novo baba. Este placar foi desativado.", "Sair", "var(--text-muted)").then(() => sairModoPublico()); return; }
             if (novaPartida.jogos_json) window.jogosDaRodada = safeParse(novaPartida.jogos_json);
-            if (novaPartida.times_json) window.timesSorteadosObjs = safeParse(novaPartida.times_json);
             if (novaPartida.artilheiros_json) window.artilheirosPub = safeParse(novaPartida.artilheiros_json);
             window.filaEquipes = safeParse(novaPartida.fila_json) || [];
             if(window.filaEquipes.length === 0 && window.jogosDaRodada.length > 0) window.partidaSalva = true; else window.partidaSalva = false;
+            
+            if (novaPartida.times_json) {
+                window.timesSorteadosObjs = safeParse(novaPartida.times_json) || [];
+                window.coringasAtivos = {}; 
+                window.timesSorteadosObjs.forEach(t => { if(t.coringas && t.coringas.length > 0) window.coringasAtivos[t.id] = t.coringas; });
+            }
+
             atualizarFilaUI();
             if (document.getElementById('view-placares').classList.contains('active')) renderizarSumula();
             if (document.getElementById('view-estatisticas').classList.contains('active')) renderizarPainelDoDia();
@@ -81,35 +128,6 @@ function carregarEstadoCompleto() {
                     exibirBoxCodigoSorteio(window.codigoAcessoAtual);
                     let btnSum = document.getElementById('btn-ir-placares'); if(btnSum) { btnSum.style.display = 'block'; btnSum.innerText = window.partidaSalva ? "📝 Ver Súmula Anterior" : "📝 Preencher Súmula"; }
                     iniciarOuvinteRealtime(window.partidaAtualId);
-                }
-                
-                let resDiv = document.getElementById('resultado');
-                if(resDiv) {
-                    let coringasEmprestadosIds = [];
-                    for(let key in window.coringasAtivos) { window.coringasAtivos[key].forEach(c => coringasEmprestadosIds.push(c.jogador.id)); }
-                    
-                    resDiv.innerHTML = ""; 
-                    window.timesSorteadosObjs.forEach((t) => {
-                        let emoji = emojisTimes[coresTimes.indexOf(t.corBase)] || '⚽'; let corHex = getCorHex(t.corBase);
-                        let html = `<div class="team" style="border-top-color: ${corHex};"><div style="display:flex; align-items:center; gap:5px; margin-bottom:10px;"><span style="font-size:18px;">${emoji}</span><input type="text" value="${t.nome}" onchange="atualizarNomeTime(${t.id}, this.value)" class="input-nome-time" placeholder="Nome do Time" style="color: ${corHex};" ${window.isModoPublico ? 'disabled' : ''}></div><ul>`;
-                        
-                        t.jogadores.forEach(j => { 
-                            if(coringasEmprestadosIds.includes(j.id)) return;
-                            let posAbbr = posMap[j.posicao] || j.posicao; html += `<li><strong>${j.nome}</strong> ${j.posicao!=='Linha'?`<span class="badge badge-posicao" style="display:inline-block; min-width:32px; text-align:center; font-size:9px;">${posAbbr}</span>`:''}</li>`; 
-                        }); 
-                        
-                        let coringasTime = (window.coringasAtivos && window.coringasAtivos[t.id]) ? window.coringasAtivos[t.id] : [];
-                        coringasTime.forEach(c => {
-                            let posAbbr = posMap[c.jogador.posicao] || c.jogador.posicao;
-                            html += `<li style="color: var(--primary); background: #e0e7ff; margin-left: -5px; padding-left: 5px; border-radius: 4px;"><strong>🎭 ${c.jogador.nome}</strong> <span style="font-size:10px;">(do ${c.timeOriginalNome})</span> ${c.jogador.posicao!=='Linha'?`<span class="badge badge-posicao" style="display:inline-block; min-width:32px; text-align:center; font-size:9px;">${posAbbr}</span>`:''}</li>`;
-                        });
-
-                        resDiv.innerHTML += html + `</ul></div>`;
-                    });
-                    if (window.reservasSorteados && window.reservasSorteados.length > 0) {
-                        let html = `<div class="team team-reservas"><h3 style="padding:5px; font-size:15px;">Reservas (Inativos)</h3><ul>`;
-                        window.reservasSorteados.forEach(j => html += `<li><strong>${j.nome}</strong> ${j.isDM ? '<span style="color:var(--danger); font-size:11px; font-weight:bold;">[DM]</span>' : ''}</li>`); resDiv.innerHTML += html + `</ul></div>`;
-                    }
                 }
                 setTimeout(() => renderizarSumula(), 50);
             }
@@ -275,16 +293,22 @@ async function alterarSenhaOrganizador() {
 
 async function zerarHistoricoAdmin() {
     if(!currentUser) return;
-    if(!confirm(`⚠️ ATENÇÃO: Isso vai apagar TODAS as partidas, súmulas, caixa e estatísticas.\n\nO seu Elenco de jogadores ficará salvo.\n\nDeseja continuar?`)) return;
-    if(!confirm(`Tem certeza absoluta? Essa ação NÃO pode ser desfeita.`)) return;
+    let querZerar = await customConfirm("⚠️ Nova Temporada", "Isso vai apagar <strong>TODAS</strong> as partidas, súmulas, caixa e estatísticas.<br><br>O seu Elenco de jogadores será mantido.<br><br>Deseja continuar?", "Apagar Tudo", "Cancelar", "var(--danger)");
+    if(!querZerar) return;
+
     try {
         let dbStatus = document.getElementById('status-db'); if(dbStatus) dbStatus.innerText = "Limpando...";
         const { data: partidas } = await db.from('partidas').select('id').eq('user_id', currentUser.id);
         if (partidas && partidas.length > 0) { const idsPartidas = partidas.map(p => p.id); await db.from('presencas').delete().in('partida_id', idsPartidas); await db.from('partidas').delete().in('id', idsPartidas); }
-        if(confirm(`Deseja zerar também a contabilidade de pagamentos dos Mensalistas?`)) await db.from('jogadores').update({ pagamentos_json: {} }).eq('user_id', currentUser.id);
+        
+        let querZerarPagamentos = await customConfirm("💰 Zerar Pagamentos?", "Deseja zerar também a contabilidade mensal (Pendente/Pago) dos Mensalistas?", "Sim, zerar tudo", "Não, manter como está", "var(--supabase)");
+        if(querZerarPagamentos) await db.from('jogadores').update({ pagamentos_json: {} }).eq('user_id', currentUser.id);
+        
         localStorage.removeItem('baba_full_state'); localStorage.removeItem('baba_presencas_temp'); localStorage.removeItem('baba_last_reset'); window.despesasMensaisGlobais = [];
         await db.from('profiles').update({ despesas_mensais_json: [] }).eq('id', currentUser.id);
-        alert("✅ Histórico zerado!"); window.location.reload();
+        
+        await customAlert("✅ Concluído", "O histórico foi apagado com sucesso. O sistema será reiniciado.", "OK", "var(--primary)");
+        window.location.reload();
     } catch (err) { alert("Erro ao limpar histórico: " + err.message); let dbStatus = document.getElementById('status-db'); if(dbStatus) dbStatus.innerText = "Online"; }
 }
 
@@ -326,7 +350,7 @@ async function acessarModoPublico() {
         const { data: prof } = await db.from('profiles').select('despesas_mensais_json').eq('id', partida.user_id).single();
         window.despesasMensaisGlobais = prof ? (safeParse(prof.despesas_mensais_json) || []) : [];
     }
-    if (partida.created_at) { if (new Date().getTime() - new Date(partida.created_at).getTime() > 518400000) { alert(`⚠️ Rodada expirada.`); sairModoPublico(); return; } }
+    if (partida.created_at) { if (new Date().getTime() - new Date(partida.created_at).getTime() > 518400000) { await customAlert("⚠️ Rodada Expirada", "Este jogo já foi encerrado pelo organizador há muito tempo.", "Sair", "var(--text-muted)"); sairModoPublico(); return; } }
     
     let topTitle = document.getElementById('top-bar-title'); if(topTitle) topTitle.innerText = partida.nome_baba || "Pega o Baba";
     if (partida.escudo_url) { 
@@ -344,7 +368,12 @@ async function acessarModoPublico() {
     
     if(partida.data_sorteio) { let d = new Date(partida.data_sorteio); window.dataPartidaAtual = !isNaN(d.getTime()) ? d.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}) : partida.data_sorteio; }
     
-    if (partida.times_json) window.timesSorteadosObjs = safeParse(partida.times_json) || [];
+    if (partida.times_json) {
+        window.timesSorteadosObjs = safeParse(partida.times_json) || [];
+        window.coringasAtivos = {}; 
+        window.timesSorteadosObjs.forEach(t => { if(t.coringas && t.coringas.length > 0) window.coringasAtivos[t.id] = t.coringas; });
+    }
+    
     window.jogosDaRodada = safeParse(partida.jogos_json) || []; window.filaEquipes = safeParse(partida.fila_json) || [];
     window.partidaSalva = (window.filaEquipes.length === 0 && window.jogosDaRodada.length > 0);
     
@@ -393,9 +422,16 @@ async function checarPartidaAtivaAdmin() {
 
                 window.partidaAtualId = p.id; window.codigoAcessoAtual = p.codigo_acesso;
                 window.jogosDaRodada = safeParse(p.jogos_json) || []; window.custosDaRodada = safeParse(p.custos_json) || [];
-                window.timesSorteadosObjs = safeParse(p.times_json) || []; window.filaEquipes = safeParse(p.fila_json) || [];
+                window.filaEquipes = safeParse(p.fila_json) || [];
+                window.golsTempA = []; window.golsTempB = [];
+                
+                if (p.times_json) {
+                    window.timesSorteadosObjs = safeParse(p.times_json) || [];
+                    window.coringasAtivos = {}; 
+                    window.timesSorteadosObjs.forEach(t => { if(t.coringas && t.coringas.length > 0) window.coringasAtivos[t.id] = t.coringas; });
+                }
+                
                 window.partidaSalva = (window.timesSorteadosObjs.length > 0 && window.filaEquipes.length === 0 && window.jogosDaRodada.length > 0);
-                window.coringasAtivos = {}; window.golsTempA = []; window.golsTempB = [];
                 
                 if (p.data_sorteio) { let d = new Date(p.data_sorteio); window.dataPartidaAtual = !isNaN(d.getTime()) ? d.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}) : p.data_sorteio; }
                 if (window.timesSorteadosObjs.length > 0) {
@@ -444,7 +480,7 @@ async function adicionarJogador() {
     const tipo = tipoInp.value; const posicao = posicaoInp.value; const nivel = parseInt(nivelInp.value); 
     const nome = nomeInput.value.trim().replace(/\s+/g, ' '); if (nome === "") return alert("Preencha o nome.");
     const nomeExiste = jogadores.some(j => { let nomeCadastrado = (j.nome || "").trim().toLowerCase(); return nomeCadastrado === nome.toLowerCase() && j.id !== jogadorEdicaoId; });
-    if (nomeExiste) return alert(`⚠️ Já existe um jogador cadastrado com este nome!`);
+    if (nomeExiste) return await customAlert("Aviso", "Já existe um jogador cadastrado com este nome!", "OK", "var(--warning)");
 
     const btn = document.getElementById('btn-adicionar'); if(btn) { btn.innerText = "Processando..."; btn.disabled = true; }
 
@@ -464,7 +500,8 @@ async function adicionarJogador() {
 }
 
 async function removerJogador(idNuvem, indexArray) { 
-    if(confirm(`Tem certeza que deseja remover o jogador(a) "${jogadores[indexArray].nome}" do elenco permanentemente?`)) { 
+    let conf = await customConfirm("Excluir Jogador", `Tem certeza que deseja remover <strong>${jogadores[indexArray].nome}</strong> do elenco permanentemente?`, "Sim, remover", "Cancelar", "var(--danger)");
+    if(conf) { 
         const { error } = await db.from('jogadores').delete().eq('id', idNuvem);
         if (!error) { jogadores.splice(indexArray, 1); salvarEstadoLocal(); atualizarListas(); atualizarFinanceiro(); } else alert("Erro ao remover: " + error.message);
     } 
@@ -475,12 +512,12 @@ function salvarEstadoLocal() {
     localStorage.setItem('baba_presencas_temp', JSON.stringify(estado));
 }
 
-function marcarPresenca(indexArray) { 
-    if (jogadores[indexArray].tipo === 'Convidado' && !jogadores[indexArray].pagou) return alert(`⚠️ O convidado precisa efetuar o pagamento antes de entrar na lista.`);
+async function marcarPresenca(indexArray) { 
+    if (jogadores[indexArray].tipo === 'Convidado' && !jogadores[indexArray].pagou) return await customAlert("Pagamento Pendente", "O convidado precisa efetuar o pagamento da diária antes de entrar na lista de sorteio.", "Entendi", "var(--warning)");
     jogadores[indexArray].presente = true; jogadores[indexArray].ordemChegada = Date.now(); salvarEstadoLocal(); atualizarListas(); 
 }
 
-function marcarTodosPresentes() {
+async function marcarTodosPresentes() {
     let convidadosPendentes = 0; let countAdicionados = 0; let agora = Date.now();
     jogadores.forEach((j) => {
         if (!j.presente) {
@@ -488,8 +525,8 @@ function marcarTodosPresentes() {
         }
     });
     if (countAdicionados > 0) { salvarEstadoLocal(); atualizarListas(); }
-    if (convidadosPendentes > 0) alert(`⚠️ ${convidadosPendentes} convidado(s) não adicionados pois precisam pagar a diária.`);
-    else if (countAdicionados === 0) alert(`Todos os jogadores do elenco já estão prontos pro jogo!`);
+    if (convidadosPendentes > 0) await customAlert("Aviso", `<strong>${convidadosPendentes} convidado(s)</strong> não adicionados pois precisam pagar a diária primeiro.`, "Entendi", "var(--warning)");
+    else if (countAdicionados === 0) await customAlert("Elenco Completo", "Todos os jogadores do elenco já estão prontos pro jogo!", "OK", "var(--primary)");
 }
 
 function desmarcarPresenca(indexArray) { 
@@ -509,8 +546,9 @@ function alternarPagamentoDiaria(indexArray) {
     salvarEstadoLocal(); atualizarListas(); atualizarFinanceiro();
 }
 
-function zerarPresencas() { 
-    if(confirm(`Deseja preparar o aplicativo para um NOVO BABA?\n\nIsso vai retirar todos da quadra e zerar as diárias temporárias.\n\n(A Súmula atual continuará salva e visível até você sortear novas equipes)`)) { 
+async function zerarPresencas() { 
+    let conf = await customConfirm("Iniciar Nova Rodada", "Deseja preparar o aplicativo para um <strong>NOVO BABA</strong>?<br><br>Isso vai retirar todos da quadra e zerar as diárias.<br>(A Súmula atual continuará salva até você sortear).", "Sim, Iniciar Novo Baba", "Cancelar", "var(--primary)");
+    if(conf) { 
         jogadores.forEach(j => { j.presente = false; j.ordemChegada = 0; j.pagou = false; }); salvarEstadoLocal(); atualizarListas(); atualizarFinanceiro(); 
         let res = document.getElementById('resultado'); if(res) res.innerHTML = ""; 
     } 
@@ -579,20 +617,25 @@ function atualizarListas() {
 
 function embaralhar(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } return array; }
 
-function iniciarSorteioComSuspense() {
+async function iniciarSorteioComSuspense() {
     let presentes = jogadores.filter(j => j.presente).sort((a, b) => { if (a.tipo === 'Mensalista' && b.tipo !== 'Mensalista') return -1; if (a.tipo !== 'Mensalista' && b.tipo === 'Mensalista') return 1; return a.ordemChegada - b.ordemChegada; });
-    if (presentes.length < 2) return alert("Adicione pelo menos 2 atletas na lista de Prontos.");
+    if (presentes.length < 2) return await customAlert("Aviso", "Adicione pelo menos 2 atletas na lista de Prontos.", "OK", "var(--warning)");
     
     let isAppend = false;
     if (window.timesSorteadosObjs.length > 0 && !window.partidaSalva) {
         let jogadoresSemTime = presentes.filter(p => !window.timesSorteadosObjs.some(t => t.jogadores.some(tj => tj.id === p.id)));
         if (jogadoresSemTime.length === 0) {
-            if(!confirm(`Todos os presentes já estão em quadra.\n\nDeseja APAGAR TUDO e refazer o sorteio do zero?`)) return;
+            let conf = await customConfirm("Times Completos", "Todos os presentes já estão em quadra.<br><br>Deseja APAGAR TUDO e refazer o sorteio do zero?", "Apagar e Refazer", "Cancelar", "var(--danger)");
+            if(!conf) return;
         } else {
-            if(confirm(`Você tem ${jogadoresSemTime.length} jogador(es) que acabaram de chegar e não estão nos times.\n\nDeseja PREENCHER os times com eles (mantendo o jogo atual rodando)?\n\n[OK] = Adicionar os atrasados aos times\n[CANCELAR] = Apagar tudo e misturar todo mundo de novo`)) {
+            let acao = await customConfirm("Jogadores Extras", `Você tem <strong>${jogadoresSemTime.length} jogador(es)</strong> que não estão nos times.<br><br>O que deseja fazer?`, "➕ Preencher os times", "🔄 Apagar tudo e misturar", "var(--primary)");
+            if(acao) {
                 isAppend = true; presentes = jogadoresSemTime; 
                 if(presentes.length === 0) return; 
-            } else { if(!confirm(`Tem certeza que deseja APAGAR os times atuais e misturar todo mundo de novo? (Isso não apaga os jogos que já aconteceram hoje).`)) return; }
+            } else { 
+                let confM = await customConfirm("Atenção", "Tem certeza que deseja APAGAR os times atuais e misturar todo mundo de novo? (Não apaga os jogos de hoje).", "Sim, Misturar", "Cancelar", "var(--danger)");
+                if(!confM) return; 
+            }
         }
     }
 
@@ -783,7 +826,7 @@ async function sortearTimes(presentesBrutos, isAppend) {
                 let coringasTime = (window.coringasAtivos && window.coringasAtivos[t.id]) ? window.coringasAtivos[t.id] : [];
                 coringasTime.forEach(c => {
                     let posAbbr = posMap[c.jogador.posicao] || c.jogador.posicao;
-                    html += `<li style="color: var(--primary); background: #e0e7ff; margin-left: -5px; padding-left: 5px; border-radius: 4px;"><strong>🎭 ${c.jogador.nome}</strong> <span style="font-size:10px;">(do ${c.timeOriginalNome})</span> ${c.jogador.posicao!=='Linha'?`<span class="badge badge-posicao" style="display:inline-block; min-width:32px; text-align:center; font-size:9px;">${posAbbr}</span>`:''}</li>`;
+                    html += `<li><strong>${c.jogador.nome}</strong> <span style="font-size:10px; color:var(--text-muted);">(do ${c.timeOriginalNome})</span> ${c.jogador.posicao!=='Linha'?`<span class="badge badge-posicao" style="display:inline-block; min-width:32px; text-align:center; font-size:9px;">${posAbbr}</span>`:''}</li>`;
                 });
 
                 resDiv.innerHTML += html + `</ul></div>`;
@@ -801,7 +844,7 @@ async function sortearTimes(presentesBrutos, isAppend) {
         
     } catch (e) {
         console.error("Erro no sorteio:", e);
-        alert(`Ocorreu um erro ao gerar os times. Verifique sua conexão e tente novamente.`);
+        customAlert("Erro", "Ocorreu um erro ao gerar os times. Verifique sua conexão e tente novamente.", "OK", "var(--danger)");
         let res = document.getElementById('resultado'); if(res) res.innerHTML = ""; 
     }
 }
@@ -1002,7 +1045,7 @@ function renderizarEscalacaoPublicaSumula() {
         let html = `<div class="team" style="border-top-color: ${corHex}; position:relative;"><div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;"><div style="display:flex; align-items:center; gap:5px;"><span style="font-size:18px;">${emoji}</span><input type="text" value="${t.nome}" onchange="atualizarNomeTime(${t.id}, this.value)" class="input-nome-time" placeholder="Nome do Time" style="color: ${corHex}; width:auto;" ${window.isModoPublico ? 'disabled' : ''}></div>`;
         
         if(!window.isModoPublico && !window.partidaSalva) {
-            let btnCoringaHtml = `<button onclick="sortearCoringasFila(${t.id})" class="btn-coringa-fila" style="background:var(--primary); color:white; border:none; padding:4px 8px; border-radius:4px; font-size:11px; cursor:pointer; font-weight:bold;">🎭 Coringa</button>`;
+            let btnCoringaHtml = `<button onclick="sortearCoringasFila(${t.id})" class="btn-coringa-fila" style="background:var(--primary); color:white; border:none; padding:6px 10px; border-radius:4px; font-size:11px; cursor:pointer; font-weight:bold;">🎭 Coringa</button>`;
             
             if(qtdAtual < tamanhoIdeal) {
                 html += btnCoringaHtml;
@@ -1019,7 +1062,7 @@ function renderizarEscalacaoPublicaSumula() {
         
         coringasTime.forEach(c => {
             let posAbbr = posMap[c.jogador.posicao] || c.jogador.posicao;
-            html += `<li style="color: var(--primary); background: #e0e7ff; margin-left: -5px; padding-left: 5px; border-radius: 4px;"><strong>🎭 ${c.jogador.nome}</strong> <span style="font-size:10px;">(do ${c.timeOriginalNome})</span> ${c.jogador.posicao!=='Linha'?`<span class="badge badge-posicao" style="display:inline-block; min-width:32px; text-align:center; font-size:9px;">${posAbbr}</span>`:''}</li>`;
+            html += `<li><strong>${c.jogador.nome}</strong> <span style="font-size:11px; color:var(--text-muted); font-weight:500;">(do ${c.timeOriginalNome})</span> ${c.jogador.posicao!=='Linha'?`<span class="badge badge-posicao" style="display:inline-block; min-width:32px; text-align:center; font-size:9px;">${posAbbr}</span>`:''}</li>`;
         });
 
         containerEscalacao.innerHTML += html + `</ul></div>`;
@@ -1045,8 +1088,8 @@ function atualizarSelectsEquipes() {
 
 function limparGolsTemp(lado) { if(lado === 'A') window.golsTempA = []; else window.golsTempB = []; atualizarPlacarTempUI(); salvarEstadoCompleto(); }
 
-// CORREÇÃO: Trava do Árbitro
-function checarTimesCompletosParaJogo() {
+// --- TRAVA DO ÁRBITRO PROFISSIONAL ---
+async function checarTimesCompletosParaJogo() {
     if(window.filaEquipes.length < 2) return true;
     let idA = window.filaEquipes[0]; let idB = window.filaEquipes[1];
     let tA = window.timesSorteadosObjs.find(t=>t.id===idA);
@@ -1061,13 +1104,26 @@ function checarTimesCompletosParaJogo() {
         let nomes = [];
         if(qA < tamanhoIdeal) nomes.push(tA.nome);
         if(qB < tamanhoIdeal) nomes.push(tB.nome);
-        return confirm(`⚠️ PARTIDA BLOQUEADA!\n\nA equipe ${nomes.join(' e ')} está incompleta.\n\nRole a tela para baixo e clique no botão "🎭 Coringa" na escalação para completar o time antes da bola rolar.\n\n(Se realmente não houver mais ninguém de fora para ajudar, clique em "OK" para forçar o jogo incompleto, ou "Cancelar" para ir sortear o coringa).`);
+        
+        let querSortear = await customConfirm(
+            "⚠️ Partida Incompleta!",
+            `A equipe <strong>${nomes.join(' e ')}</strong> está incompleta.<br><br>Sorteie o Coringa antes da bola rolar.`,
+            "🎭 Ir Sortear Coringa",
+            "⚠️ Forçar jogo incompleto",
+            "var(--warning)"
+        );
+        
+        if (querSortear) {
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+            return false; 
+        }
+        return true; // Deixou jogar com um a menos
     }
     return true;
 }
 
-function abrirModalGol(lado) {
-    if (!checarTimesCompletosParaJogo()) return; 
+async function abrirModalGol(lado) {
+    if (!(await checarTimesCompletosParaJogo())) return; 
     
     let selEq = document.getElementById(lado === 'A' ? 'sumula_equipe_a' : 'sumula_equipe_b'); 
     if(!selEq) return alert("Erro: Caixa de equipe não encontrada na tela.");
@@ -1114,7 +1170,7 @@ function atualizarPlacarTempUI() {
 function formatarGolsResumo(golsArray) { if(!golsArray || golsArray.length === 0) return ''; let contagem = {}; golsArray.forEach(g => { contagem[g] = (contagem[g] || 0) + 1; }); return Object.entries(contagem).map(([nome, qtd]) => qtd > 1 ? `${nome} (${qtd})` : nome).join(', '); }
 
 async function adicionarJogoNaSumula() {
-    if (!checarTimesCompletosParaJogo()) return; 
+    if (!(await checarTimesCompletosParaJogo())) return; 
     
     let selA = document.getElementById('sumula_equipe_a'); let selB = document.getElementById('sumula_equipe_b');
     if(!selA || !selB) return;
@@ -1142,7 +1198,8 @@ async function adicionarJogoNaSumula() {
         isEmpate = true;
         let caraOuCoroa = Math.random() > 0.5; let pFim = caraOuCoroa ? idA : idB; let sFim = caraOuCoroa ? idB : idA; window.filaEquipes.push(pFim, sFim); 
         let nomePfim = window.timesSorteadosObjs.find(t=>t.id === pFim).nome; let nomeSfim = window.timesSorteadosObjs.find(t=>t.id === sFim).nome;
-        alert(`⚖️ EMPATE! As duas equipes saem da quadra.\nSorteio da fila: ${nomePfim} volta antes de ${nomeSfim}.`);
+        
+        await customAlert("⚖️ EMPATE!", `As duas equipes saem da quadra.<br><br>Sorteio da fila: o <strong>${nomePfim}</strong> volta para a quadra antes do <strong>${nomeSfim}</strong>.`, "Continuar", "var(--text-muted)");
         
         let nextTeam1 = window.filaEquipes[0]; let nextTeam2 = window.filaEquipes[1];
         if(window.coringasAtivos) {
@@ -1152,7 +1209,6 @@ async function adicionarJogoNaSumula() {
                 }
             });
             
-            // CORREÇÃO: Fogo amigo no empate entre quem VAI entrar na quadra
             let conflitosN1 = []; let conflitosN2 = [];
             if(window.coringasAtivos[nextTeam1]) {
                 conflitosN1 = window.coringasAtivos[nextTeam1].filter(c => c.timeOriginalId === nextTeam2);
@@ -1163,10 +1219,11 @@ async function adicionarJogoNaSumula() {
                 if(conflitosN2.length > 0) window.coringasAtivos[nextTeam2] = window.coringasAtivos[nextTeam2].filter(c => c.timeOriginalId !== nextTeam1);
             }
             if(conflitosN1.length > 0 || conflitosN2.length > 0) {
-                let msg = `⚠️ CONFLITO DE CAMISA NO EMPATE!\n\nOs times ${window.timesSorteadosObjs.find(t=>t.id===nextTeam1).nome} e ${window.timesSorteadosObjs.find(t=>t.id===nextTeam2).nome} vão se enfrentar agora.\n\n`;
-                if(conflitosN1.length > 0) msg += `Os coringas: ${conflitosN1.map(c=>c.jogador.nome).join(', ')} retornaram ao ${window.timesSorteadosObjs.find(t=>t.id===nextTeam2).nome}.\n`;
-                if(conflitosN2.length > 0) msg += `Os coringas: ${conflitosN2.map(c=>c.jogador.nome).join(', ')} retornaram ao ${window.timesSorteadosObjs.find(t=>t.id===nextTeam1).nome}.\n`;
-                alert(msg);
+                let msg = `Os times <strong>${window.timesSorteadosObjs.find(t=>t.id===nextTeam1).nome}</strong> e <strong>${window.timesSorteadosObjs.find(t=>t.id===nextTeam2).nome}</strong> vão se enfrentar agora.<br><br>`;
+                if(conflitosN1.length > 0) msg += `Os coringas: <strong>${conflitosN1.map(c=>c.jogador.nome).join(', ')}</strong> retornaram ao ${window.timesSorteadosObjs.find(t=>t.id===nextTeam2).nome}.<br>`;
+                if(conflitosN2.length > 0) msg += `Os coringas: <strong>${conflitosN2.map(c=>c.jogador.nome).join(', ')}</strong> retornaram ao ${window.timesSorteadosObjs.find(t=>t.id===nextTeam1).nome}.<br>`;
+                
+                await customAlert("⚠️ CONFLITO DE CAMISA", msg, "Entendi", "var(--danger)");
             }
         }
     }
@@ -1181,19 +1238,24 @@ async function adicionarJogoNaSumula() {
 
             if(conflitos.length > 0) {
                 let nomes = conflitos.map(c => c.jogador.nome).join(', ');
-                alert(`⚠️ CONFLITO DE CAMISA!\n\nOs coringas: ${nomes} precisaram voltar para o adversário (${window.timesSorteadosObjs.find(t=>t.id===nextAdversarioId).nome}) pois vão se enfrentar agora!\n\nEles foram removidos do time vencedor.`);
+                await customAlert("⚠️ CONFLITO DE CAMISA", `Os coringas: <strong>${nomes}</strong> precisaram voltar para o adversário (<strong>${window.timesSorteadosObjs.find(t=>t.id===nextAdversarioId).nome}</strong>) pois vão se enfrentar agora!<br><br>Eles foram removidos do time vencedor.`, "Entendi", "var(--danger)");
                 window.coringasAtivos[idWinner] = coringasWin.filter(c => c.timeOriginalId !== nextAdversarioId);
             }
 
             if(window.coringasAtivos[idWinner] && window.coringasAtivos[idWinner].length > 0) {
-                if(confirm(`O time vencedor continuará em quadra com Coringas.\n\nDeseja realizar um RODÍZIO e remover os coringas atuais para dar chance a outros da fila?\n\n[OK] = Remover e rodar\n[Cancelar] = Manter os mesmos`)) {
+                let querRodizio = await customConfirm("🔄 Rodízio de Coringas", `O <strong>${window.timesSorteadosObjs.find(t=>t.id===idWinner).nome}</strong> continuará em quadra.<br><br>Deseja remover os coringas atuais para dar chance a outros da fila?`, "✅ Remover e Rodar", "Manter os mesmos", "var(--supabase)");
+                if(querRodizio) {
                     delete window.coringasAtivos[idWinner];
                 }
             }
         }
     }
 
-    if(window.partidaAtualId) await db.from('partidas').update({ jogos_json: window.jogosDaRodada, artilheiros_json: artilheiros, fila_json: window.filaEquipes }).eq('id', window.partidaAtualId);
+    // SYNC CORINGAS PARA O MODO PUBLICO
+    window.timesSorteadosObjs.forEach(t => { t.coringas = window.coringasAtivos[t.id] || []; });
+
+    if(window.partidaAtualId) await db.from('partidas').update({ jogos_json: window.jogosDaRodada, artilheiros_json: artilheiros, fila_json: window.filaEquipes, times_json: window.timesSorteadosObjs }).eq('id', window.partidaAtualId);
+    
     limparGolsTemp('A'); limparGolsTemp('B'); atualizarSelectsEquipes(); atualizarFilaUI(); atualizarListaJogosDaRodada(); renderizarEscalacaoPublicaSumula(); salvarEstadoCompleto();
 }
 
@@ -1229,17 +1291,21 @@ function salvarLesao() {
 
     jogador.isDM = true; window.reservasSorteados.push(jogador);
 
-    alert(`🚑 ${jogador.nome} foi movido para o DM (Reserva) e não será sorteado como Coringa.`);
-    fecharModalLesao(); salvarEstadoCompleto(); renderizarEscalacaoPublicaSumula();
+    customAlert("🚑 Departamento Médico", `<strong>${jogador.nome}</strong> foi movido para os Reservas e não será sorteado como Coringa.`, "OK", "var(--danger)");
     
     if(window.coringasAtivos) {
         for(let key in window.coringasAtivos) {
             window.coringasAtivos[key] = window.coringasAtivos[key].filter(c => c.jogador.id !== jogador.id);
         }
     }
+    
+    window.timesSorteadosObjs.forEach(t => { t.coringas = window.coringasAtivos[t.id] || []; });
+    if(window.partidaAtualId) db.from('partidas').update({ times_json: window.timesSorteadosObjs }).eq('id', window.partidaAtualId);
+    
+    fecharModalLesao(); salvarEstadoCompleto(); renderizarEscalacaoPublicaSumula();
 }
 
-function sortearCoringasFila(idTimeIncompleto) {
+async function sortearCoringasFila(idTimeIncompleto) {
     let timeInc = window.timesSorteadosObjs.find(t => t.id === idTimeIncompleto);
     let tamanhoIdeal = currentProfile && currentProfile.jogadores_por_time ? parseInt(currentProfile.jogadores_por_time) : 7;
 
@@ -1247,7 +1313,7 @@ function sortearCoringasFila(idTimeIncompleto) {
     let coringasAtuaisInc = window.coringasAtivos[idTimeIncompleto] || [];
     let faltam = tamanhoIdeal - (timeInc.jogadores.length + coringasAtuaisInc.length);
 
-    if(faltam <= 0) return alert("Este time já está completo!");
+    if(faltam <= 0) return await customAlert("Time Completo", "Esta equipe já está com a quantidade ideal de jogadores.", "OK", "var(--primary)");
 
     let somaNotasTimesCompletos = 0;
     let qtdTimesCompletos = 0;
@@ -1280,7 +1346,7 @@ function sortearCoringasFila(idTimeIncompleto) {
     for(let key in window.coringasAtivos) { window.coringasAtivos[key].forEach(c => todosCoringasEmUso.push(c.jogador.id)); }
     elegiveis = elegiveis.filter(e => !todosCoringasEmUso.includes(e.jogador.id));
 
-    if(elegiveis.length < faltam) return alert(`Não há jogadores descansando no banco para completar este time agora.\n\nAguarde um jogo acabar para ter mais opções na Fila de Espera.`);
+    if(elegiveis.length < faltam) return await customAlert("Banco Vazio", "Não há jogadores suficientes descansando no banco para completar o time agora.<br><br>Aguarde o jogo atual acabar.", "Entendi", "var(--warning)");
 
     elegiveis = embaralhar(elegiveis); elegiveis.sort((a, b) => (Number(b.jogador.nivel)||3) - (Number(a.jogador.nivel)||3));
 
@@ -1298,7 +1364,13 @@ function sortearCoringasFila(idTimeIncompleto) {
     if(!window.coringasAtivos[idTimeIncompleto]) window.coringasAtivos[idTimeIncompleto] = [];
     window.coringasAtivos[idTimeIncompleto].push(...escolhidos);
 
-    let msg = `🎭 CORINGAS SORTEADOS PELO BANCO:\n\n`; escolhidos.forEach(c => msg += `- ${c.jogador.nome} (do ${c.timeOriginalNome})\n`); alert(msg);
+    // SYNC CORINGAS PARA MODO PÚBLICO
+    window.timesSorteadosObjs.forEach(t => { t.coringas = window.coringasAtivos[t.id] || []; });
+    if(window.partidaAtualId) db.from('partidas').update({ times_json: window.timesSorteadosObjs }).eq('id', window.partidaAtualId);
+
+    let msg = ``; escolhidos.forEach(c => msg += `<strong>${c.jogador.nome}</strong> (do ${c.timeOriginalNome})<br>`); 
+    await customAlert("🎭 Coringas Sorteados", msg, "Continuar", "var(--primary)");
+
     salvarEstadoCompleto(); renderizarEscalacaoPublicaSumula();
 }
 
@@ -1526,7 +1598,9 @@ async function adicionarCusto() {
 }
         
 async function removerCusto(idUnico, indexArrayFallback) { 
-    if(!confirm(`Deseja realmente apagar esta movimentação do Livro Caixa?`)) return;
+    let conf = await customConfirm("Excluir Movimentação", "Deseja realmente apagar esta movimentação do Livro Caixa?", "Sim, apagar", "Cancelar", "var(--danger)");
+    if(!conf) return;
+    
     let indexReal = window.despesasMensaisGlobais.findIndex(c => c.id === idUnico);
     if (indexReal === -1) indexReal = indexArrayFallback;
     if (indexReal === -1 || indexReal === undefined) return alert("Erro: Movimentação não encontrada.");
@@ -1544,7 +1618,8 @@ async function removerCusto(idUnico, indexArrayFallback) {
 
 async function salvarPartidaComPlacares() {
     if(!window.partidaAtualId) return alert("Erro: Nenhuma partida ativa encontrada no banco de dados. Por favor, volte em 'Sorteio' e gere as equipes novamente.");
-    if(!confirm(`Deseja encerrar o baba de hoje e computar a presença de todos os jogadores?`)) return;
+    let conf = await customConfirm("Finalizar Baba", "Deseja encerrar o baba de hoje e computar a presença de todos os jogadores no banco de dados?", "Sim, Finalizar", "Cancelar", "var(--supabase)");
+    if(!conf) return;
     
     const btn = document.getElementById('btn-encerrar-baba'); if(btn) { btn.innerText = "Sincronizando Servidor..."; btn.disabled = true; }
     try {
@@ -1585,6 +1660,7 @@ async function salvarPartidaComPlacares() {
 
         carregarElencoDaNuvem(); gerarRelatorioMensal();
 
-        if(btn) btn.innerText = "✅ Baba Encerrado e Salvo com Sucesso!"; alert("Baba finalizado com sucesso!");
+        if(btn) btn.innerText = "✅ Baba Encerrado e Salvo com Sucesso!"; 
+        await customAlert("Sucesso", "O Baba de hoje foi finalizado e os dados salvos com sucesso!", "OK", "var(--supabase)");
     } catch(err) { alert("Erro de comunicação com o banco: " + err.message); if(btn) { btn.innerText = "Tentar Novamente"; btn.disabled = false; } }
 }
