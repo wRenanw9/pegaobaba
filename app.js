@@ -102,7 +102,6 @@ function iniciarOuvinteRealtime(partidaId) {
         }
     }).subscribe();
 
-    // Auto-Sync Periódico para garantir atualização em telas de espectadores
     if (window.isModoPublico && !publicSyncInterval) {
         publicSyncInterval = setInterval(async () => {
             if (!window.partidaAtualId) return;
@@ -669,12 +668,17 @@ async function iniciarSorteioComSuspense() {
     
     let isAppend = false;
     if (window.timesSorteadosObjs.length > 0 && !window.partidaSalva) {
-        let jogadoresSemTime = presentes.filter(p => !window.timesSorteadosObjs.some(t => t.jogadores.some(tj => tj.id === p.id)));
+        // CORREÇÃO: Filtra apenas quem está presente, NÃO está em nenhum time e NÃO está na lista de reservas (DM)
+        let jogadoresSemTime = presentes.filter(p => 
+            !window.timesSorteadosObjs.some(t => t.jogadores.some(tj => tj.id === p.id)) &&
+            !window.reservasSorteados.some(r => r.id === p.id)
+        );
+
         if (jogadoresSemTime.length === 0) {
-            let conf = await customConfirm("Times Completos", "Todos os presentes já estão em quadra.<br><br>Deseja APAGAR TUDO e refazer o sorteio do zero?", "Apagar e Refazer", "Cancelar", "var(--danger)");
+            let conf = await customConfirm("Times Completos", "Todos os presentes já estão em quadra ou no banco.<br><br>Deseja APAGAR TUDO e refazer o sorteio do zero?", "Apagar e Refazer", "Cancelar", "var(--danger)");
             if(!conf) return;
         } else {
-            let acao = await customConfirm("Jogadores Extras", `Você tem <strong>${jogadoresSemTime.length} jogador(es)</strong> que não estão nos times.<br><br>O que deseja fazer?`, "➕ Preencher os times", "🔄 Apagar tudo e misturar", "var(--primary)");
+            let acao = await customConfirm("Jogadores Extras", `Você tem <strong>${jogadoresSemTime.length} jogador(es)</strong> recém-chegados.<br><br>O que deseja fazer?`, "➕ Preencher os times", "🔄 Apagar tudo e misturar", "var(--primary)");
             if(acao) {
                 isAppend = true; presentes = jogadoresSemTime; 
                 if(presentes.length === 0) return; 
@@ -1078,7 +1082,6 @@ function renderizarEscalacaoPublicaSumula() {
     containerEscalacao.innerHTML = "";
     let tamanhoIdeal = currentProfile && currentProfile.jogadores_por_time ? parseInt(currentProfile.jogadores_por_time) : 7;
     
-    // Varredura de quem está atuando como Coringa no momento
     let coringasEmprestadosIds = [];
     window.timesSorteadosObjs.forEach(t => {
         let cList = t.coringas || (window.coringasAtivos && window.coringasAtivos[t.id]) || [];
@@ -1135,7 +1138,6 @@ function atualizarSelectsEquipes() {
 
 function limparGolsTemp(lado) { if(lado === 'A') window.golsTempA = []; else window.golsTempB = []; atualizarPlacarTempUI(); salvarEstadoCompleto(); }
 
-// --- TRAVA DO ÁRBITRO PROFISSIONAL ---
 async function checarTimesCompletosParaJogo() {
     if(window.filaEquipes.length < 2) return true;
     let idA = window.filaEquipes[0]; let idB = window.filaEquipes[1];
@@ -1297,7 +1299,6 @@ async function adicionarJogoNaSumula() {
         }
     }
 
-    // SYNC CORINGAS PARA O MODO PUBLICO
     window.timesSorteadosObjs.forEach(t => { t.coringas = window.coringasAtivos[t.id] || []; });
 
     if(window.partidaAtualId) await db.from('partidas').update({ jogos_json: window.jogosDaRodada, artilheiros_json: artilheiros, fila_json: window.filaEquipes, times_json: window.timesSorteadosObjs }).eq('id', window.partidaAtualId);
@@ -1410,7 +1411,6 @@ async function sortearCoringasFila(idTimeIncompleto) {
     if(!window.coringasAtivos[idTimeIncompleto]) window.coringasAtivos[idTimeIncompleto] = [];
     window.coringasAtivos[idTimeIncompleto].push(...escolhidos);
 
-    // SYNC CORINGAS PARA MODO PÚBLICO
     window.timesSorteadosObjs.forEach(t => { t.coringas = window.coringasAtivos[t.id] || []; });
     if(window.partidaAtualId) await db.from('partidas').update({ times_json: window.timesSorteadosObjs }).eq('id', window.partidaAtualId);
 
