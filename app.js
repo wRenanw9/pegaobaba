@@ -611,6 +611,58 @@ function filtrarSorteioAusentes() {
     document.querySelectorAll('#lista-aguardando .linha-jogador').forEach(linha => { linha.style.display = linha.getAttribute('data-nome').toLowerCase().includes(termo) ? 'grid' : 'none'; });
 }
 
+// --- FUNÇÃO PARA EXPORTAR ELENCO POR POSIÇÃO ---
+async function exportarElencoPorPosicao() {
+    if (!jogadores || jogadores.length === 0) {
+        return await customAlert("Aviso", "Não há jogadores cadastrados no elenco.", "OK", "var(--warning)");
+    }
+
+    let grupos = { "Goleiro": [], "Zagueiro": [], "Lateral": [], "Meia": [], "Atacante": [], "Linha": [] };
+
+    jogadores.forEach(j => {
+        let pos = j.posicao || "Linha";
+        if (!grupos[pos]) grupos[pos] = [];
+        grupos[pos].push(j.nome);
+    });
+
+    let nomeBaba = currentProfile && currentProfile.nome_baba ? currentProfile.nome_baba : "Pega o Baba";
+    let texto = `📋 *Resumo do Elenco - ${nomeBaba}*\n`;
+    texto += `👥 Total de Jogadores: ${jogadores.length}\n\n`;
+
+    const icones = { "Goleiro": "🧤", "Zagueiro": "🛡️", "Lateral": "🏃", "Meia": "🧠", "Atacante": "🎯", "Linha": "⚽" };
+
+    for (let pos in grupos) {
+        if (grupos[pos].length > 0) {
+            grupos[pos].sort((a, b) => a.localeCompare(b));
+            texto += `${icones[pos] || "⚽"} *${pos}s (${grupos[pos].length})*:\n`;
+            grupos[pos].forEach(nome => { texto += `• ${nome}\n`; });
+            texto += `\n`;
+        }
+    }
+
+    texto += `🔗 Gerado pelo app Pega o Baba`;
+    let textoEncoded = encodeURIComponent(texto);
+
+    let querCompartilhar = await customConfirm(
+        "📊 Elenco Exportado",
+        "O resumo foi gerado com sucesso!<br><br>Escolha como deseja exportar:",
+        "📱 WhatsApp",
+        "📋 Copiar Texto",
+        "var(--supabase)"
+    );
+
+    if (querCompartilhar) {
+        window.open(`https://api.whatsapp.com/send?text=${textoEncoded}`, '_blank');
+    } else {
+        try {
+            await navigator.clipboard.writeText(texto);
+            customAlert("Copiado!", "O resumo do elenco foi copiado para a área de transferência.", "OK", "var(--primary)");
+        } catch(err) {
+            alert("Não foi possível copiar automaticamente para o seu dispositivo.");
+        }
+    }
+}
+
 function atualizarListas() {
     const listaElenco = document.getElementById('lista-elenco-admin'); const listaAguardando = document.getElementById('lista-aguardando'); const listaPresentes = document.getElementById('lista-presentes');
     if(listaElenco) listaElenco.innerHTML = ""; if(listaAguardando) listaAguardando.innerHTML = ""; if(listaPresentes) listaPresentes.innerHTML = "";
@@ -668,7 +720,6 @@ async function iniciarSorteioComSuspense() {
     
     let isAppend = false;
     if (window.timesSorteadosObjs.length > 0 && !window.partidaSalva) {
-        // CORREÇÃO: Filtra apenas quem está presente, NÃO está em nenhum time e NÃO está na lista de reservas (DM)
         let jogadoresSemTime = presentes.filter(p => 
             !window.timesSorteadosObjs.some(t => t.jogadores.some(tj => tj.id === p.id)) &&
             !window.reservasSorteados.some(r => r.id === p.id)
