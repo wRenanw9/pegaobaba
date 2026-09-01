@@ -114,7 +114,11 @@
                         <option value="todos_sem_goleiro">Todos - sem goleiro</option>
                         <option value="todos" selected>Todos - com goleiro</option>
                     </select>
-                    <div style="display:flex; gap:10px; align-items:flex-start; background: white; padding:10px; border-radius:8px; border:1px solid var(--border);">
+                    
+                    <label style="font-weight: 600; display: block; margin-bottom: 8px; margin-top: 12px;">Máximo de Times (Opcional):</label>
+                    <input type="number" id="limite-times" placeholder="Ilimitado (Ex: 4)" min="2" style="width: 100%; margin-bottom: 10px; padding: 10px;">
+
+                    <div style="display:flex; gap:10px; align-items:flex-start; background: white; padding:10px; border-radius:8px; border:1px solid var(--border); margin-top: 10px;">
                         <input type="checkbox" id="priorizar-ordem" style="width:auto; margin-top:2px;">
                         <label for="priorizar-ordem" style="font-size:14px; font-weight:500;">
                             Priorizar Ordem de Chegada
@@ -132,13 +136,13 @@
             </div>
         </div>
 
-        <!-- ABA 3: SÚMULA DINÂMICA -->
+        <!-- ABA 3: SÚMULA DINÂMICA (CLEAN) -->
         <div id="view-placares" class="page-view">
             <div class="card" style="margin-bottom: 20px;">
-                <h2>📝 Súmula de Jogo</h2>
-                <div id="data-rodada-label" style="font-size: 13px; color: var(--text-muted); text-align: center; margin-top: -10px; margin-bottom: 15px; font-weight: 600;"></div>
+                <h2 style="margin-bottom: 5px;">📝 Súmula da Partida</h2>
+                <div id="data-rodada-label" style="font-size: 13px; color: var(--text-muted); text-align: center; margin-bottom: 15px; font-weight: 600;"></div>
                 <p id="texto-instrucoes-sumula" class="hidden-public" style="font-size: 13px; color: var(--text-muted); margin-top: -10px; margin-bottom: 20px; text-align:center;">
-                    Registre o resultado. Em caso de empate, as duas equipes saem da quadra automaticamente.
+                    Registre o resultado. Em caso de empate, ambos saem.
                 </p>
                 
                 <div id="aviso-sem-sorteio" style="text-align: center; padding: 30px; color: var(--text-muted);">
@@ -150,7 +154,7 @@
                     <div id="container-status-fila"></div>
 
                     <!-- PLACAR DE ARENA -->
-                    <div class="placar-arena hidden-public" id="painel-placar-arena">
+                    <div class="placar-arena hidden-public" id="painel-placar-arena" style="margin-bottom: 15px;">
                         <div class="placar-header">
                             <div class="placar-time">
                                 <select id="sumula_equipe_a" onchange="limparGolsTemp('A')"></select>
@@ -166,22 +170,27 @@
                                 <div class="lista-gols-arena" id="lista-gols-b"></div>
                             </div>
                         </div>
-                        <button onclick="adicionarJogoNaSumula()" style="background: white; color: var(--dark); width: 100%; border-radius: 8px; padding: 12px; font-weight: 800; font-size: 15px;">✔️ Confirmar Resultado</button>
+                        <button onclick="adicionarJogoNaSumula()" style="background: white; color: var(--dark); width: 100%; border-radius: 8px; padding: 12px; font-weight: 800; font-size: 15px; border: 2px solid var(--border);">✔️ Confirmar Resultado</button>
                     </div>
 
-                    <h3 style="font-size: 15px; margin-bottom: 10px;">Jogos Registrados (<span id="qtd-jogos-reg">0</span>):</h3>
-                    <div id="lista-jogos-registrados" style="margin-bottom: 15px;"></div>
+                    <!-- TOOLBAR DE AÇÕES (MENOR) -->
+                    <div class="hidden-public" style="display: flex; gap: 10px; margin-bottom: 20px;">
+                        <button class="btn-acao-outline" style="flex:1; text-align:center; padding: 10px; font-size: 13px; background: #f8fafc; border: 1px solid var(--border);" onclick="abrirModalAjuste()">⚙️ Ajuste Gols</button>
+                        <button class="btn-acao-outline" style="flex:1; text-align:center; padding: 10px; font-size: 13px; background: #fef2f2; border: 1px solid #fca5a5; color: var(--danger);" onclick="abrirModalLesao()">🚑 DM / Alta</button>
+                    </div>
+
+                    <!-- ACORDEON DE ESCALAÇÃO (RETIRANDO POLUIÇÃO) -->
+                    <div style="margin-bottom: 25px;">
+                        <button onclick="let w = document.getElementById('wrapper-escalacao'); w.style.display = w.style.display === 'none' ? 'block' : 'none';" style="width: 100%; background: var(--light); color: var(--dark); border: 1px solid var(--border); font-weight: 600; padding: 12px; border-radius: 8px; font-size: 14px;">👁️ Ver Escalações e Sortear Coringa</button>
+                        <div id="wrapper-escalacao" style="display: none; margin-top: 15px; border-top: 1px dashed var(--border); padding-top: 15px;">
+                            <div id="lista-escalacao-publica" class="team-container" style="margin-top: 0;"></div>
+                        </div>
+                    </div>
+
+                    <h3 style="font-size: 14px; margin-bottom: 10px; color: var(--text-muted); border-top: 1px solid var(--border); padding-top: 15px;">Histórico da Rodada (<span id="qtd-jogos-reg">0</span>):</h3>
+                    <div id="lista-jogos-registrados" style="margin-bottom: 20px;"></div>
                     
-                    <div style="display: flex; gap: 10px; margin-bottom: 25px;">
-                        <button class="btn-acao-outline hidden-public" style="flex:1; text-align:center; display:block;" onclick="abrirModalAjuste()">⚙️ Ajuste de Gols</button>
-                        <button class="btn-acao-outline hidden-public" style="flex:1; text-align:center; display:block; border-color:var(--danger); color:var(--danger);" onclick="abrirModalLesao()">🚑 DM / Lesão</button>
-                    </div>
-
-                    <h3 style="font-size: 15px; margin-bottom: 10px; border-top: 1px solid var(--border); padding-top: 20px;">🛡️ Escalação das Equipes</h3>
-                    <!-- AQUI SERÃO RENDERIZADOS OS TIMES E BOTÕES DE CORINGA -->
-                    <div id="lista-escalacao-publica" class="team-container" style="margin-top: 0; margin-bottom: 25px;"></div>
-
-                    <button class="btn-salvar hidden-public" id="btn-encerrar-baba" onclick="salvarPartidaComPlacares()">✅ Finalizar Baba e Salvar Dados</button>
+                    <button class="btn-salvar hidden-public" id="btn-encerrar-baba" onclick="salvarPartidaComPlacares()" style="padding: 16px; font-size: 16px;">✅ Finalizar Baba e Salvar</button>
                 </div>
             </div>
 
@@ -239,13 +248,6 @@
                         <tbody id="body-ranking-anual"><tr><td colspan="3" style="color:var(--text-muted);">Carregando...</td></tr></tbody>
                     </table>
                 </div>
-            </div>
-            
-            <div class="dev-signature card public-only" style="border: 1px solid var(--border); box-shadow: none; padding: 20px; margin-top: 20px;">
-                <p class="cta-title">Quer ter este sistema no seu baba?</p>
-                <p class="cta-desc">Entre em contato e profissionalize a sua resenha!</p>
-                Desenvolvido por <strong>Renan Barbosa</strong><br>
-                <a href="https://api.whatsapp.com/send?phone=5571996212118&text=Olá%20Renan!%20Gostaria%20de%20adicionar%20o%20sistema%20ao%20meu%20baba." target="_blank" class="btn-dev-whatsapp">📱 Chamar no WhatsApp</a>
             </div>
         </div>
 
@@ -332,8 +334,6 @@
                 <h3 style="font-size: 14px; margin-top:0; color: var(--danger); border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom: 10px;">Sessão</h3>
                 <button onclick="fazerLogout()" style="background: var(--danger); padding: 10px; font-size: 13px;">Sair da Conta</button>
             </div>
-
-            <div class="dev-signature" style="border-top: none; padding-top: 0;">Desenvolvido por <strong>Renan Barbosa</strong></div>
         </div>
 
         <!-- ABA: MASTER ADMIN -->
@@ -345,7 +345,7 @@
             </div>
         </div>
 
-        <!-- MODAL DE ALERTAS PROFISSIONAIS (NOVO) -->
+        <!-- MODAL DE ALERTAS PROFISSIONAIS -->
         <div id="modal-confirm-custom" class="modal-overlay" style="display:none; z-index: 99999;">
             <div class="modal-content" style="text-align: center; max-width: 320px; padding: 25px 20px;">
                 <h3 id="modal-confirm-title" style="margin-bottom: 12px; font-size: 18px;">Atenção</h3>
@@ -377,13 +377,24 @@
             </div>
         </div>
 
+        <!-- MODAL NOVO DE DM E ALTA MÉDICA -->
         <div id="modal-lesao" class="modal-overlay" style="display:none;">
             <div class="modal-content">
-                <h3 style="margin-bottom: 5px; color:var(--danger);">🚑 Departamento Médico</h3>
-                <p style="font-size:12px; color:var(--text-muted); text-align:center; margin-bottom:15px; margin-top:0;">Retire um machucado do time. Ele virará reserva e não será Coringa.</p>
-                <select id="select-jogador-lesao" style="margin-bottom: 15px; font-weight:bold; width: 100%; padding: 10px;"></select>
-                <button onclick="salvarLesao()" style="margin-bottom:10px; background:var(--danger); width: 100%;">Enviar para o DM</button>
-                <button onclick="fecharModalLesao()" style="background:white; color:var(--dark); border:1px solid var(--border); width: 100%;">Cancelar</button>
+                <h3 style="margin-bottom: 15px; text-align: center;">🚑 Dep. Médico</h3>
+                
+                <div style="margin-bottom: 15px; border: 1px solid var(--border); padding: 15px; border-radius: 8px; background: #fff1f2;">
+                    <p style="font-size:12px; color:var(--danger); font-weight: 700; text-align:center; margin-top:0; margin-bottom: 10px;">Baixa Médica (Mandar pro DM)</p>
+                    <select id="select-jogador-lesao" style="margin-bottom: 10px; font-weight:bold; width: 100%; padding: 10px; border-radius: 6px;"></select>
+                    <button onclick="salvarLesao()" style="background:var(--danger); width: 100%;">Registrar Lesão</button>
+                </div>
+
+                <div style="margin-bottom: 15px; border: 1px solid var(--border); padding: 15px; border-radius: 8px; background: #f0fdf4;">
+                    <p style="font-size:12px; color:#10b981; font-weight: 700; text-align:center; margin-top:0; margin-bottom: 10px;">Alta Médica (Voltar pro Banco)</p>
+                    <select id="select-jogador-alta" style="margin-bottom: 10px; font-weight:bold; width: 100%; padding: 10px; border-radius: 6px;"></select>
+                    <button onclick="salvarAltaDM()" style="background:#10b981; color: white; width: 100%; border: none;">Dar Alta</button>
+                </div>
+
+                <button onclick="fecharModalLesao()" style="background:white; color:var(--dark); border:1px solid var(--border); width: 100%;">Cancelar e Voltar</button>
             </div>
         </div>
 
