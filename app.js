@@ -1,4 +1,19 @@
-// --- FUNÇÃO DE TRADUÇÃO SEGURA DE DADOS ---
+// --- FUNÇÕES DE SEGURANÇA E PERFORMANCE SÊNIOR ---
+
+// Blindagem contra XSS (Cross-Site Scripting) no HTML
+function escapeHTML(str) {
+    if (str === null || str === undefined) return '';
+    return String(str).replace(/[&<>'"]/g, tag => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+    }[tag] || tag));
+}
+
+// Blindagem para variáveis injetadas dentro de funções nativas (onclick)
+function escapeJS(str) {
+    if (str === null || str === undefined) return '';
+    return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
+}
+
 function safeParse(data) {
     if (typeof data === 'string') {
         try { return JSON.parse(data); } catch(e) { return data; }
@@ -20,7 +35,7 @@ function customConfirm(title, text, primaryText, secondaryText, primaryColor = '
 
         elTitle.innerText = title;
         elTitle.style.color = primaryColor;
-        elText.innerHTML = text;
+        elText.innerHTML = text; // Permitimos HTML aqui pois o texto interno dos alertas é gerado pelo nosso próprio código
         
         let btnP = document.getElementById('modal-confirm-btn-primary');
         btnP.innerText = primaryText;
@@ -173,6 +188,39 @@ function carregarEstadoCompleto() {
                     let btnSum = document.getElementById('btn-ir-placares'); if(btnSum) { btnSum.style.display = 'block'; btnSum.innerText = window.partidaSalva ? "📝 Ver Súmula Anterior" : "📝 Preencher Súmula"; }
                     iniciarOuvinteRealtime(window.partidaAtualId);
                 }
+                
+                let resDiv = document.getElementById('resultado');
+                if(resDiv) {
+                    let coringasEmprestadosIds = [];
+                    for(let key in window.coringasAtivos) { window.coringasAtivos[key].forEach(c => coringasEmprestadosIds.push(c.jogador.id)); }
+                    
+                    let resHtml = ""; 
+                    window.timesSorteadosObjs.forEach((t) => {
+                        let emoji = emojisTimes[coresTimes.indexOf(t.corBase)] || '⚽'; let corHex = getCorHex(t.corBase);
+                        let nomeEscaped = escapeHTML(t.nome);
+                        let html = `<div class="team" style="border-top-color: ${corHex};"><div style="display:flex; align-items:center; gap:5px; margin-bottom:10px;"><span style="font-size:18px;">${emoji}</span><input type="text" value="${nomeEscaped}" onchange="atualizarNomeTime(${t.id}, this.value)" class="input-nome-time" placeholder="Nome do Time" style="color: ${corHex};" ${window.isModoPublico ? 'disabled' : ''}></div><ul>`;
+                        
+                        t.jogadores.forEach(j => { 
+                            if(coringasEmprestadosIds.includes(j.id)) return;
+                            let posAbbr = posMap[j.posicao] || j.posicao; 
+                            html += `<li><strong>${escapeHTML(j.nome)}</strong> ${j.posicao!=='Linha'?`<span class="badge badge-posicao" style="display:inline-block; min-width:32px; text-align:center; font-size:9px;">${posAbbr}</span>`:''}</li>`; 
+                        }); 
+                        
+                        let coringasTime = (window.coringasAtivos && window.coringasAtivos[t.id]) ? window.coringasAtivos[t.id] : [];
+                        coringasTime.forEach(c => {
+                            let posAbbr = posMap[c.jogador.posicao] || c.jogador.posicao;
+                            html += `<li style="color: var(--primary); background: #e0e7ff; margin-left: -5px; padding-left: 5px; border-radius: 4px;"><strong>🎭 ${escapeHTML(c.jogador.nome)}</strong> <span style="font-size:10px;">(do ${escapeHTML(c.timeOriginalNome)})</span> ${c.jogador.posicao!=='Linha'?`<span class="badge badge-posicao" style="display:inline-block; min-width:32px; text-align:center; font-size:9px;">${posAbbr}</span>`:''}</li>`;
+                        });
+
+                        resHtml += html + `</ul></div>`;
+                    });
+                    if (window.reservasSorteados && window.reservasSorteados.length > 0) {
+                        let html = `<div class="team team-reservas"><h3 style="padding:5px; font-size:15px;">Reservas (Inativos)</h3><ul>`;
+                        window.reservasSorteados.forEach(j => html += `<li><strong>${escapeHTML(j.nome)}</strong> ${j.isDM ? '<span style="color:var(--danger); font-size:11px; font-weight:bold;">[DM]</span>' : ''}</li>`); 
+                        resHtml += html + `</ul></div>`;
+                    }
+                    resDiv.innerHTML = resHtml;
+                }
                 setTimeout(() => renderizarSumula(), 50);
             }
         } catch(e) { limparEstadoRodada(); }
@@ -291,7 +339,7 @@ async function salvarNomeBaba() {
     let novoNome = document.getElementById('nome-baba-input').value.trim();
     const { error } = await db.from('profiles').update({ nome_baba: novoNome }).eq('id', currentUser.id);
     if (error) alert("Erro ao salvar nome: " + error.message); 
-    else { alert("✅ Nome do Baba atualizado com sucesso!"); let title = document.getElementById('top-bar-title'); if(title) title.innerText = novoNome || "Pega o Baba"; if(currentProfile) currentProfile.nome_baba = novoNome; }
+    else { alert("✅ Nome do Baba atualizado com sucesso!"); let title = document.getElementById('top-bar-title'); if(title) title.innerText = escapeHTML(novoNome) || "Pega o Baba"; if(currentProfile) currentProfile.nome_baba = novoNome; }
 }
 
 async function salvarJogadoresPorTime() {
@@ -366,11 +414,12 @@ async function carregarPainelAdmin() {
     if (error) { container.innerHTML = "Erro ao carregar usuários."; return; }
     if (!users || users.length === 0) { container.innerHTML = "Nenhum usuário cadastrado."; return; }
 
-    container.innerHTML = "";
+    let htmlAdmin = "";
     users.forEach(u => {
         let expDate = u.subscription_expires_at || '';
-        container.innerHTML += `<div style="background: var(--light); padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 10px; font-size: 13px;"><div style="font-weight: 700; margin-bottom: 5px;">${u.email} ${u.is_admin ? '(Master Admin)' : ''}</div><div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;"><label style="font-size: 11px;">Autorizado: <input type="checkbox" id="auth-${u.id}" ${u.is_authorized ? 'checked' : ''} onchange="atualizarAdminUser('${u.id}')"></label><label style="font-size: 11px;">Vencimento: <input type="date" id="date-${u.id}" value="${expDate}" style="width: auto; padding: 6px; margin: 0;" onchange="atualizarAdminUser('${u.id}')"></label><span id="msg-${u.id}" style="font-size: 11px; color: var(--supabase); font-weight: bold;"></span></div></div>`;
+        htmlAdmin += `<div style="background: var(--light); padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 10px; font-size: 13px;"><div style="font-weight: 700; margin-bottom: 5px;">${escapeHTML(u.email)} ${u.is_admin ? '(Master Admin)' : ''}</div><div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;"><label style="font-size: 11px;">Autorizado: <input type="checkbox" id="auth-${u.id}" ${u.is_authorized ? 'checked' : ''} onchange="atualizarAdminUser('${u.id}')"></label><label style="font-size: 11px;">Vencimento: <input type="date" id="date-${u.id}" value="${expDate}" style="width: auto; padding: 6px; margin: 0;" onchange="atualizarAdminUser('${u.id}')"></label><span id="msg-${u.id}" style="font-size: 11px; color: var(--supabase); font-weight: bold;"></span></div></div>`;
     });
+    container.innerHTML = htmlAdmin;
 }
 
 async function atualizarAdminUser(uid) {
@@ -398,7 +447,7 @@ async function acessarModoPublico() {
     }
     if (partida.created_at) { if (new Date().getTime() - new Date(partida.created_at).getTime() > 518400000) { await customAlert("⚠️ Rodada Expirada", "Este jogo já foi encerrado pelo organizador há muito tempo.", "Sair", "var(--text-muted)"); sairModoPublico(); return; } }
     
-    let topTitle = document.getElementById('top-bar-title'); if(topTitle) topTitle.innerText = partida.nome_baba || "Pega o Baba";
+    let topTitle = document.getElementById('top-bar-title'); if(topTitle) topTitle.innerText = escapeHTML(partida.nome_baba) || "Pega o Baba";
     if (partida.escudo_url) { 
         let tEsc = document.getElementById('top-bar-escudo'); if(tEsc) { tEsc.src = partida.escudo_url; tEsc.style.display = 'block'; } 
     } else { 
@@ -406,7 +455,7 @@ async function acessarModoPublico() {
     }
 
     window.partidaAtualId = partida.id; 
-    if(dbStatus) dbStatus.innerText = `Visualizando: ${codigo}`;
+    if(dbStatus) dbStatus.innerText = `Visualizando: ${escapeHTML(codigo)}`;
     window.custosDaRodada = safeParse(partida.custos_json) || [];
     
     let vConv = document.getElementById('valor-convidado'); if(vConv && partida.valor_por_convidado) vConv.value = partida.valor_por_convidado;
@@ -545,7 +594,7 @@ async function adicionarJogador() {
 }
 
 async function removerJogador(idNuvem, indexArray) { 
-    let conf = await customConfirm("Excluir Jogador", `Tem certeza que deseja remover <strong>${jogadores[indexArray].nome}</strong> do elenco permanentemente?`, "Sim, remover", "Cancelar", "var(--danger)");
+    let conf = await customConfirm("Excluir Jogador", `Tem certeza que deseja remover <strong>${escapeHTML(jogadores[indexArray].nome)}</strong> do elenco permanentemente?`, "Sim, remover", "Cancelar", "var(--danger)");
     if(conf) { 
         const { error } = await db.from('jogadores').delete().eq('id', idNuvem);
         if (!error) { jogadores.splice(indexArray, 1); salvarEstadoLocal(); atualizarListas(); atualizarFinanceiro(); } else alert("Erro ao remover: " + error.message);
@@ -665,7 +714,8 @@ async function exportarElencoPorPosicao() {
 
 function atualizarListas() {
     const listaElenco = document.getElementById('lista-elenco-admin'); const listaAguardando = document.getElementById('lista-aguardando'); const listaPresentes = document.getElementById('lista-presentes');
-    if(listaElenco) listaElenco.innerHTML = ""; if(listaAguardando) listaAguardando.innerHTML = ""; if(listaPresentes) listaPresentes.innerHTML = "";
+    
+    let htmlElenco = ""; let htmlAguardando = ""; let htmlPresentes = "";
     let presentes = []; const mesKey = new Date().toISOString().substring(0, 7);
     
     let todosOrdenados = [...jogadores].sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
@@ -678,19 +728,19 @@ function atualizarListas() {
         let publicDisabled = window.isModoPublico ? "" : clickAction; let cursorStyle = window.isModoPublico ? "" : "cursor: pointer;";
         let tagConvidado = j.tipo === 'Convidado' ? '<span class="badge badge-convidado">C</span>' : '';
         let posAbbr = posMap[j.posicao] || j.posicao; let tagPosicao = (j.posicao !== 'Goleiro' && j.posicao !== 'Linha') ? `<span class="badge badge-posicao" style="display: inline-block; min-width: 28px; text-align: center;">${posAbbr}</span>` : '';
-        let nomeSeguro = j.nome || "Sem Nome";
+        let nomeSeguro = escapeHTML(j.nome || "Sem Nome");
 
         if(listaElenco) {
             let btnEdicao = `<button class="btn-small btn-acao-outline" onclick="prepararEdicao(${indexArray})">✏️</button>`;
             let btnExcluir = `<button class="btn-small btn-acao-outline" style="color:var(--danger); border-color:var(--danger);" onclick="removerJogador('${j.id}', ${indexArray})">X</button>`;
             let btnMensal = j.tipo === 'Mensalista' ? (isPago ? `<button class="btn-small btn-pagou" onclick="alternarMensalidade('${j.id}', ${indexArray})">Pago</button>` : `<button class="btn-small btn-devendo" onclick="alternarMensalidade('${j.id}', ${indexArray})">Pendente</button>`) : `<span>Diária local</span>`;
-            listaElenco.innerHTML += `<div class="linha-jogador grid-elenco" data-nome="${nomeSeguro}"><div class="col-nome">${tagConvidado} <span style="margin-left: 4px;">${nomeSeguro}</span></div><div class="col-status">${btnMensal}</div><div class="col-acoes">${btnEdicao} ${btnExcluir}</div></div>`;
+            htmlElenco += `<div class="linha-jogador grid-elenco" data-nome="${nomeSeguro}"><div class="col-nome">${tagConvidado} <span style="margin-left: 4px;">${nomeSeguro}</span></div><div class="col-status">${btnMensal}</div><div class="col-acoes">${btnEdicao} ${btnExcluir}</div></div>`;
         }
-        if(j.presente) presentes.push({ ...j, indexArray: indexArray, nome: nomeSeguro });
+        if(j.presente) presentes.push({ ...j, indexArray: indexArray, nomeView: nomeSeguro });
         else if(listaAguardando) {
             let btnAcoesAguardando = '';
             if (j.tipo === 'Convidado') btnAcoesAguardando += isPago ? `<button class="btn-small btn-pagou" onclick="alternarPagamentoDiaria(${indexArray})">Pago</button>` : `<button class="btn-small btn-devendo" onclick="alternarPagamentoDiaria(${indexArray})">Pendente</button>`;
-            listaAguardando.innerHTML += `<div class="linha-jogador grid-aguardando" data-nome="${nomeSeguro}"><div class="col-nome" style="justify-content: space-between; width: 100%;"><div style="display:flex; align-items:center; gap:5px; overflow:hidden; flex: 1; min-width: 0; ${colorStyle} ${cursorStyle}" ${publicDisabled} title="${isPago ? 'Pago' : 'Pendente - Clique para pagar'}">${tagConvidado} <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block;">${nomeSeguro}</span></div>${tagPosicao ? `<div style="flex-shrink:0; margin-left: 5px;">${tagPosicao}</div>` : ''}</div><div class="col-status">${btnAcoesAguardando}</div><div class="col-acoes"><button class="btn-small btn-presente" onclick="marcarPresenca(${indexArray})">Chegou</button></div></div>`;
+            htmlAguardando += `<div class="linha-jogador grid-aguardando" data-nome="${nomeSeguro}"><div class="col-nome" style="justify-content: space-between; width: 100%;"><div style="display:flex; align-items:center; gap:5px; overflow:hidden; flex: 1; min-width: 0; ${colorStyle} ${cursorStyle}" ${publicDisabled} title="${isPago ? 'Pago' : 'Pendente - Clique para pagar'}">${tagConvidado} <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block;">${nomeSeguro}</span></div>${tagPosicao ? `<div style="flex-shrink:0; margin-left: 5px;">${tagPosicao}</div>` : ''}</div><div class="col-status">${btnAcoesAguardando}</div><div class="col-acoes"><button class="btn-small btn-presente" onclick="marcarPresenca(${indexArray})">Chegou</button></div></div>`;
         }
     });
     
@@ -703,9 +753,13 @@ function atualizarListas() {
         let clickAction = j.tipo === 'Mensalista' ? `onclick="alternarMensalidade('${j.id}', ${j.indexArray})"` : `onclick="alternarPagamentoDiaria(${j.indexArray})"`;
         let publicDisabled = window.isModoPublico ? "" : clickAction; let cursorStyle = window.isModoPublico ? "" : "cursor: pointer;";
         let posAbbr = posMap[j.posicao] || j.posicao; let tagPosicao = (j.posicao !== 'Goleiro' && j.posicao !== 'Linha') ? `<span class="badge badge-posicao" style="display: inline-block; min-width: 28px; text-align: center;">${posAbbr}</span>` : '';
-        if(listaPresentes) listaPresentes.innerHTML += `<div class="linha-jogador grid-prontos"><div class="col-nome" style="justify-content: space-between; width: 100%;"><div style="display:flex; align-items:center; gap:5px; overflow:hidden; flex: 1; min-width: 0; ${colorStyle} ${cursorStyle}" ${publicDisabled} title="${isPago ? 'Pago' : 'Pendente - Clique para pagar'}"><span class="badge" style="background:var(--dark); color:white; flex-shrink:0;">${pos + 1}º</span> ${tagConvidado} <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block;">${j.nome}</span></div>${tagPosicao ? `<div style="flex-shrink:0; margin-left: 5px;">${tagPosicao}</div>` : ''}</div><div class="col-acoes"><button class="btn-small btn-acao-outline hidden-public" style="color:var(--danger); border-color:var(--danger);" onclick="desmarcarPresenca(${j.indexArray})">Retirar</button></div></div>`;
+        htmlPresentes += `<div class="linha-jogador grid-prontos"><div class="col-nome" style="justify-content: space-between; width: 100%;"><div style="display:flex; align-items:center; gap:5px; overflow:hidden; flex: 1; min-width: 0; ${colorStyle} ${cursorStyle}" ${publicDisabled} title="${isPago ? 'Pago' : 'Pendente - Clique para pagar'}"><span class="badge" style="background:var(--dark); color:white; flex-shrink:0;">${pos + 1}º</span> ${tagConvidado} <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block;">${j.nomeView}</span></div>${tagPosicao ? `<div style="flex-shrink:0; margin-left: 5px;">${tagPosicao}</div>` : ''}</div><div class="col-acoes"><button class="btn-small btn-acao-outline hidden-public" style="color:var(--danger); border-color:var(--danger);" onclick="desmarcarPresenca(${j.indexArray})">Retirar</button></div></div>`;
     });
     
+    if(listaElenco) listaElenco.innerHTML = htmlElenco;
+    if(listaAguardando) listaAguardando.innerHTML = htmlAguardando;
+    if(listaPresentes) listaPresentes.innerHTML = htmlPresentes;
+
     let elTotalPres = document.getElementById('total-presentes'); if(elTotalPres) elTotalPres.innerText = presentes.length; 
     let elTotalElenco = document.getElementById('total-elenco'); if(elTotalElenco) elTotalElenco.innerText = jogadores.length;
     let btnZerar = document.getElementById('btn-zerar'); if(btnZerar) btnZerar.style.display = "block";
@@ -914,28 +968,31 @@ async function sortearTimes(presentesBrutos, isAppend) {
             let coringasEmprestadosIds = [];
             for(let key in window.coringasAtivos) { window.coringasAtivos[key].forEach(c => coringasEmprestadosIds.push(c.jogador.id)); }
             
-            resDiv.innerHTML = ""; 
+            let resHtml = ""; 
             window.timesSorteadosObjs.forEach((t) => {
                 let emoji = emojisTimes[coresTimes.indexOf(t.corBase)] || '⚽'; let corHex = getCorHex(t.corBase);
-                let html = `<div class="team" style="border-top-color: ${corHex};"><div style="display:flex; align-items:center; gap:5px; margin-bottom:10px;"><span style="font-size:18px;">${emoji}</span><input type="text" value="${t.nome}" onchange="atualizarNomeTime(${t.id}, this.value)" class="input-nome-time" placeholder="Nome do Time" style="color: ${corHex};" ${window.isModoPublico ? 'disabled' : ''}></div><ul>`;
+                let nomeEscaped = escapeHTML(t.nome);
+                let html = `<div class="team" style="border-top-color: ${corHex};"><div style="display:flex; align-items:center; gap:5px; margin-bottom:10px;"><span style="font-size:18px;">${emoji}</span><input type="text" value="${nomeEscaped}" onchange="atualizarNomeTime(${t.id}, this.value)" class="input-nome-time" placeholder="Nome do Time" style="color: ${corHex};" ${window.isModoPublico ? 'disabled' : ''}></div><ul>`;
                 
                 t.jogadores.forEach(j => { 
                     if(coringasEmprestadosIds.includes(j.id)) return;
-                    let posAbbr = posMap[j.posicao] || j.posicao; html += `<li><strong>${j.nome}</strong> ${j.posicao!=='Linha'?`<span class="badge badge-posicao" style="display:inline-block; min-width:32px; text-align:center; font-size:9px;">${posAbbr}</span>`:''}</li>`; 
+                    let posAbbr = posMap[j.posicao] || j.posicao; html += `<li><strong>${escapeHTML(j.nome)}</strong> ${j.posicao!=='Linha'?`<span class="badge badge-posicao" style="display:inline-block; min-width:32px; text-align:center; font-size:9px;">${posAbbr}</span>`:''}</li>`; 
                 }); 
                 
                 let coringasTime = (t.coringas && t.coringas.length > 0) ? t.coringas : ((window.coringasAtivos && window.coringasAtivos[t.id]) ? window.coringasAtivos[t.id] : []);
                 coringasTime.forEach(c => {
                     let posAbbr = posMap[c.jogador.posicao] || c.jogador.posicao;
-                    html += `<li><strong>${c.jogador.nome}</strong> <span style="font-size:11px; color:var(--primary); font-weight:600;">(Coringa - ${c.timeOriginalNome})</span> ${c.jogador.posicao!=='Linha'?`<span class="badge badge-posicao" style="display:inline-block; min-width:32px; text-align:center; font-size:9px;">${posAbbr}</span>`:''}</li>`;
+                    html += `<li><strong>${escapeHTML(c.jogador.nome)}</strong> <span style="font-size:11px; color:var(--primary); font-weight:600;">(Coringa - ${escapeHTML(c.timeOriginalNome)})</span> ${c.jogador.posicao!=='Linha'?`<span class="badge badge-posicao" style="display:inline-block; min-width:32px; text-align:center; font-size:9px;">${posAbbr}</span>`:''}</li>`;
                 });
 
-                resDiv.innerHTML += html + `</ul></div>`;
+                resHtml += html + `</ul></div>`;
             });
             if (window.reservasSorteados && window.reservasSorteados.length > 0) {
                 let html = `<div class="team team-reservas"><h3 style="padding:5px; font-size:15px;">Reservas (Inativos)</h3><ul>`;
-                window.reservasSorteados.forEach(j => html += `<li><strong>${j.nome}</strong> ${j.isDM ? '<span style="color:var(--danger); font-size:11px; font-weight:bold;">[DM]</span>' : ''}</li>`); resDiv.innerHTML += html + `</ul></div>`;
+                window.reservasSorteados.forEach(j => html += `<li><strong>${escapeHTML(j.nome)}</strong> ${j.isDM ? '<span style="color:var(--danger); font-size:11px; font-weight:bold;">[DM]</span>' : ''}</li>`); 
+                resHtml += html + `</ul></div>`;
             }
+            resDiv.innerHTML = resHtml;
         }
 
         let btnSum = document.getElementById('btn-ir-placares'); 
@@ -1029,7 +1086,7 @@ async function gerarRelatorioMensal() {
         mensalistas.forEach(j => {
             let pago = j.pagamentos_json && j.pagamentos_json[mesKey] === true; if(pago) totalMensalidades += valMens;
             let statusText = pago ? `<span style="color:var(--supabase); font-weight:bold;">✅ Pago</span>` : `<span style="color:var(--danger); font-weight:bold;">❌ Pendente</span>`;
-            htmlMensalistas += `<div class="item-mensalista"><span>${j.nome}</span> <span>${statusText}</span></div>`;
+            htmlMensalistas += `<div class="item-mensalista"><span>${escapeHTML(j.nome)}</span> <span>${statusText}</span></div>`;
         });
         htmlMensalistas += `</div>`; html += `<tr><td colspan="2" style="padding: 0;">${htmlMensalistas}</td></tr>`;
     }
@@ -1039,7 +1096,7 @@ async function gerarRelatorioMensal() {
     if(partidasDoMes.length > 0) {
         partidasDoMes.forEach((p, idx) => {
             let vConv = p.valor_por_convidado || defConv; let qtdConv = p.renda_convidados || 0; let subConv = qtdConv * vConv; totalConvidados += subConv;
-            let dataF = p.data_sorteio ? p.data_sorteio.split('T')[0].split('-').reverse().join('/') : `Rodada ${idx+1}`; if(qtdConv > 0) html += `<tr><td>Rodada (${dataF}): ${qtdConv} convidados</td><td style="text-align:right;">R$ ${subConv.toFixed(2)}</td></tr>`;
+            let dataF = p.data_sorteio ? p.data_sorteio.split('T')[0].split('-').reverse().join('/') : `Rodada ${idx+1}`; if(qtdConv > 0) html += `<tr><td>Rodada (${escapeHTML(dataF)}): ${qtdConv} convidados</td><td style="text-align:right;">R$ ${subConv.toFixed(2)}</td></tr>`;
         });
     } else html += `<tr><td colspan="2" style="color:var(--text-muted);">Nenhuma rodada finalizada neste mês.</td></tr>`;
     html += `<tr><td><strong>Subtotal Convidados:</strong></td><td style="text-align:right; font-weight:bold; color:var(--supabase);">R$ ${totalConvidados.toFixed(2)}</td></tr>`;
@@ -1049,14 +1106,15 @@ async function gerarRelatorioMensal() {
         let dIso = c.data || "";
         if (dIso.substring(0, 7) === mesKey) {
             let dataBr = (c.data && c.tipo !== 'mensal') ? c.data.split('-').reverse().join('/') : ''; let dStr = dataBr ? ` <span style="color:var(--text-muted); font-size:10px;">(${dataBr})</span>` : ''; let idUnico = c.id || indexReal; let op = c.operacao || 'saida';
-            if (op === 'entrada') { totalEntradasExtras += c.valor; temEntradaExtra = true; htmlEntradasExtras += `<div class="item-custo-relatorio"><span>${c.desc}${dStr}</span> <span style="display:flex; align-items:center;"><strong class="valor-positivo" style="white-space:nowrap;">+ R$ ${c.valor.toFixed(2)}</strong> <button class="btn-excluir-mini no-print" style="margin-left:8px;" onclick="removerCusto(${idUnico}, ${indexReal})">X</button></span></div>`; } 
-            else { totalCustos += c.valor; temCustos = true; htmlCustosDiarios += `<div class="item-custo-relatorio"><span>${c.desc}${dStr}</span> <span style="display:flex; align-items:center;"><strong class="valor-negativo" style="white-space:nowrap;">- R$ ${c.valor.toFixed(2)}</strong> <button class="btn-excluir-mini no-print" style="margin-left:8px;" onclick="removerCusto(${idUnico}, ${indexReal})">X</button></span></div>`; }
+            let descSafe = escapeHTML(c.desc);
+            if (op === 'entrada') { totalEntradasExtras += c.valor; temEntradaExtra = true; htmlEntradasExtras += `<div class="item-custo-relatorio"><span>${descSafe}${dStr}</span> <span style="display:flex; align-items:center;"><strong class="valor-positivo" style="white-space:nowrap;">+ R$ ${c.valor.toFixed(2)}</strong> <button class="btn-excluir-mini no-print" style="margin-left:8px;" onclick="removerCusto(${idUnico}, ${indexReal})">X</button></span></div>`; } 
+            else { totalCustos += c.valor; temCustos = true; htmlCustosDiarios += `<div class="item-custo-relatorio"><span>${descSafe}${dStr}</span> <span style="display:flex; align-items:center;"><strong class="valor-negativo" style="white-space:nowrap;">- R$ ${c.valor.toFixed(2)}</strong> <button class="btn-excluir-mini no-print" style="margin-left:8px;" onclick="removerCusto(${idUnico}, ${indexReal})">X</button></span></div>`; }
         }
     });
 
     if(partidasDoMes.length > 0) {
         partidasDoMes.forEach(p => {
-            let c_json = safeParse(p.custos_json) || []; c_json.forEach(c => { totalCustos += c.valor; temCustos = true; let rawDate = p.data_sorteio || p.created_at || ""; let dData = rawDate ? rawDate.split('T')[0].split('-').reverse().join('/') : "Antigo"; htmlCustosDiarios += `<div class="item-custo-relatorio"><span>${c.desc} <span style="color:var(--text-muted); font-size:10px;">(${dData})</span></span> <strong class="valor-negativo" style="white-space:nowrap;">- R$ ${c.valor.toFixed(2)}</strong></div>`; });
+            let c_json = safeParse(p.custos_json) || []; c_json.forEach(c => { totalCustos += c.valor; temCustos = true; let rawDate = p.data_sorteio || p.created_at || ""; let dData = rawDate ? rawDate.split('T')[0].split('-').reverse().join('/') : "Antigo"; htmlCustosDiarios += `<div class="item-custo-relatorio"><span>${escapeHTML(c.desc)} <span style="color:var(--text-muted); font-size:10px;">(${escapeHTML(dData)})</span></span> <strong class="valor-negativo" style="white-space:nowrap;">- R$ ${c.valor.toFixed(2)}</strong></div>`; });
         });
     }
     htmlCustosDiarios += `</div>`; htmlEntradasExtras += `</div>`;
@@ -1086,7 +1144,7 @@ function exibirBoxCodigoSorteio(codigo) {
     let dataBoxStr = window.dataPartidaAtual || new Date().toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
     let boxCod = document.getElementById('box-codigo-gerado-sorteio');
     if (boxCod) {
-        boxCod.innerHTML = `<div style="font-size:13px; color:var(--text-muted); font-weight:700; margin-bottom:5px;">Código do jogo (${dataBoxStr}) para os jogadores</div><div style="color:var(--primary); font-size:28px; line-height:1; margin-bottom:15px;">${codigo}</div><div style="display: flex; flex-direction: column; gap: 8px;"><a href="https://api.whatsapp.com/send?text=${textoWppEscalacao}" target="_blank" class="btn-whatsapp">👥 Compartilhar Escalação no WhatsApp</a><a href="https://api.whatsapp.com/send?text=${textoWpp}" target="_blank" style="display:inline-block; background:var(--dark); color:white; padding:12px 20px; border-radius:8px; text-decoration:none; font-size:14px; font-weight:bold; width:100%; box-sizing:border-box;">📱 Compartilhar Link Geral</a></div>`;
+        boxCod.innerHTML = `<div style="font-size:13px; color:var(--text-muted); font-weight:700; margin-bottom:5px;">Código do jogo (${escapeHTML(dataBoxStr)}) para os jogadores</div><div style="color:var(--primary); font-size:28px; line-height:1; margin-bottom:15px;">${escapeHTML(codigo)}</div><div style="display: flex; flex-direction: column; gap: 8px;"><a href="https://api.whatsapp.com/send?text=${textoWppEscalacao}" target="_blank" class="btn-whatsapp">👥 Compartilhar Escalação no WhatsApp</a><a href="https://api.whatsapp.com/send?text=${textoWpp}" target="_blank" style="display:inline-block; background:var(--dark); color:white; padding:12px 20px; border-radius:8px; text-decoration:none; font-size:14px; font-weight:bold; width:100%; box-sizing:border-box;">📱 Compartilhar Link Geral</a></div>`;
         boxCod.style.display = 'block';
     }
 }
@@ -1110,7 +1168,7 @@ function renderizarSumula() {
     if(aviso) aviso.style.display = 'none'; if(container) container.style.display = 'block';
     if(instrucoes) instrucoes.style.display = window.partidaSalva ? 'none' : 'block';
     if(window.codigoAcessoAtual) exibirBoxCodigoSorteio(window.codigoAcessoAtual);
-    if(dataLabel) { let dataExibicao = window.dataPartidaAtual || new Date().toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}); dataLabel.innerText = `📅 Data da Rodada: ${dataExibicao}`; }
+    if(dataLabel) { let dataExibicao = window.dataPartidaAtual || new Date().toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}); dataLabel.innerText = `📅 Data da Rodada: ${escapeHTML(dataExibicao)}`; }
     if (window.timesSorteadosObjs && window.timesSorteadosObjs.length > 0 && window.filaEquipes.length === 0 && !window.partidaSalva) window.filaEquipes = window.timesSorteadosObjs.map(t => t.id);
     if (window.timesSorteadosObjs && window.timesSorteadosObjs.length > 0) { atualizarSelectsEquipes(); renderizarEscalacaoPublicaSumula(); }
     atualizarFilaUI(); atualizarPlacarTempUI(); atualizarListaJogosDaRodada();
@@ -1122,15 +1180,16 @@ function atualizarFilaUI() {
     let timeA = window.timesSorteadosObjs.find(t => t.id === window.filaEquipes[0]); let timeB = window.timesSorteadosObjs.find(t => t.id === window.filaEquipes[1]);
     let proximoTime = window.timesSorteadosObjs.find(t => t.id === window.filaEquipes[2]); let restantesFila = window.filaEquipes.slice(3).map(id => window.timesSorteadosObjs.find(t => t.id === id)?.nome).filter(Boolean);
     let html = `<div style="background: white; border: 1px solid var(--border); border-radius: 12px; padding: 15px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">`;
-    if (timeA && timeB) { html += `<div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px; display: flex; align-items: center; gap: 5px;">⚡ Em Quadra Agora</div><div style="font-size: 15px; font-weight: 800; color: var(--dark); margin-bottom: 12px; background: var(--light); padding: 10px; border-radius: 8px; text-align: center;">${timeA.nome} vs ${timeB.nome}</div>`; }
-    if (proximoTime) { html += `<div style="font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 5px; display: flex; align-items: center; gap: 5px;">⏳ Próxima Equipe a Jogar</div><div style="font-size: 16px; font-weight: 800; color: var(--primary); background: #e0e7ff; padding: 10px; border-radius: 8px; text-align: center; margin-bottom: ${restantesFila.length > 0 ? '12px' : '0'};">🚀 ${proximoTime.nome}</div>`; }
-    if (restantesFila.length > 0) { html += `<div style="font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Fila de Espera:</div><div style="font-size: 13px; color: var(--dark); font-weight: 500;">${restantesFila.join(' ➔ ')}</div>`; }
+    if (timeA && timeB) { html += `<div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px; display: flex; align-items: center; gap: 5px;">⚡ Em Quadra Agora</div><div style="font-size: 15px; font-weight: 800; color: var(--dark); margin-bottom: 12px; background: var(--light); padding: 10px; border-radius: 8px; text-align: center;">${escapeHTML(timeA.nome)} vs ${escapeHTML(timeB.nome)}</div>`; }
+    if (proximoTime) { html += `<div style="font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 5px; display: flex; align-items: center; gap: 5px;">⏳ Próxima Equipe a Jogar</div><div style="font-size: 16px; font-weight: 800; color: var(--primary); background: #e0e7ff; padding: 10px; border-radius: 8px; text-align: center; margin-bottom: ${restantesFila.length > 0 ? '12px' : '0'};">🚀 ${escapeHTML(proximoTime.nome)}</div>`; }
+    if (restantesFila.length > 0) { html += `<div style="font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Fila de Espera:</div><div style="font-size: 13px; color: var(--dark); font-weight: 500;">${escapeHTML(restantesFila.join(' ➔ '))}</div>`; }
     html += `</div>`; containerFila.innerHTML = html; containerFila.style.display = 'block';
 }
 
 function renderizarEscalacaoPublicaSumula() {
     const containerEscalacao = document.getElementById('lista-escalacao-publica'); if(!containerEscalacao) return;
-    containerEscalacao.innerHTML = "";
+    
+    let htmlEscalacao = "";
     let tamanhoIdeal = currentProfile && currentProfile.jogadores_por_time ? parseInt(currentProfile.jogadores_por_time) : 7;
     
     let coringasEmprestadosIds = [];
@@ -1144,7 +1203,7 @@ function renderizarEscalacaoPublicaSumula() {
         let coringasTime = (t.coringas && t.coringas.length > 0) ? t.coringas : ((window.coringasAtivos && window.coringasAtivos[t.id]) ? window.coringasAtivos[t.id] : []);
         let qtdAtual = t.jogadores.length + coringasTime.length;
                 
-        let html = `<div class="team" style="border-top-color: ${corHex}; position:relative;"><div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;"><div style="display:flex; align-items:center; gap:5px;"><span style="font-size:18px;">${emoji}</span><input type="text" value="${t.nome}" onchange="atualizarNomeTime(${t.id}, this.value)" class="input-nome-time" placeholder="Nome do Time" style="color: ${corHex}; width:auto;" ${window.isModoPublico ? 'disabled' : ''}></div>`;
+        let html = `<div class="team" style="border-top-color: ${corHex}; position:relative;"><div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;"><div style="display:flex; align-items:center; gap:5px;"><span style="font-size:18px;">${emoji}</span><input type="text" value="${escapeHTML(t.nome)}" onchange="atualizarNomeTime(${t.id}, this.value)" class="input-nome-time" placeholder="Nome do Time" style="color: ${corHex}; width:auto;" ${window.isModoPublico ? 'disabled' : ''}></div>`;
         
         if(!window.isModoPublico && !window.partidaSalva) {
             let btnCoringaHtml = `<button onclick="sortearCoringasFila(${t.id})" class="btn-coringa-fila" style="background:var(--primary); color:white; border:none; padding:6px 10px; border-radius:4px; font-size:11px; cursor:pointer; font-weight:bold;">🎭 Coringa</button>`;
@@ -1158,20 +1217,22 @@ function renderizarEscalacaoPublicaSumula() {
         t.jogadores.forEach(j => { 
             if(coringasEmprestadosIds.includes(j.id)) return;
             let posAbbr = posMap[j.posicao] || j.posicao; 
-            html += `<li><strong>${j.nome}</strong> ${j.posicao!=='Linha'?`<span class="badge badge-posicao" style="display:inline-block; min-width:32px; text-align:center; font-size:9px;">${posAbbr}</span>`:''}</li>`; 
+            html += `<li><strong>${escapeHTML(j.nome)}</strong> ${j.posicao!=='Linha'?`<span class="badge badge-posicao" style="display:inline-block; min-width:32px; text-align:center; font-size:9px;">${posAbbr}</span>`:''}</li>`; 
         }); 
         
         coringasTime.forEach(c => {
             let posAbbr = posMap[c.jogador.posicao] || c.jogador.posicao;
-            html += `<li><strong>${c.jogador.nome}</strong> <span style="font-size:11px; color:var(--primary); font-weight:600;">(Coringa - ${c.timeOriginalNome})</span> ${c.jogador.posicao!=='Linha'?`<span class="badge badge-posicao" style="display:inline-block; min-width:32px; text-align:center; font-size:9px;">${posAbbr}</span>`:''}</li>`;
+            html += `<li><strong>${escapeHTML(c.jogador.nome)}</strong> <span style="font-size:11px; color:var(--primary); font-weight:600;">(Coringa - ${escapeHTML(c.timeOriginalNome)})</span> ${c.jogador.posicao!=='Linha'?`<span class="badge badge-posicao" style="display:inline-block; min-width:32px; text-align:center; font-size:9px;">${posAbbr}</span>`:''}</li>`;
         });
 
-        containerEscalacao.innerHTML += html + `</ul></div>`;
+        htmlEscalacao += html + `</ul></div>`;
     });
     
     if (window.reservasSorteados && window.reservasSorteados.length > 0) {
-        let html = `<div class="team team-reservas"><h3 style="padding:5px; font-size:15px;">Reservas (Inativos)</h3><ul>`; window.reservasSorteados.forEach(j => html += `<li><strong>${j.nome}</strong> ${j.isDM ? '<span style="color:var(--danger); font-size:11px; font-weight:bold;">[DM]</span>' : ''}</li>`); containerEscalacao.innerHTML += html + `</ul></div>`;
+        let htmlRes = `<div class="team team-reservas"><h3 style="padding:5px; font-size:15px;">Reservas (Inativos)</h3><ul>`; window.reservasSorteados.forEach(j => htmlRes += `<li><strong>${escapeHTML(j.nome)}</strong> ${j.isDM ? '<span style="color:var(--danger); font-size:11px; font-weight:bold;">[DM]</span>' : ''}</li>`); htmlEscalacao += htmlRes + `</ul></div>`;
     }
+
+    containerEscalacao.innerHTML = htmlEscalacao;
 }
 
 function atualizarCoringasUI() {
@@ -1181,7 +1242,7 @@ function atualizarCoringasUI() {
 function atualizarSelectsEquipes() {
     let selA = document.getElementById('sumula_equipe_a'); let selB = document.getElementById('sumula_equipe_b');
     if(!selA || !selB) return;
-    let options = ''; window.timesSorteadosObjs.forEach((t) => { options += `<option value="${t.id}">${t.nome}</option>`; });
+    let options = ''; window.timesSorteadosObjs.forEach((t) => { options += `<option value="${t.id}">${escapeHTML(t.nome)}</option>`; });
     selA.innerHTML = options; selB.innerHTML = options;
     if (window.filaEquipes.length >= 2) { selA.value = window.filaEquipes[0]; selB.value = window.filaEquipes[1]; }
     atualizarFilaUI();
@@ -1202,8 +1263,8 @@ async function checarTimesCompletosParaJogo() {
     
     if (qA < tamanhoIdeal || qB < tamanhoIdeal) {
         let nomes = [];
-        if(qA < tamanhoIdeal) nomes.push(tA.nome);
-        if(qB < tamanhoIdeal) nomes.push(tB.nome);
+        if(qA < tamanhoIdeal) nomes.push(escapeHTML(tA.nome));
+        if(qB < tamanhoIdeal) nomes.push(escapeHTML(tB.nome));
         
         let querSortear = await customConfirm(
             "⚠️ Partida Incompleta!",
@@ -1234,20 +1295,25 @@ async function abrirModalGol(lado) {
     
     const containerJogadores = document.getElementById('lista-jogadores-gol'); 
     if(!containerJogadores) return alert("Lista de jogadores do modal não encontrada.");
-    containerJogadores.innerHTML = ''; 
     
     let titMod = document.getElementById('titulo-modal-gol'); 
-    if(titMod) titMod.innerText = `Gol do(a) ${timeObj.nome}`;
+    if(titMod) titMod.innerText = `Gol do(a) ${escapeHTML(timeObj.nome)}`;
     
+    let htmlBotoes = "";
     let jogadoresTime = [...timeObj.jogadores].sort((a,b) => (a.nome||"").localeCompare(b.nome||""));
-    jogadoresTime.forEach(j => { containerJogadores.innerHTML += `<button class="btn-jogador-gol" onclick="registrarGol('${lado}', '${j.nome}')">⚽ ${j.nome}</button>`; });
+    
+    jogadoresTime.forEach(j => { 
+        htmlBotoes += `<button class="btn-jogador-gol" onclick="registrarGol('${lado}', '${escapeJS(j.nome)}')">⚽ ${escapeHTML(j.nome)}</button>`; 
+    });
 
     let coringasTime = (timeObj.coringas && timeObj.coringas.length > 0) ? timeObj.coringas : ((window.coringasAtivos && window.coringasAtivos[selTimeId]) ? window.coringasAtivos[selTimeId] : []);
     coringasTime.forEach(c => {
-        containerJogadores.innerHTML += `<button class="btn-jogador-gol" style="background:#e0e7ff; color:var(--primary); border-color:var(--primary);" onclick="registrarGol('${lado}', '${c.jogador.nome}')">🎭 ${c.jogador.nome} (Coringa)</button>`;
+        htmlBotoes += `<button class="btn-jogador-gol" style="background:#e0e7ff; color:var(--primary); border-color:var(--primary);" onclick="registrarGol('${lado}', '${escapeJS(c.jogador.nome)}')">🎭 ${escapeHTML(c.jogador.nome)} (Coringa)</button>`;
     });
 
-    containerJogadores.innerHTML += `<button class="btn-jogador-gol" style="background:#fee2e2; color:var(--danger); border-color:var(--danger);" onclick="registrarGol('${lado}', 'Gol Contra')">⚠️ Gol Contra</button>`;
+    htmlBotoes += `<button class="btn-jogador-gol" style="background:#fee2e2; color:var(--danger); border-color:var(--danger);" onclick="registrarGol('${lado}', 'Gol Contra')">⚠️ Gol Contra</button>`;
+    
+    containerJogadores.innerHTML = htmlBotoes;
     
     let modGol = document.getElementById('modal-gol'); 
     if(modGol) modGol.style.display = 'flex';
@@ -1261,12 +1327,14 @@ function removerGolTemp(lado, index) { if(lado === 'A') window.golsTempA.splice(
 function atualizarPlacarTempUI() {
     let placA = document.getElementById('placar-num-a'); if(placA) placA.innerText = window.golsTempA.length; 
     let placB = document.getElementById('placar-num-b'); if(placB) placB.innerText = window.golsTempB.length;
-    let htmlA = ''; window.golsTempA.forEach((nome, i) => htmlA += `<div class="item-gol-arena">${nome} <span class="remover-gol-btn-arena" onclick="removerGolTemp('A', ${i})">x</span></div>`); 
+    
+    let htmlA = ''; window.golsTempA.forEach((nome, i) => htmlA += `<div class="item-gol-arena">${escapeHTML(nome)} <span class="remover-gol-btn-arena" onclick="removerGolTemp('A', ${i})">x</span></div>`); 
     let listA = document.getElementById('lista-gols-a'); if(listA) listA.innerHTML = htmlA || '<span style="opacity:0.5;">Nenhum gol</span>';
-    let htmlB = ''; window.golsTempB.forEach((nome, i) => htmlB += `<div class="item-gol-arena">${nome} <span class="remover-gol-btn-arena" onclick="removerGolTemp('B', ${i})">x</span></div>`); 
+    
+    let htmlB = ''; window.golsTempB.forEach((nome, i) => htmlB += `<div class="item-gol-arena">${escapeHTML(nome)} <span class="remover-gol-btn-arena" onclick="removerGolTemp('B', ${i})">x</span></div>`); 
     let listB = document.getElementById('lista-gols-b'); if(listB) listB.innerHTML = htmlB || '<span style="opacity:0.5;">Nenhum gol</span>';
 }
-function formatarGolsResumo(golsArray) { if(!golsArray || golsArray.length === 0) return ''; let contagem = {}; golsArray.forEach(g => { contagem[g] = (contagem[g] || 0) + 1; }); return Object.entries(contagem).map(([nome, qtd]) => qtd > 1 ? `${nome} (${qtd})` : nome).join(', '); }
+function formatarGolsResumo(golsArray) { if(!golsArray || golsArray.length === 0) return ''; let contagem = {}; golsArray.forEach(g => { contagem[g] = (contagem[g] || 0) + 1; }); return Object.entries(contagem).map(([nome, qtd]) => qtd > 1 ? `${escapeHTML(nome)} (${qtd})` : escapeHTML(nome)).join(', '); }
 
 async function adicionarJogoNaSumula() {
     if (!(await checarTimesCompletosParaJogo())) return; 
@@ -1296,7 +1364,7 @@ async function adicionarJogoNaSumula() {
     else {
         isEmpate = true;
         let caraOuCoroa = Math.random() > 0.5; let pFim = caraOuCoroa ? idA : idB; let sFim = caraOuCoroa ? idB : idA; window.filaEquipes.push(pFim, sFim); 
-        let nomePfim = window.timesSorteadosObjs.find(t=>t.id === pFim).nome; let nomeSfim = window.timesSorteadosObjs.find(t=>t.id === sFim).nome;
+        let nomePfim = escapeHTML(window.timesSorteadosObjs.find(t=>t.id === pFim).nome); let nomeSfim = escapeHTML(window.timesSorteadosObjs.find(t=>t.id === sFim).nome);
         
         await customAlert("⚖️ EMPATE!", `As duas equipes saem da quadra.<br><br>Sorteio da fila: o <strong>${nomePfim}</strong> volta para a quadra antes do <strong>${nomeSfim}</strong>.`, "Continuar", "var(--text-muted)");
         
@@ -1318,9 +1386,9 @@ async function adicionarJogoNaSumula() {
                 if(conflitosN2.length > 0) window.coringasAtivos[nextTeam2] = window.coringasAtivos[nextTeam2].filter(c => c.timeOriginalId !== nextTeam1);
             }
             if(conflitosN1.length > 0 || conflitosN2.length > 0) {
-                let msg = `Os times <strong>${window.timesSorteadosObjs.find(t=>t.id===nextTeam1).nome}</strong> e <strong>${window.timesSorteadosObjs.find(t=>t.id===nextTeam2).nome}</strong> vão se enfrentar agora.<br><br>`;
-                if(conflitosN1.length > 0) msg += `Os coringas: <strong>${conflitosN1.map(c=>c.jogador.nome).join(', ')}</strong> retornaram ao ${window.timesSorteadosObjs.find(t=>t.id===nextTeam2).nome}.<br>`;
-                if(conflitosN2.length > 0) msg += `Os coringas: <strong>${conflitosN2.map(c=>c.jogador.nome).join(', ')}</strong> retornaram ao ${window.timesSorteadosObjs.find(t=>t.id===nextTeam1).nome}.<br>`;
+                let msg = `Os times <strong>${escapeHTML(window.timesSorteadosObjs.find(t=>t.id===nextTeam1).nome)}</strong> e <strong>${escapeHTML(window.timesSorteadosObjs.find(t=>t.id===nextTeam2).nome)}</strong> vão se enfrentar agora.<br><br>`;
+                if(conflitosN1.length > 0) msg += `Os coringas: <strong>${escapeHTML(conflitosN1.map(c=>c.jogador.nome).join(', '))}</strong> retornaram ao ${escapeHTML(window.timesSorteadosObjs.find(t=>t.id===nextTeam2).nome)}.<br>`;
+                if(conflitosN2.length > 0) msg += `Os coringas: <strong>${escapeHTML(conflitosN2.map(c=>c.jogador.nome).join(', '))}</strong> retornaram ao ${escapeHTML(window.timesSorteadosObjs.find(t=>t.id===nextTeam1).nome)}.<br>`;
                 
                 await customAlert("⚠️ CONFLITO DE CAMISA", msg, "Entendi", "var(--danger)");
             }
@@ -1336,13 +1404,13 @@ async function adicionarJogoNaSumula() {
             let conflitos = coringasWin.filter(c => c.timeOriginalId === nextAdversarioId);
 
             if(conflitos.length > 0) {
-                let nomes = conflitos.map(c => c.jogador.nome).join(', ');
-                await customAlert("⚠️ CONFLITO DE CAMISA", `Os coringas: <strong>${nomes}</strong> precisaram voltar para o adversário (<strong>${window.timesSorteadosObjs.find(t=>t.id===nextAdversarioId).nome}</strong>) pois vão se enfrentar agora!<br><br>Eles foram removidos do time vencedor.`, "Entendi", "var(--danger)");
+                let nomes = escapeHTML(conflitos.map(c => c.jogador.nome).join(', '));
+                await customAlert("⚠️ CONFLITO DE CAMISA", `Os coringas: <strong>${nomes}</strong> precisaram voltar para o adversário (<strong>${escapeHTML(window.timesSorteadosObjs.find(t=>t.id===nextAdversarioId).nome)}</strong>) pois vão se enfrentar agora!<br><br>Eles foram removidos do time vencedor.`, "Entendi", "var(--danger)");
                 window.coringasAtivos[idWinner] = coringasWin.filter(c => c.timeOriginalId !== nextAdversarioId);
             }
 
             if(window.coringasAtivos[idWinner] && window.coringasAtivos[idWinner].length > 0) {
-                let querRodizio = await customConfirm("🔄 Rodízio de Coringas", `O <strong>${window.timesSorteadosObjs.find(t=>t.id===idWinner).nome}</strong> continuará em quadra.<br><br>Deseja remover os coringas atuais para dar chance a outros da fila?`, "✅ Remover e Rodar", "Manter os mesmos", "var(--supabase)");
+                let querRodizio = await customConfirm("🔄 Rodízio de Coringas", `O <strong>${escapeHTML(window.timesSorteadosObjs.find(t=>t.id===idWinner).nome)}</strong> continuará em quadra.<br><br>Deseja remover os coringas atuais para dar chance a outros da fila?`, "✅ Remover e Rodar", "Manter os mesmos", "var(--supabase)");
                 if(querRodizio) {
                     delete window.coringasAtivos[idWinner];
                 }
@@ -1389,7 +1457,7 @@ async function salvarLesao() {
 
     jogador.isDM = true; window.reservasSorteados.push(jogador);
 
-    await customAlert("🚑 Departamento Médico", `<strong>${jogador.nome}</strong> foi movido para os Reservas e não será sorteado como Coringa.`, "OK", "var(--danger)");
+    await customAlert("🚑 Departamento Médico", `<strong>${escapeHTML(jogador.nome)}</strong> foi movido para os Reservas e não será sorteado como Coringa.`, "OK", "var(--danger)");
     
     if(window.coringasAtivos) {
         for(let key in window.coringasAtivos) {
@@ -1465,7 +1533,7 @@ async function sortearCoringasFila(idTimeIncompleto) {
     window.timesSorteadosObjs.forEach(t => { t.coringas = window.coringasAtivos[t.id] || []; });
     if(window.partidaAtualId) await db.from('partidas').update({ times_json: window.timesSorteadosObjs }).eq('id', window.partidaAtualId);
 
-    let msg = ``; escolhidos.forEach(c => msg += `<strong>${c.jogador.nome}</strong> (do ${c.timeOriginalNome})<br>`); 
+    let msg = ``; escolhidos.forEach(c => msg += `<strong>${escapeHTML(c.jogador.nome)}</strong> (do ${escapeHTML(c.timeOriginalNome)})<br>`); 
     await customAlert("🎭 Coringas Sorteados", msg, "Continuar", "var(--primary)");
 
     salvarEstadoCompleto(); renderizarEscalacaoPublicaSumula();
@@ -1476,7 +1544,7 @@ function abrirModalAjuste() {
     if(!sel) return alert("Erro de HTML: Caixa de seleção não encontrada.");
     sel.innerHTML = '<option value="">Selecione o Jogador</option>';
     let todosOrdem = [...jogadores].sort((a,b) => (a.nome||"").localeCompare(b.nome||""));
-    todosOrdem.forEach(j => { sel.innerHTML += `<option value="${j.nome}">${j.nome}</option>`; });
+    todosOrdem.forEach(j => { sel.innerHTML += `<option value="${escapeHTML(j.nome)}">${escapeHTML(j.nome)}</option>`; });
     let inpG = document.getElementById('input-gols-ajuste'); if(inpG) inpG.value = "1";
     let modAj = document.getElementById('modal-ajuste-manual'); 
     if(modAj) modAj.style.display = 'flex';
@@ -1522,14 +1590,14 @@ function atualizarListaJogosDaRodada() {
         if (j.tipo === 'ajuste') {
             let sinal = j.gols > 0 ? '+' : '';
             let cardHtml = `<div style="background: white; padding: 12px; border-radius: 8px; border: 1px dashed var(--border); margin-bottom: 8px; display:flex; justify-content:space-between; align-items:center;">
-                <div><span style="font-size:10px; color:var(--text-muted); font-weight:bold; display:block; text-transform:uppercase;">Ajuste Manual</span><strong>${j.jogador}</strong></div>
+                <div><span style="font-size:10px; color:var(--text-muted); font-weight:bold; display:block; text-transform:uppercase;">Ajuste Manual</span><strong>${escapeHTML(j.jogador)}</strong></div>
                 <div style="font-size:15px; font-weight:bold; color:${j.gols > 0 ? 'var(--supabase)' : 'var(--danger)'};">${sinal}${j.gols} gols</div>${btnExcluirHtml}</div>`;
             htmlCompleto = cardHtml + htmlCompleto;
         } else {
             let autoresA = formatarGolsResumo(j.gols_a); let autoresB = formatarGolsResumo(j.gols_b);
             let detalhesGolsHtml = '';
             if (autoresA || autoresB) detalhesGolsHtml = `<div style="font-size: 11px; color: var(--text-muted); display: flex; justify-content: space-between; margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border);"><span style="flex: 1; text-align: right; padding-right: 10px;">${autoresA ? '⚽ ' + autoresA : ''}</span><span style="flex: 1; text-align: left; padding-left: 10px;">${autoresB ? '⚽ ' + autoresB : ''}</span></div>`;
-            let cardHtml = `<div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 8px;"><div style="font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 8px; display: flex; justify-content: space-between;"><span>Partida ${numJogo}</span>${btnExcluirHtml}</div><div style="display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 600;"><div style="flex:1; text-align:right;">${j.equipe_a_nome}</div><div class="placar-box" style="margin: 0 10px;">${j.gols_a.length} x ${j.gols_b.length}</div><div style="flex:1; text-align:left;">${j.equipe_b_nome}</div></div>${detalhesGolsHtml}</div>`;
+            let cardHtml = `<div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 8px;"><div style="font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 8px; display: flex; justify-content: space-between;"><span>Partida ${numJogo}</span>${btnExcluirHtml}</div><div style="display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 600;"><div style="flex:1; text-align:right;">${escapeHTML(j.equipe_a_nome)}</div><div class="placar-box" style="margin: 0 10px;">${j.gols_a.length} x ${j.gols_b.length}</div><div style="flex:1; text-align:left;">${escapeHTML(j.equipe_b_nome)}</div></div>${detalhesGolsHtml}</div>`;
             htmlCompleto = cardHtml + htmlCompleto;
         }
     });
@@ -1556,18 +1624,19 @@ function renderizarPainelDoDiaComJogos(jogosArr, dataStr) {
 
     let dataExibicao = window.dataPartidaAtual || new Date().toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
     if (dataStr) { let d = new Date(dataStr); dataExibicao = !isNaN(d.getTime()) ? d.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}) : dataStr; }
-    let tituloClass = document.getElementById('titulo-classificacao-dia'); if(tituloClass) tituloClass.innerText = `🏆 Classificação do dia (${dataExibicao})`; 
-    let tituloArts = document.getElementById('titulo-artilheiros-dia'); if (tituloArts) tituloArts.innerText = `⚽ Artilheiros do dia (${dataExibicao})`;
+    let tituloClass = document.getElementById('titulo-classificacao-dia'); if(tituloClass) tituloClass.innerText = `🏆 Classificação do dia (${escapeHTML(dataExibicao)})`; 
+    let tituloArts = document.getElementById('titulo-artilheiros-dia'); if (tituloArts) tituloArts.innerText = `⚽ Artilheiros do dia (${escapeHTML(dataExibicao)})`;
 
     const bodyClass = document.getElementById('body-classificacao');
     if(bodyClass) {
         if(rankTimes.length === 0) { bodyClass.innerHTML = '<tr><td colspan="7" style="color:var(--text-muted);">Sem jogos hoje.</td></tr>'; } 
         else {
-            bodyClass.innerHTML = '';
+            let htmlClass = '';
             rankTimes.forEach((r, i) => {
                 let t = r[1]; let sg = t.gp - t.gc; let ic = i===0?'🏆 ':'';
-                bodyClass.innerHTML += `<tr><td style="font-weight:700;">${ic}${r[0]}</td><td style="font-weight:700; color:var(--primary);">${t.pts}</td><td>${t.j}</td><td>${t.v}</td><td>${t.e}</td><td>${t.d}</td><td>${sg > 0 ? '+'+sg : sg}</td></tr>`;
+                htmlClass += `<tr><td style="font-weight:700;">${ic}${escapeHTML(r[0])}</td><td style="font-weight:700; color:var(--primary);">${t.pts}</td><td>${t.j}</td><td>${t.v}</td><td>${t.e}</td><td>${t.d}</td><td>${sg > 0 ? '+'+sg : sg}</td></tr>`;
             });
+            bodyClass.innerHTML = htmlClass;
         }
     }
 
@@ -1576,8 +1645,9 @@ function renderizarPainelDoDiaComJogos(jogosArr, dataStr) {
         let arts = Object.entries(artilheiros).sort((a,b) => b[1] - a[1]);
         if(arts.length === 0) { bodyArts.innerHTML = '<tr><td colspan="2" style="color:var(--text-muted);">Nenhum gol lançado.</td></tr>'; }
         else {
-            bodyArts.innerHTML = '';
-            arts.forEach((a, i) => { let ic = i===0?'🥇':(i===1?'🥈':(i===2?'🥉':'⚽')); bodyArts.innerHTML += `<tr><td>${ic} <strong>${a[0]}</strong></td><td>${a[1]}</td></tr>`; });
+            let htmlArts = '';
+            arts.forEach((a, i) => { let ic = i===0?'🥇':(i===1?'🥈':(i===2?'🥉':'⚽')); htmlArts += `<tr><td>${ic} <strong>${escapeHTML(a[0])}</strong></td><td>${a[1]}</td></tr>`; });
+            bodyArts.innerHTML = htmlArts;
         }
     }
 }
@@ -1651,14 +1721,14 @@ async function carregarEstatisticasGerais() {
         if(bodyArtsMes) {
             let artsMesArr = Object.entries(artilhariaMes).sort((a,b) => b[1] - a[1]);
             if(artsMesArr.length === 0) bodyArtsMes.innerHTML = '<tr><td colspan="2" style="color:var(--text-muted);">Sem histórico neste mês.</td></tr>';
-            else { bodyArtsMes.innerHTML = ''; artsMesArr.forEach((a, i) => { let ic = i===0?'🔥':'⚽'; bodyArtsMes.innerHTML += `<tr><td>${ic} <strong>${a[0]}</strong></td><td>${a[1]}</td></tr>`; }); }
+            else { let htmlArtsMes = ''; artsMesArr.forEach((a, i) => { let ic = i===0?'🔥':'⚽'; htmlArtsMes += `<tr><td>${ic} <strong>${escapeHTML(a[0])}</strong></td><td>${a[1]}</td></tr>`; }); bodyArtsMes.innerHTML = htmlArtsMes; }
         }
 
         const bodyRanking = document.getElementById('body-ranking-anual'); 
         if(bodyRanking) {
             let rankArr = Object.entries(rankingAnual).sort((a,b) => { if(b[1].gols !== a[1].gols) return b[1].gols - a[1].gols; return b[1].presencas - a[1].presencas; });
             if(rankArr.length === 0) bodyRanking.innerHTML = '<tr><td colspan="3" style="color:var(--text-muted);">Sem histórico no ano.</td></tr>';
-            else { bodyRanking.innerHTML = ''; rankArr.forEach((r, i) => { let ic = i===0?'🌟':'👤'; bodyRanking.innerHTML += `<tr><td>${ic} <strong>${r[0]}</strong></td><td style="font-weight:700; color:var(--primary);">${r[1].gols}</td><td style="color:var(--text-muted);">${r[1].presencas}</td></tr>`; }); }
+            else { let htmlRank = ''; rankArr.forEach((r, i) => { let ic = i===0?'🌟':'👤'; htmlRank += `<tr><td>${ic} <strong>${escapeHTML(r[0])}</strong></td><td style="font-weight:700; color:var(--primary);">${r[1].gols}</td><td style="color:var(--text-muted);">${r[1].presencas}</td></tr>`; }); bodyRanking.innerHTML = htmlRank; }
         }
     } catch(e) {}
 }
