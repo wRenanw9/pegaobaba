@@ -35,7 +35,7 @@ function customConfirm(title, text, primaryText, secondaryText, primaryColor = '
 
         elTitle.innerText = title;
         elTitle.style.color = primaryColor;
-        elText.innerHTML = text; // Permitimos HTML aqui pois o texto interno dos alertas é gerado pelo nosso próprio código
+        elText.innerHTML = text; 
         
         let btnP = document.getElementById('modal-confirm-btn-primary');
         btnP.innerText = primaryText;
@@ -296,6 +296,25 @@ async function fazerLogout() {
     limparEstadoRodada(); mostrarLogin();
 }
 
+// --- FUNÇÃO INTELIGENTE DE SINCRONIZAÇÃO DE VALORES (FINANCEIRO) ---
+async function carregarPreferenciasFinanceiras() {
+    if (!currentUser) return;
+    try {
+        const { data: pData } = await db.from('partidas')
+            .select('valor_por_mensalista, valor_por_convidado')
+            .eq('user_id', currentUser.id)
+            .order('created_at', { ascending: false })
+            .limit(1);
+            
+        if(pData && pData.length > 0) {
+            let vM = document.getElementById('valor-mensalista');
+            let vC = document.getElementById('valor-convidado');
+            if(vM && pData[0].valor_por_mensalista) vM.value = pData[0].valor_por_mensalista;
+            if(vC && pData[0].valor_por_convidado) vC.value = pData[0].valor_por_convidado;
+        }
+    } catch(e) {}
+}
+
 function mostrarApp() { 
     window.isModoPublico = false; 
     let authC = document.getElementById('auth-container'); if(authC) authC.style.display = 'none'; 
@@ -324,6 +343,7 @@ function mostrarApp() {
         let orgEmail = document.getElementById('organizer-email-label'); 
         if(orgEmail && currentUser) orgEmail.innerText = currentUser.email; 
         
+        carregarPreferenciasFinanceiras();
         carregarElencoDaNuvem(); mudarAba('view-sorteio');
     }
 }
@@ -660,7 +680,6 @@ function filtrarSorteioAusentes() {
     document.querySelectorAll('#lista-aguardando .linha-jogador').forEach(linha => { linha.style.display = linha.getAttribute('data-nome').toLowerCase().includes(termo) ? 'grid' : 'none'; });
 }
 
-// --- FUNÇÃO PARA EXPORTAR ELENCO POR POSIÇÃO ---
 async function exportarElencoPorPosicao() {
     if (!jogadores || jogadores.length === 0) {
         return await customAlert("Aviso", "Não há jogadores cadastrados no elenco.", "OK", "var(--warning)");
@@ -1336,6 +1355,7 @@ function atualizarPlacarTempUI() {
 }
 function formatarGolsResumo(golsArray) { if(!golsArray || golsArray.length === 0) return ''; let contagem = {}; golsArray.forEach(g => { contagem[g] = (contagem[g] || 0) + 1; }); return Object.entries(contagem).map(([nome, qtd]) => qtd > 1 ? `${escapeHTML(nome)} (${qtd})` : escapeHTML(nome)).join(', '); }
 
+// --- BOTÃO BLINDADO DE CONFIRMAÇÃO DO RESULTADO ---
 async function adicionarJogoNaSumula() {
     if (!(await checarTimesCompletosParaJogo())) return; 
     
@@ -1346,83 +1366,105 @@ async function adicionarJogoNaSumula() {
     let gaList = [...window.golsTempA]; let gbList = [...window.golsTempB]; let ga = gaList.length; let gb = gbList.length;
     let nomeA = window.timesSorteadosObjs.find(t=>t.id === idA).nome; let nomeB = window.timesSorteadosObjs.find(t=>t.id === idB).nome;
 
-    window.jogosDaRodada.push({ equipe_a_id: idA, equipe_a_nome: nomeA, gols_a: gaList, equipe_b_id: idB, equipe_b_nome: nomeB, gols_b: gbList });
-    let artilheiros = {};
-    window.jogosDaRodada.forEach(jogo => {
-        if(jogo.tipo === 'ajuste') { artilheiros[jogo.jogador] = (artilheiros[jogo.jogador] || 0) + jogo.gols; } 
+    let msgConf = `Confirmar o encerramento da partida?<br><br><span style="font-size:18px; font-weight:900; color:var(--dark);">${escapeHTML(nomeA)} ${ga} x ${gb} ${escapeHTML(nomeB)}</span>`;
+    let querConfirmar = await customConfirm("⚽ Fim de Jogo", msgConf, "✔️ Confirmar Placar", "Cancelar", "var(--supabase)");
+    if (!querConfirmar) return;
+
+    let btnConfirmar = document.querySelector('button[onclick="adicionarJogoNaSumula()"]');
+    let textoOriginal = "";
+    if(btnConfirmar) {
+        textoOriginal = btnConfirmar.innerText;
+        btnConfirmar.innerText = "⏳ Salvando...";
+        btnConfirmar.disabled = true;
+        btnConfirmar.style.opacity = "0.6";
+    }
+
+    try {
+        window.jogosDaRodada.push({ equipe_a_id: idA, equipe_a_nome: nomeA, gols_a: gaList, equipe_b_id: idB, equipe_b_nome: nomeB, gols_b: gbList });
+        let artilheiros = {};
+        window.jogosDaRodada.forEach(jogo => {
+            if(jogo.tipo === 'ajuste') { artilheiros[jogo.jogador] = (artilheiros[jogo.jogador] || 0) + jogo.gols; } 
+            else {
+                jogo.gols_a.forEach(nome => { if(nome !== 'Gol Contra') artilheiros[nome] = (artilheiros[nome] || 0) + 1; });
+                jogo.gols_b.forEach(nome => { if(nome !== 'Gol Contra') artilheiros[nome] = (artilheiros[nome] || 0) + 1; });
+            }
+        });
+
+        window.filaEquipes = window.filaEquipes.filter(id => id !== idA && id !== idB);
+        let idWinner = null; let idLoser = null; let isEmpate = false;
+
+        if (ga > gb) { window.filaEquipes.unshift(idA); window.filaEquipes.push(idB); idWinner = idA; idLoser = idB; } 
+        else if (gb > ga) { window.filaEquipes.unshift(idB); window.filaEquipes.push(idA); idWinner = idB; idLoser = idA; } 
         else {
-            jogo.gols_a.forEach(nome => { if(nome !== 'Gol Contra') artilheiros[nome] = (artilheiros[nome] || 0) + 1; });
-            jogo.gols_b.forEach(nome => { if(nome !== 'Gol Contra') artilheiros[nome] = (artilheiros[nome] || 0) + 1; });
-        }
-    });
-
-    window.filaEquipes = window.filaEquipes.filter(id => id !== idA && id !== idB);
-    let idWinner = null; let idLoser = null; let isEmpate = false;
-
-    if (ga > gb) { window.filaEquipes.unshift(idA); window.filaEquipes.push(idB); idWinner = idA; idLoser = idB; } 
-    else if (gb > ga) { window.filaEquipes.unshift(idB); window.filaEquipes.push(idA); idWinner = idB; idLoser = idA; } 
-    else {
-        isEmpate = true;
-        let caraOuCoroa = Math.random() > 0.5; let pFim = caraOuCoroa ? idA : idB; let sFim = caraOuCoroa ? idB : idA; window.filaEquipes.push(pFim, sFim); 
-        let nomePfim = escapeHTML(window.timesSorteadosObjs.find(t=>t.id === pFim).nome); let nomeSfim = escapeHTML(window.timesSorteadosObjs.find(t=>t.id === sFim).nome);
-        
-        await customAlert("⚖️ EMPATE!", `As duas equipes saem da quadra.<br><br>Sorteio da fila: o <strong>${nomePfim}</strong> volta para a quadra antes do <strong>${nomeSfim}</strong>.`, "Continuar", "var(--text-muted)");
-        
-        let nextTeam1 = window.filaEquipes[0]; let nextTeam2 = window.filaEquipes[1];
-        if(window.coringasAtivos) {
-            [idA, idB].forEach(id => {
-                if(window.coringasAtivos[id]) {
-                    delete window.coringasAtivos[id];
-                }
-            });
+            isEmpate = true;
+            let caraOuCoroa = Math.random() > 0.5; let pFim = caraOuCoroa ? idA : idB; let sFim = caraOuCoroa ? idB : idA; window.filaEquipes.push(pFim, sFim); 
+            let nomePfim = escapeHTML(window.timesSorteadosObjs.find(t=>t.id === pFim).nome); let nomeSfim = escapeHTML(window.timesSorteadosObjs.find(t=>t.id === sFim).nome);
             
-            let conflitosN1 = []; let conflitosN2 = [];
-            if(window.coringasAtivos[nextTeam1]) {
-                conflitosN1 = window.coringasAtivos[nextTeam1].filter(c => c.timeOriginalId === nextTeam2);
-                if(conflitosN1.length > 0) window.coringasAtivos[nextTeam1] = window.coringasAtivos[nextTeam1].filter(c => c.timeOriginalId !== nextTeam2);
-            }
-            if(window.coringasAtivos[nextTeam2]) {
-                conflitosN2 = window.coringasAtivos[nextTeam2].filter(c => c.timeOriginalId === nextTeam1);
-                if(conflitosN2.length > 0) window.coringasAtivos[nextTeam2] = window.coringasAtivos[nextTeam2].filter(c => c.timeOriginalId !== nextTeam1);
-            }
-            if(conflitosN1.length > 0 || conflitosN2.length > 0) {
-                let msg = `Os times <strong>${escapeHTML(window.timesSorteadosObjs.find(t=>t.id===nextTeam1).nome)}</strong> e <strong>${escapeHTML(window.timesSorteadosObjs.find(t=>t.id===nextTeam2).nome)}</strong> vão se enfrentar agora.<br><br>`;
-                if(conflitosN1.length > 0) msg += `Os coringas: <strong>${escapeHTML(conflitosN1.map(c=>c.jogador.nome).join(', '))}</strong> retornaram ao ${escapeHTML(window.timesSorteadosObjs.find(t=>t.id===nextTeam2).nome)}.<br>`;
-                if(conflitosN2.length > 0) msg += `Os coringas: <strong>${escapeHTML(conflitosN2.map(c=>c.jogador.nome).join(', '))}</strong> retornaram ao ${escapeHTML(window.timesSorteadosObjs.find(t=>t.id===nextTeam1).nome)}.<br>`;
+            await customAlert("⚖️ EMPATE!", `As duas equipes saem da quadra.<br><br>Sorteio da fila: o <strong>${nomePfim}</strong> volta para a quadra antes do <strong>${nomeSfim}</strong>.`, "Continuar", "var(--text-muted)");
+            
+            let nextTeam1 = window.filaEquipes[0]; let nextTeam2 = window.filaEquipes[1];
+            if(window.coringasAtivos) {
+                [idA, idB].forEach(id => {
+                    if(window.coringasAtivos[id]) {
+                        delete window.coringasAtivos[id];
+                    }
+                });
                 
-                await customAlert("⚠️ CONFLITO DE CAMISA", msg, "Entendi", "var(--danger)");
-            }
-        }
-    }
-
-    if (!isEmpate && idLoser !== null && window.coringasAtivos) {
-        delete window.coringasAtivos[idLoser]; 
-        
-        if (window.coringasAtivos[idWinner] && window.coringasAtivos[idWinner].length > 0) {
-            let nextAdversarioId = window.filaEquipes[1]; 
-            let coringasWin = window.coringasAtivos[idWinner];
-            let conflitos = coringasWin.filter(c => c.timeOriginalId === nextAdversarioId);
-
-            if(conflitos.length > 0) {
-                let nomes = escapeHTML(conflitos.map(c => c.jogador.nome).join(', '));
-                await customAlert("⚠️ CONFLITO DE CAMISA", `Os coringas: <strong>${nomes}</strong> precisaram voltar para o adversário (<strong>${escapeHTML(window.timesSorteadosObjs.find(t=>t.id===nextAdversarioId).nome)}</strong>) pois vão se enfrentar agora!<br><br>Eles foram removidos do time vencedor.`, "Entendi", "var(--danger)");
-                window.coringasAtivos[idWinner] = coringasWin.filter(c => c.timeOriginalId !== nextAdversarioId);
-            }
-
-            if(window.coringasAtivos[idWinner] && window.coringasAtivos[idWinner].length > 0) {
-                let querRodizio = await customConfirm("🔄 Rodízio de Coringas", `O <strong>${escapeHTML(window.timesSorteadosObjs.find(t=>t.id===idWinner).nome)}</strong> continuará em quadra.<br><br>Deseja remover os coringas atuais para dar chance a outros da fila?`, "✅ Remover e Rodar", "Manter os mesmos", "var(--supabase)");
-                if(querRodizio) {
-                    delete window.coringasAtivos[idWinner];
+                let conflitosN1 = []; let conflitosN2 = [];
+                if(window.coringasAtivos[nextTeam1]) {
+                    conflitosN1 = window.coringasAtivos[nextTeam1].filter(c => c.timeOriginalId === nextTeam2);
+                    if(conflitosN1.length > 0) window.coringasAtivos[nextTeam1] = window.coringasAtivos[nextTeam1].filter(c => c.timeOriginalId !== nextTeam2);
+                }
+                if(window.coringasAtivos[nextTeam2]) {
+                    conflitosN2 = window.coringasAtivos[nextTeam2].filter(c => c.timeOriginalId === nextTeam1);
+                    if(conflitosN2.length > 0) window.coringasAtivos[nextTeam2] = window.coringasAtivos[nextTeam2].filter(c => c.timeOriginalId !== nextTeam1);
+                }
+                if(conflitosN1.length > 0 || conflitosN2.length > 0) {
+                    let msg = `Os times <strong>${escapeHTML(window.timesSorteadosObjs.find(t=>t.id===nextTeam1).nome)}</strong> e <strong>${escapeHTML(window.timesSorteadosObjs.find(t=>t.id===nextTeam2).nome)}</strong> vão se enfrentar agora.<br><br>`;
+                    if(conflitosN1.length > 0) msg += `Os coringas: <strong>${escapeHTML(conflitosN1.map(c=>c.jogador.nome).join(', '))}</strong> retornaram ao ${escapeHTML(window.timesSorteadosObjs.find(t=>t.id===nextTeam2).nome)}.<br>`;
+                    if(conflitosN2.length > 0) msg += `Os coringas: <strong>${escapeHTML(conflitosN2.map(c=>c.jogador.nome).join(', '))}</strong> retornaram ao ${escapeHTML(window.timesSorteadosObjs.find(t=>t.id===nextTeam1).nome)}.<br>`;
+                    
+                    await customAlert("⚠️ CONFLITO DE CAMISA", msg, "Entendi", "var(--danger)");
                 }
             }
         }
-    }
 
-    window.timesSorteadosObjs.forEach(t => { t.coringas = window.coringasAtivos[t.id] || []; });
+        if (!isEmpate && idLoser !== null && window.coringasAtivos) {
+            delete window.coringasAtivos[idLoser]; 
+            
+            if (window.coringasAtivos[idWinner] && window.coringasAtivos[idWinner].length > 0) {
+                let nextAdversarioId = window.filaEquipes[1]; 
+                let coringasWin = window.coringasAtivos[idWinner];
+                let conflitos = coringasWin.filter(c => c.timeOriginalId === nextAdversarioId);
 
-    if(window.partidaAtualId) await db.from('partidas').update({ jogos_json: window.jogosDaRodada, artilheiros_json: artilheiros, fila_json: window.filaEquipes, times_json: window.timesSorteadosObjs }).eq('id', window.partidaAtualId);
+                if(conflitos.length > 0) {
+                    let nomes = escapeHTML(conflitos.map(c => c.jogador.nome).join(', '));
+                    await customAlert("⚠️ CONFLITO DE CAMISA", `Os coringas: <strong>${nomes}</strong> precisaram voltar para o adversário (<strong>${escapeHTML(window.timesSorteadosObjs.find(t=>t.id===nextAdversarioId).nome)}</strong>) pois vão se enfrentar agora!<br><br>Eles foram removidos do time vencedor.`, "Entendi", "var(--danger)");
+                    window.coringasAtivos[idWinner] = coringasWin.filter(c => c.timeOriginalId !== nextAdversarioId);
+                }
+
+                if(window.coringasAtivos[idWinner] && window.coringasAtivos[idWinner].length > 0) {
+                    let querRodizio = await customConfirm("🔄 Rodízio de Coringas", `O <strong>${escapeHTML(window.timesSorteadosObjs.find(t=>t.id===idWinner).nome)}</strong> continuará em quadra.<br><br>Deseja remover os coringas atuais para dar chance a outros da fila?`, "✅ Remover e Rodar", "Manter os mesmos", "var(--supabase)");
+                    if(querRodizio) {
+                        delete window.coringasAtivos[idWinner];
+                    }
+                }
+            }
+        }
+
+        window.timesSorteadosObjs.forEach(t => { t.coringas = window.coringasAtivos[t.id] || []; });
+
+        if(window.partidaAtualId) await db.from('partidas').update({ jogos_json: window.jogosDaRodada, artilheiros_json: artilheiros, fila_json: window.filaEquipes, times_json: window.timesSorteadosObjs }).eq('id', window.partidaAtualId);
+        
+        limparGolsTemp('A'); limparGolsTemp('B'); atualizarSelectsEquipes(); atualizarFilaUI(); atualizarListaJogosDaRodada(); renderizarEscalacaoPublicaSumula(); salvarEstadoCompleto();
     
-    limparGolsTemp('A'); limparGolsTemp('B'); atualizarSelectsEquipes(); atualizarFilaUI(); atualizarListaJogosDaRodada(); renderizarEscalacaoPublicaSumula(); salvarEstadoCompleto();
+    } finally {
+        if(btnConfirmar) {
+            btnConfirmar.innerText = textoOriginal;
+            btnConfirmar.disabled = false;
+            btnConfirmar.style.opacity = "1";
+        }
+    }
 }
 
 function removerJogo(index) { 
@@ -1736,6 +1778,12 @@ async function carregarEstatisticasGerais() {
 function atualizarFinanceiro() {
     if(window.isModoPublico) return;
     gerarRelatorioMensal(); salvarEstadoCompleto();
+    
+    if(window.partidaAtualId) {
+        let vConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
+        let vMens = parseFloat(document.getElementById('valor-mensalista').value) || 0;
+        db.from('partidas').update({ valor_por_convidado: vConv, valor_por_mensalista: vMens }).eq('id', window.partidaAtualId).then();
+    }
 }
 
 async function adicionarCusto() {
