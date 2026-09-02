@@ -55,14 +55,35 @@ window.onload = async function() {
         const code = new URLSearchParams(window.location.search).get('code');
         if(code) { document.getElementById('codigo-baba-input').value = code; acessarModoPublico(); } 
         else { carregarEstadoCompleto(); if(checarReset24h()) limparEstadoRodada(); verificarSessao(); }
+        
+        // AUTO-RECONECTOR INTELIGENTE
+        setInterval(async () => {
+            let dbStatus = document.getElementById('status-db');
+            if(!dbStatus || !db) return;
+            try {
+                const { error } = await db.from('profiles').select('id').limit(1);
+                if(!error && dbStatus.innerText === "Off-line") {
+                    dbStatus.innerText = "Online"; 
+                    dbStatus.style.backgroundColor = "var(--supabase)";
+                }
+            } catch(e) {
+                if(dbStatus.innerText !== "Off-line" && dbStatus.innerText !== "Buscando Baba..." && dbStatus.innerText !== "Sincronizando...") {
+                    dbStatus.innerText = "Off-line"; 
+                    dbStatus.style.backgroundColor = "var(--danger)";
+                }
+            }
+        }, 10000);
+
     } catch(e) { console.error("Falha ao iniciar app:", e); }
 };
 
 function iniciarOuvinteRealtime(partidaId) {
     if (!partidaId) return;
     if (supabaseChannel) db.removeChannel(supabaseChannel);
+    
     supabaseChannel = db.channel('partida_' + partidaId).on('postgres_changes', { event: '*', schema: 'public', table: 'partidas', filter: `id=eq.${partidaId}` }, payload => {
-        if (payload.new) processarDadosRecebidosNuvem(payload.new);
+        const novaPartida = payload.new;
+        if (novaPartida) processarDadosRecebidosNuvem(novaPartida);
     }).subscribe();
 
     if (window.isModoPublico && !publicSyncInterval) {
@@ -508,10 +529,7 @@ async function sortearTimes(presentesBrutos, isAppend) {
         if (!incluiGoleiros) { reservasNovas.push(...jogadoresLivres.filter(j => j.posicao === 'Goleiro')); jogadoresLivres = jogadoresLivres.filter(j => j.posicao !== 'Goleiro'); }
 
         let tamanhoIdeal = currentProfile && currentProfile.jogadores_por_time ? parseInt(currentProfile.jogadores_por_time) : 7;
-        
-        // --- NOVO: LÓGICA DE LIMITE DE TIMES ---
-        let limiteTimesInput = document.getElementById('limite-times-input');
-        let maxTimes = limiteTimesInput && limiteTimesInput.value ? parseInt(limiteTimesInput.value) : null;
+        let limiteTimesInput = document.getElementById('limite-times-input'); let maxTimes = limiteTimesInput && limiteTimesInput.value ? parseInt(limiteTimesInput.value) : null;
         
         if (isAppend) {
             jogadoresLivres.sort((a, b) => (Number(b.nivel) || 3) - (Number(a.nivel) || 3));
@@ -519,11 +537,9 @@ async function sortearTimes(presentesBrutos, isAppend) {
             while (jogadoresLivres.length > 0 && incompletos.length > 0) {
                 incompletos.sort((a, b) => {
                     if (a.jogadores.length !== b.jogadores.length) return a.jogadores.length - b.jogadores.length;
-                    let scoreA = a.jogadores.reduce((acc, j) => acc + (Number(j.nivel) || 3), 0); let scoreB = b.jogadores.reduce((acc, j) => acc + (Number(j.nivel) || 3), 0);
-                    return scoreA - scoreB;
+                    let scoreA = a.jogadores.reduce((acc, j) => acc + (Number(j.nivel) || 3), 0); let scoreB = b.jogadores.reduce((acc, j) => acc + (Number(j.nivel) || 3), 0); return scoreA - scoreB;
                 });
-                let timeAlvo = incompletos[0]; let jogador = jogadoresLivres.shift(); timeAlvo.jogadores.push(jogador);
-                incompletos = window.timesSorteadosObjs.filter(t => t.jogadores.length < tamanhoIdeal);
+                let timeAlvo = incompletos[0]; let jogador = jogadoresLivres.shift(); timeAlvo.jogadores.push(jogador); incompletos = window.timesSorteadosObjs.filter(t => t.jogadores.length < tamanhoIdeal);
             }
         }
 
@@ -531,11 +547,7 @@ async function sortearTimes(presentesBrutos, isAppend) {
             let maxTitularesPermitidos = 0;
             if (isAppend) { let timesRestantes = maxTimes - window.timesSorteadosObjs.length; maxTitularesPermitidos = timesRestantes > 0 ? timesRestantes * tamanhoIdeal : 0; } 
             else { maxTitularesPermitidos = maxTimes * tamanhoIdeal; }
-            
-            if (jogadoresLivres.length > maxTitularesPermitidos) {
-                let cortados = jogadoresLivres.splice(maxTitularesPermitidos);
-                reservasNovas.push(...cortados);
-            }
+            if (jogadoresLivres.length > maxTitularesPermitidos) { let cortados = jogadoresLivres.splice(maxTitularesPermitidos); reservasNovas.push(...cortados); }
         }
 
         let titulares = []; let maxTitulares = jogadoresLivres.length;
@@ -550,15 +562,11 @@ async function sortearTimes(presentesBrutos, isAppend) {
             let tamanhoPartida;
             if (priorizarOrdem) { tamanhoPartida = tamanhoIdeal; } else { tamanhoPartida = (modo === '12' || modo === '14') ? maxTitulares : titulares.length; }
 
-            const getSomaNotas = (time) => time.reduce((acc, j) => acc + (Number(j.nivel) || 3), 0);
-            const getQtdPosicao = (time, pos) => time.filter(j => j.posicao === pos).length;
+            const getSomaNotas = (time) => time.reduce((acc, j) => acc + (Number(j.nivel) || 3), 0); const getQtdPosicao = (time, pos) => time.filter(j => j.posicao === pos).length;
             
             for (let i = 0; i < titulares.length; i += tamanhoPartida) {
                 let chunk = titulares.slice(i, i + tamanhoPartida); let numTimesNoChunk;
-                if (priorizarOrdem || isAppend) { numTimesNoChunk = Math.max(1, Math.ceil(chunk.length / tamanhoIdeal)); } 
-                else if (modo === '12' || modo === '14') { numTimesNoChunk = 2; } 
-                else { numTimesNoChunk = Math.ceil(chunk.length / tamanhoIdeal); if (numTimesNoChunk < 2 && titulares.length >= 2) numTimesNoChunk = 2; }
-                
+                if (priorizarOrdem || isAppend) { numTimesNoChunk = Math.max(1, Math.ceil(chunk.length / tamanhoIdeal)); } else if (modo === '12' || modo === '14') { numTimesNoChunk = 2; } else { numTimesNoChunk = Math.ceil(chunk.length / tamanhoIdeal); if (numTimesNoChunk < 2 && titulares.length >= 2) numTimesNoChunk = 2; }
                 if (numTimesNoChunk === 0) continue;
 
                 let capacities = []; let remaining = chunk.length;
@@ -566,7 +574,6 @@ async function sortearTimes(presentesBrutos, isAppend) {
                 else { for (let k = 0; k < numTimesNoChunk; k++) { if (remaining >= tamanhoIdeal) { capacities.push(tamanhoIdeal); remaining -= tamanhoIdeal; } else if (remaining > 0) { capacities.push(remaining); remaining = 0; } else { capacities.push(0); } } }
                 
                 let goleirosChunk = embaralhar(chunk.filter(j => j.posicao === 'Goleiro')); let linhaChunk = embaralhar(chunk.filter(j => j.posicao !== 'Goleiro')); let timesLocais = Array.from({ length: numTimesNoChunk }, () => []);
-                
                 if (incluiGoleiros) { for (let t = 0; t < numTimesNoChunk; t++) { if (goleirosChunk.length > 0 && timesLocais[t].length < capacities[t]) { timesLocais[t].push(goleirosChunk.shift()); } } reservasNovas.push(...goleirosChunk); }
 
                 const posicoes = ["Zagueiro", "Lateral", "Meia", "Atacante", "Linha"]; const grupos = {}; posicoes.forEach(p => grupos[p] = []);
@@ -613,7 +620,7 @@ async function sortearTimes(presentesBrutos, isAppend) {
                 let html = `<div class="team" style="border-top-color: ${corHex};"><div style="display:flex; align-items:center; gap:5px; margin-bottom:10px;"><span style="font-size:18px;">${emoji}</span><input type="text" value="${nomeEscaped}" onchange="atualizarNomeTime(${t.id}, this.value)" class="input-nome-time" placeholder="Nome do Time" style="color: ${corHex};" ${window.isModoPublico ? 'disabled' : ''}></div><ul>`;
                 t.jogadores.forEach(j => { if(coringasEmprestadosIds.includes(j.id)) return; let posAbbr = posMap[j.posicao] || j.posicao; html += `<li><strong>${escapeHTML(j.nome)}</strong> ${j.posicao!=='Linha'?`<span class="badge badge-posicao" style="display:inline-block; min-width:32px; text-align:center; font-size:9px;">${posAbbr}</span>`:''}</li>`; }); 
                 let coringasTime = (t.coringas && t.coringas.length > 0) ? t.coringas : ((window.coringasAtivos && window.coringasAtivos[t.id]) ? window.coringasAtivos[t.id] : []);
-                coringasTime.forEach(c => { let posAbbr = posMap[c.jogador.posicao] || c.jogador.posicao; html += `<li><strong>${escapeHTML(c.jogador.nome)}</strong> <span style="font-size:11px; color:var(--primary); font-weight:600;">(Coringa - ${escapeHTML(c.timeOriginalNome)})</span> ${c.jogador.posicao!=='Linha'?`<span class="badge badge-posicao" style="display:inline-block; min-width:32px; text-align:center; font-size:9px;">${posAbbr}</span>`:''}</li>`; });
+                coringasTime.forEach(c => { let posAbbr = posMap[c.jogador.posicao] || c.jogador.posicao; html += `<li style="color: var(--primary); background: #e0e7ff; margin-left: -5px; padding-left: 5px; border-radius: 4px;"><strong>🎭 ${escapeHTML(c.jogador.nome)}</strong> <span style="font-size:10px;">(do ${escapeHTML(c.timeOriginalNome)})</span> ${c.jogador.posicao!=='Linha'?`<span class="badge badge-posicao" style="display:inline-block; min-width:32px; text-align:center; font-size:9px;">${posAbbr}</span>`:''}</li>`; });
                 resHtml += html + `</ul></div>`;
             });
             if (window.reservasSorteados && window.reservasSorteados.length > 0) { let html = `<div class="team team-reservas"><h3 style="padding:5px; font-size:15px;">Reservas (Inativos)</h3><ul>`; window.reservasSorteados.forEach(j => html += `<li><strong>${escapeHTML(j.nome)}</strong> ${j.isDM ? '<span style="color:var(--danger); font-size:11px; font-weight:bold;">[DM]</span>' : ''}</li>`); resHtml += html + `</ul></div>`; }
@@ -653,24 +660,15 @@ async function gerarRelatorioMensal() {
     if (!mesKey) { let tzoffset = (new Date()).getTimezoneOffset() * 60000; mesKey = (new Date(Date.now() - tzoffset)).toISOString().substring(0, 7); if(filtroInput) filtroInput.value = mesKey; }
     let partes = mesKey.split('-'); let elMens = document.getElementById('valor-mensalista'); let valMens = elMens ? parseFloat(elMens.value) || 70 : 70; let elConv = document.getElementById('valor-convidado'); let defConv = elConv ? parseFloat(elConv.value) || 25 : 25;
     let partidasDoMes = []; let saldoAnterior = 0; 
-    
-    if(currentUser) {
-        const { data: partidas } = await db.from('partidas').select('*').eq('user_id', currentUser.id);
-        if(partidas) {
-            partidas.forEach(p => { let dataRef = p.data_sorteio || p.created_at; if (!dataRef) return; let pMes = dataRef.substring(0, 7); if(pMes === mesKey) partidasDoMes.push(p); else if (pMes < mesKey) { let vConv = p.valor_por_convidado || defConv; saldoAnterior += ((p.renda_convidados || 0) * vConv); (p.custos_json || []).forEach(c => { saldoAnterior -= c.valor; }); } });
-        }
-    }
-
+    if(currentUser) { const { data: partidas } = await db.from('partidas').select('*').eq('user_id', currentUser.id); if(partidas) { partidas.forEach(p => { let dataRef = p.data_sorteio || p.created_at; if (!dataRef) return; let pMes = dataRef.substring(0, 7); if(pMes === mesKey) partidasDoMes.push(p); else if (pMes < mesKey) { let vConv = p.valor_por_convidado || defConv; saldoAnterior += ((p.renda_convidados || 0) * vConv); (p.custos_json || []).forEach(c => { saldoAnterior -= c.valor; }); } }); } }
     let mensalistas = jogadores.filter(j => j.tipo === 'Mensalista');
     mensalistas.forEach(j => { if(j.pagamentos_json) { for(let mKey in j.pagamentos_json) { if(mKey < mesKey && j.pagamentos_json[mKey] === true) saldoAnterior += valMens; } } });
     (window.despesasMensaisGlobais || []).forEach(c => { let cMes = c.data ? c.data.substring(0, 7) : ""; if(cMes && cMes < mesKey) { let op = c.operacao || 'saida'; if (op === 'entrada') saldoAnterior += c.valor; else saldoAnterior -= c.valor; } });
 
-    let html = `<table class="relatorio-tabela"><tr><th colspan="2">👥 Mensalidades Pagas no Mês</th></tr>`;
-    let totalMensalidades = 0;
+    let html = `<table class="relatorio-tabela"><tr><th colspan="2">👥 Mensalidades Pagas no Mês</th></tr>`; let totalMensalidades = 0;
     if(mensalistas.length === 0) html += `<tr><td colspan="2" style="color:var(--text-muted);">Nenhum mensalista cadastrado.</td></tr>`;
     else { let htmlMensalistas = `<div class="grid-mensalistas">`; mensalistas.forEach(j => { let pago = j.pagamentos_json && j.pagamentos_json[mesKey] === true; if(pago) totalMensalidades += valMens; let statusText = pago ? `<span style="color:var(--supabase); font-weight:bold;">✅ Pago</span>` : `<span style="color:var(--danger); font-weight:bold;">❌ Pendente</span>`; htmlMensalistas += `<div class="item-mensalista"><span>${escapeHTML(j.nome)}</span> <span>${statusText}</span></div>`; }); htmlMensalistas += `</div>`; html += `<tr><td colspan="2" style="padding: 0;">${htmlMensalistas}</td></tr>`; }
     html += `<tr><td><strong>Subtotal Mensalidades:</strong></td><td style="text-align:right; font-weight:bold; color:var(--supabase);">R$ ${totalMensalidades.toFixed(2)}</td></tr><tr><th colspan="2" style="padding-top:12px;">🎟️ Arrecadação de Convidados (Por Rodada)</th></tr>`;
-    
     let totalConvidados = 0;
     if(partidasDoMes.length > 0) { partidasDoMes.forEach((p, idx) => { let vConv = p.valor_por_convidado || defConv; let qtdConv = p.renda_convidados || 0; let subConv = qtdConv * vConv; totalConvidados += subConv; let dataF = p.data_sorteio ? p.data_sorteio.split('T')[0].split('-').reverse().join('/') : `Rodada ${idx+1}`; if(qtdConv > 0) html += `<tr><td>Rodada (${escapeHTML(dataF)}): ${qtdConv} convidados</td><td style="text-align:right;">R$ ${subConv.toFixed(2)}</td></tr>`; }); } else html += `<tr><td colspan="2" style="color:var(--text-muted);">Nenhuma rodada finalizada neste mês.</td></tr>`;
     html += `<tr><td><strong>Subtotal Convidados:</strong></td><td style="text-align:right; font-weight:bold; color:var(--supabase);">R$ ${totalConvidados.toFixed(2)}</td></tr>`;
@@ -685,15 +683,12 @@ async function gerarRelatorioMensal() {
 
     if(partidasDoMes.length > 0) { partidasDoMes.forEach(p => { let c_json = safeParse(p.custos_json) || []; c_json.forEach(c => { totalCustos += c.valor; temCustos = true; let rawDate = p.data_sorteio || p.created_at || ""; let dData = rawDate ? rawDate.split('T')[0].split('-').reverse().join('/') : "Antigo"; htmlCustosDiarios += `<div class="item-custo-relatorio"><span>${escapeHTML(c.desc)} <span style="color:var(--text-muted); font-size:10px;">(${escapeHTML(dData)})</span></span> <strong class="valor-negativo" style="white-space:nowrap;">- R$ ${c.valor.toFixed(2)}</strong></div>`; }); }); }
     htmlCustosDiarios += `</div>`; htmlEntradasExtras += `</div>`;
-
-    html += `<tr><th colspan="2" style="padding-top:12px;">📈 Entradas Extras (Manuais)</th></tr>`;
-    if(temEntradaExtra) html += `<tr><td colspan="2" style="padding: 0 0 10px 0;">${htmlEntradasExtras}</td></tr>`; else html += `<tr><td colspan="2" style="color:var(--text-muted);">Nenhuma entrada extra neste mês.</td></tr>`;
+    html += `<tr><th colspan="2" style="padding-top:12px;">📈 Entradas Extras (Manuais)</th></tr>`; if(temEntradaExtra) html += `<tr><td colspan="2" style="padding: 0 0 10px 0;">${htmlEntradasExtras}</td></tr>`; else html += `<tr><td colspan="2" style="color:var(--text-muted);">Nenhuma entrada extra neste mês.</td></tr>`;
     html += `<tr><td><strong>Subtotal Extras:</strong></td><td style="text-align:right; font-weight:bold; color:var(--supabase);">R$ ${totalEntradasExtras.toFixed(2)}</td></tr><tr><th colspan="2" style="padding-top:12px;">📉 Detalhamento de Despesas (Saídas)</th></tr>`;
     if(temCustos) html += `<tr><td colspan="2" style="padding: 0 0 10px 0;">${htmlCustosDiarios}</td></tr>`; else html += `<tr><td colspan="2" style="color:var(--text-muted);">Nenhuma despesa registrada no mês selecionado.</td></tr>`; html += `</table>`;
 
     let receitaTotal = totalMensalidades + totalConvidados + totalEntradasExtras; let saldoMensal = receitaTotal - totalCustos; let saldoTotalCaixa = saldoAnterior + saldoMensal;
-
-    html += `<div style="margin-top: 20px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); page-break-inside: avoid;">`; html += `<div style="background: var(--dark); color: white; padding: 12px 15px; text-align: center; font-weight: 700; font-size: 14px; text-transform: uppercase; -webkit-print-color-adjust: exact; print-color-adjust: exact;">💰 Resumo Financeiro (${partes[1]}/${partes[0]})</div>`; html += `<div style="padding: 15px; background: white;"><div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;"><span style="color: var(--text-muted);">Entradas no Mês:</span><span style="font-weight: bold; color: var(--supabase);">+ R$ ${receitaTotal.toFixed(2)}</span></div>`; html += `<div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13px; border-bottom: 1px dashed var(--border); padding-bottom: 12px;"><span style="color: var(--text-muted);">Saídas no Mês:</span><span style="font-weight: bold; color: var(--danger);">- R$ ${totalCustos.toFixed(2)}</span></div>`; html += `<div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: bold;"><span>Saldo do Mês:</span><span style="color: ${saldoMensal >= 0 ? 'var(--primary)' : 'var(--danger)'};">R$ ${saldoMensal.toFixed(2)}</span></div></div>`; html += `<div style="padding: 15px; background: var(--light); border-top: 1px solid var(--border); -webkit-print-color-adjust: exact; print-color-adjust: exact;"><div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 12px; color: var(--text-muted);"><span>⏪ Saldo Anterior Acumulado:</span><span style="font-weight: bold; color: ${saldoAnterior >= 0 ? 'var(--supabase)' : 'var(--danger)'};">R$ ${saldoAnterior.toFixed(2)}</span></div>`; html += `<div style="display: flex; justify-content: space-between; align-items: center; font-size: 16px;"><span style="font-weight: 800; color: var(--dark);">🏦 CAIXA TOTAL:</span><span style="font-weight: 900; font-size: 18px; color: ${saldoTotalCaixa >= 0 ? 'var(--supabase)' : 'var(--danger)'};">R$ ${saldoTotalCaixa.toFixed(2)}</span></div></div></div>`;
+    html += `<div style="margin-top: 20px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); page-break-inside: avoid;"><div style="background: var(--dark); color: white; padding: 12px 15px; text-align: center; font-weight: 700; font-size: 14px; text-transform: uppercase; -webkit-print-color-adjust: exact; print-color-adjust: exact;">💰 Resumo Financeiro (${partes[1]}/${partes[0]})</div><div style="padding: 15px; background: white;"><div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;"><span style="color: var(--text-muted);">Entradas no Mês:</span><span style="font-weight: bold; color: var(--supabase);">+ R$ ${receitaTotal.toFixed(2)}</span></div><div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13px; border-bottom: 1px dashed var(--border); padding-bottom: 12px;"><span style="color: var(--text-muted);">Saídas no Mês:</span><span style="font-weight: bold; color: var(--danger);">- R$ ${totalCustos.toFixed(2)}</span></div><div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: bold;"><span>Saldo do Mês:</span><span style="color: ${saldoMensal >= 0 ? 'var(--primary)' : 'var(--danger)'};">R$ ${saldoMensal.toFixed(2)}</span></div></div><div style="padding: 15px; background: var(--light); border-top: 1px solid var(--border); -webkit-print-color-adjust: exact; print-color-adjust: exact;"><div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 12px; color: var(--text-muted);"><span>⏪ Saldo Anterior Acumulado:</span><span style="font-weight: bold; color: ${saldoAnterior >= 0 ? 'var(--supabase)' : 'var(--danger)'};">R$ ${saldoAnterior.toFixed(2)}</span></div><div style="display: flex; justify-content: space-between; align-items: center; font-size: 16px;"><span style="font-weight: 800; color: var(--dark);">🏦 CAIXA TOTAL:</span><span style="font-weight: 900; font-size: 18px; color: ${saldoTotalCaixa >= 0 ? 'var(--supabase)' : 'var(--danger)'};">R$ ${saldoTotalCaixa.toFixed(2)}</span></div></div></div>`;
     let elConteudo = document.getElementById('conteudo-relatorio-mensal'); if(elConteudo) elConteudo.innerHTML = html;
 }
 
@@ -708,15 +703,8 @@ function atualizarNomeTime(id, novoNome) { let time = window.timesSorteadosObjs.
 
 // --- BOTÃO DA SANFONA DE ESCALAÇÃO ---
 window.toggleEscalacao = function() {
-    let el = document.getElementById('container-escalacao-toggled');
-    let btn = document.getElementById('btn-toggle-escalacao');
-    if (el.style.display === 'none' || el.style.display === '') {
-        el.style.display = 'block';
-        if(btn) btn.innerHTML = '🙈 Ocultar Escalação das Equipes';
-    } else {
-        el.style.display = 'none';
-        if(btn) btn.innerHTML = '👁️ Mostrar Escalação das Equipes';
-    }
+    let el = document.getElementById('container-escalacao-toggled'); let btn = document.getElementById('btn-toggle-escalacao');
+    if (el.style.display === 'none' || el.style.display === '') { el.style.display = 'block'; if(btn) btn.innerHTML = '🙈 Ocultar Escalação das Equipes'; } else { el.style.display = 'none'; if(btn) btn.innerHTML = '👁️ Mostrar Escalação das Equipes'; }
 };
 
 function renderizarSumula() {
@@ -795,8 +783,7 @@ async function abrirModalGol(lado) {
     coringasTime.forEach(c => { htmlBotoes += `<button class="btn-jogador-gol" style="background:#e0e7ff; color:var(--primary); border-color:var(--primary);" onclick="registrarGol('${lado}', '${escapeJS(c.jogador.nome)}')">🎭 ${escapeHTML(c.jogador.nome)} (Coringa)</button>`; });
     htmlBotoes += `<button class="btn-jogador-gol" style="background:#fee2e2; color:var(--danger); border-color:var(--danger);" onclick="registrarGol('${lado}', 'Gol Contra')">⚠️ Gol Contra</button>`;
     
-    containerJogadores.innerHTML = htmlBotoes;
-    let modGol = document.getElementById('modal-gol'); if(modGol) modGol.style.display = 'flex'; else alert("Janela do Gol não encontrada no HTML!");
+    containerJogadores.innerHTML = htmlBotoes; let modGol = document.getElementById('modal-gol'); if(modGol) modGol.style.display = 'flex'; else alert("Janela do Gol não encontrada no HTML!");
 }
 
 function fecharModalGol() { let modGol = document.getElementById('modal-gol'); if(modGol) modGol.style.display = 'none'; }
@@ -813,7 +800,6 @@ function atualizarPlacarTempUI() {
 }
 function formatarGolsResumo(golsArray) { if(!golsArray || golsArray.length === 0) return ''; let contagem = {}; golsArray.forEach(g => { contagem[g] = (contagem[g] || 0) + 1; }); return Object.entries(contagem).map(([nome, qtd]) => qtd > 1 ? `${escapeHTML(nome)} (${qtd})` : escapeHTML(nome)).join(', '); }
 
-// --- BOTÃO BLINDADO ANTI-DUPLO CLIQUE ---
 async function adicionarJogoNaSumula() {
     if (!(await checarTimesCompletosParaJogo())) return; 
     
@@ -886,12 +872,11 @@ async function adicionarJogoNaSumula() {
 
 function removerJogo(index) { if(window.partidaSalva || window.isModoPublico) return; window.jogosDaRodada.splice(index, 1); atualizarListaJogosDaRodada(); salvarEstadoCompleto(); }
 
-// --- NOVAS FUNÇÕES DO DEPARTAMENTO MÉDICO ---
+// --- INTELIGÊNCIA MÉDICA: LESÃO COM AUTO-SWAP ---
 function abrirModalLesao() {
     const selLesao = document.getElementById('select-jogador-lesao'); const selAlta = document.getElementById('select-jogador-alta');
     if(!selLesao || !selAlta) return alert("Erro de HTML: Modal não atualizado.");
     
-    // Popula aba DM
     selLesao.innerHTML = '<option value="">Quem se machucou?</option>';
     window.timesSorteadosObjs.forEach(t => {
         let optgroup = document.createElement('optgroup'); optgroup.label = `Time ${t.nome}`;
@@ -899,7 +884,6 @@ function abrirModalLesao() {
         selLesao.appendChild(optgroup);
     });
 
-    // Popula aba Alta
     selAlta.innerHTML = '<option value="">Quem melhorou?</option>';
     let temGenteNoDM = false;
     if(window.reservasSorteados) {
@@ -920,7 +904,19 @@ async function salvarLesao() {
     let jogador = time.jogadores.splice(jIndex, 1)[0];
     jogador.isDM = true; window.reservasSorteados.push(jogador);
 
-    await customAlert("🚑 Departamento Médico", `<strong>${escapeHTML(jogador.nome)}</strong> foi movido para os Reservas e não será sorteado como Coringa.`, "OK", "var(--danger)");
+    let msgAlert = `<strong>${escapeHTML(jogador.nome)}</strong> foi movido para o DM.`;
+
+    // 🔄 AUTO-SWAP: Procura quem está no banco pra tapar o buraco
+    let reservasDisponiveis = window.reservasSorteados.filter(j => !j.isDM);
+    if (reservasDisponiveis.length > 0) {
+        reservasDisponiveis.sort((a, b) => (Number(b.nivel)||3) - (Number(a.nivel)||3));
+        let substituto = reservasDisponiveis[0];
+        window.reservasSorteados = window.reservasSorteados.filter(j => j.id !== substituto.id);
+        time.jogadores.push(substituto);
+        msgAlert += `<br><br>🔄 <strong>${escapeHTML(substituto.nome)}</strong> (Reserva) assumiu a vaga dele no <strong>${escapeHTML(time.nome)}</strong> automaticamente.`;
+    }
+
+    await customAlert("🚑 Departamento Médico", msgAlert, "OK", "var(--danger)");
     
     if(window.coringasAtivos) { for(let key in window.coringasAtivos) { window.coringasAtivos[key] = window.coringasAtivos[key].filter(c => c.jogador.id !== jogador.id); } }
     window.timesSorteadosObjs.forEach(t => { t.coringas = window.coringasAtivos[t.id] || []; });
@@ -929,54 +925,101 @@ async function salvarLesao() {
     fecharModalLesao(); salvarEstadoCompleto(); renderizarEscalacaoPublicaSumula();
 }
 
+// --- INTELIGÊNCIA MÉDICA: ALTA COM AUTO-FILL ---
 async function darAltaDM() {
     let selAlta = document.getElementById('select-jogador-alta'); if(!selAlta) return;
     let idJog = selAlta.value; if(!idJog) return alert("Selecione um jogador para dar alta.");
     let jogador = window.reservasSorteados.find(j => j.id === idJog);
     
     if(jogador) {
-        jogador.isDM = false; // Tira do DM, continua na reserva apto a ser coringa
-        await customAlert("🩺 Alta Médica", `<strong>${escapeHTML(jogador.nome)}</strong> foi liberado pelo DM e agora está disponível no banco de Reservas!`, "OK", "var(--primary)");
+        jogador.isDM = false; 
+        let msgAlert = `<strong>${escapeHTML(jogador.nome)}</strong> foi liberado pelo DM!`;
+        let tamanhoIdeal = currentProfile && currentProfile.jogadores_por_time ? parseInt(currentProfile.jogadores_por_time) : 7;
+        let timeIncompleto = window.timesSorteadosObjs.find(t => t.jogadores.length < tamanhoIdeal);
+
+        if (timeIncompleto) {
+            window.reservasSorteados = window.reservasSorteados.filter(j => j.id !== jogador.id);
+            timeIncompleto.jogadores.push(jogador);
+            msgAlert += `<br><br>⚡ Como o <strong>${escapeHTML(timeIncompleto.nome)}</strong> estava incompleto, ele já assumiu a vaga e está titular!`;
+        } else {
+            msgAlert += `<br><br>O jogador agora está disponível no banco de Reservas para atuar como Coringa.`;
+        }
+
+        await customAlert("🩺 Alta Médica", msgAlert, "OK", "var(--primary)");
+        if(window.partidaAtualId) await db.from('partidas').update({ times_json: window.timesSorteadosObjs }).eq('id', window.partidaAtualId);
         fecharModalLesao(); salvarEstadoCompleto(); renderizarEscalacaoPublicaSumula();
     }
 }
 
+// --- SORTEIO DE CORINGA: PRIORIDADE AO BANCO ---
 async function sortearCoringasFila(idTimeIncompleto) {
     let timeInc = window.timesSorteadosObjs.find(t => t.id === idTimeIncompleto); let tamanhoIdeal = currentProfile && currentProfile.jogadores_por_time ? parseInt(currentProfile.jogadores_por_time) : 7;
     if(!window.coringasAtivos) window.coringasAtivos = {}; let coringasAtuaisInc = window.coringasAtivos[idTimeIncompleto] || [];
     let faltam = tamanhoIdeal - (timeInc.jogadores.length + coringasAtuaisInc.length);
     if(faltam <= 0) return await customAlert("Time Completo", "Esta equipe já está com a quantidade ideal de jogadores.", "OK", "var(--primary)");
 
-    let somaNotasTimesCompletos = 0; let qtdTimesCompletos = 0;
-    window.timesSorteadosObjs.forEach(t => { if(t.id !== idTimeIncompleto && t.jogadores.length === tamanhoIdeal) { somaNotasTimesCompletos += t.jogadores.reduce((acc, j) => acc + (Number(j.nivel)||3), 0); qtdTimesCompletos++; } });
-    let notaMediaBaba = qtdTimesCompletos > 0 ? (somaNotasTimesCompletos / qtdTimesCompletos) : (tamanhoIdeal * 3);
-    let notaIncAtual = timeInc.jogadores.reduce((acc, j) => acc + (Number(j.nivel)||3), 0) + coringasAtuaisInc.reduce((acc, c) => acc + (Number(c.jogador.nivel)||3), 0);
-    let alvo = notaMediaBaba - notaIncAtual; let emQuadraIds = window.filaEquipes.slice(0, 2);
-    
-    let elegiveis = [];
-    window.filaEquipes.forEach(tId => { if(!emQuadraIds.includes(tId) && tId !== idTimeIncompleto) { let t = window.timesSorteadosObjs.find(x => x.id === tId); if(t) t.jogadores.forEach(j => elegiveis.push({ jogador: j, timeOriginalId: tId, timeOriginalNome: t.nome })); } });
-    window.reservasSorteados.forEach(j => { if(!j.isDM) elegiveis.push({ jogador: j, timeOriginalId: -1, timeOriginalNome: "Reserva" }); });
-
     let todosCoringasEmUso = []; for(let key in window.coringasAtivos) { window.coringasAtivos[key].forEach(c => todosCoringasEmUso.push(c.jogador.id)); }
-    elegiveis = elegiveis.filter(e => !todosCoringasEmUso.includes(e.jogador.id));
 
-    if(elegiveis.length < faltam) return await customAlert("Banco Vazio", "Não há jogadores suficientes descansando no banco para completar o time agora.<br><br>Aguarde o jogo atual acabar.", "Entendi", "var(--warning)");
+    // 1. PRIORIDADE ABSOLUTA: Reservas Livres e Saudáveis
+    let elegiveisReservas = [];
+    window.reservasSorteados.forEach(j => { 
+        if(!j.isDM && !todosCoringasEmUso.includes(j.id)) { elegiveisReservas.push({ jogador: j, timeOriginalId: -1, timeOriginalNome: "Reserva" }); } 
+    });
 
-    elegiveis = embaralhar(elegiveis); elegiveis.sort((a, b) => (Number(b.jogador.nivel)||3) - (Number(a.jogador.nivel)||3));
-    let escolhidos = []; let somaEscolhidos = 0;
-    for(let i=0; i<faltam; i++) {
-        let mediaFaltante = (alvo - somaEscolhidos) / (faltam - i); let closestIdx = 0; let minDiff = 999;
-        for(let k=0; k<elegiveis.length; k++) { let diff = Math.abs((Number(elegiveis[k].jogador.nivel)||3) - mediaFaltante); if(diff < minDiff) { minDiff = diff; closestIdx = k; } }
-        let best = elegiveis.splice(closestIdx, 1)[0]; escolhidos.push(best); somaEscolhidos += (Number(best.jogador.nivel)||3);
+    // 2. SEGUNDA OPÇÃO: Emprestar de outros times
+    let elegiveisOutros = []; let emQuadraIds = window.filaEquipes.slice(0, 2);
+    window.filaEquipes.forEach(tId => {
+        if(!emQuadraIds.includes(tId) && tId !== idTimeIncompleto) {
+            let t = window.timesSorteadosObjs.find(x => x.id === tId);
+            if(t) t.jogadores.forEach(j => { if (!todosCoringasEmUso.includes(j.id)) { elegiveisOutros.push({ jogador: j, timeOriginalId: tId, timeOriginalNome: t.nome }); } });
+        }
+    });
+
+    if((elegiveisReservas.length + elegiveisOutros.length) < faltam) {
+        return await customAlert("Banco Vazio", "Não há jogadores suficientes descansando para completar o time agora.<br><br>Aguarde o jogo atual acabar.", "Entendi", "var(--warning)");
+    }
+
+    let escolhidos = [];
+    
+    // Tira os coringas da Reserva (Ordem de Habilidade)
+    while (faltam > 0 && elegiveisReservas.length > 0) {
+        elegiveisReservas.sort((a, b) => (Number(b.jogador.nivel)||3) - (Number(a.jogador.nivel)||3));
+        escolhidos.push(elegiveisReservas.shift());
+        faltam--;
+    }
+
+    // Se a reserva esgotou e ainda faltar, aplica a matemática pros times de fora
+    if (faltam > 0) {
+        let somaNotasTimesCompletos = 0; let qtdTimesCompletos = 0;
+        window.timesSorteadosObjs.forEach(t => {
+            if(t.id !== idTimeIncompleto && t.jogadores.length === tamanhoIdeal) { somaNotasTimesCompletos += t.jogadores.reduce((acc, j) => acc + (Number(j.nivel)||3), 0); qtdTimesCompletos++; }
+        });
+
+        let notaMediaBaba = qtdTimesCompletos > 0 ? (somaNotasTimesCompletos / qtdTimesCompletos) : (tamanhoIdeal * 3);
+        let notaIncAtual = timeInc.jogadores.reduce((acc, j) => acc + (Number(j.nivel)||3), 0) + coringasAtuaisInc.reduce((acc, c) => acc + (Number(c.jogador.nivel)||3), 0);
+        let notaEscolhidosReservas = escolhidos.reduce((acc, c) => acc + (Number(c.jogador.nivel)||3), 0);
+        
+        let alvo = notaMediaBaba - (notaIncAtual + notaEscolhidosReservas);
+
+        elegiveisOutros = embaralhar(elegiveisOutros); elegiveisOutros.sort((a, b) => (Number(b.jogador.nivel)||3) - (Number(a.jogador.nivel)||3));
+        let somaEscolhidos = 0;
+        
+        for(let i=0; i<faltam; i++) {
+            let mediaFaltante = (alvo - somaEscolhidos) / (faltam - i); let closestIdx = 0; let minDiff = 999;
+            for(let k=0; k<elegiveisOutros.length; k++) { let diff = Math.abs((Number(elegiveisOutros[k].jogador.nivel)||3) - mediaFaltante); if(diff < minDiff) { minDiff = diff; closestIdx = k; } }
+            let best = elegiveisOutros.splice(closestIdx, 1)[0]; escolhidos.push(best); somaEscolhidos += (Number(best.jogador.nivel)||3);
+        }
     }
 
     if(!window.coringasAtivos[idTimeIncompleto]) window.coringasAtivos[idTimeIncompleto] = [];
     window.coringasAtivos[idTimeIncompleto].push(...escolhidos);
     window.timesSorteadosObjs.forEach(t => { t.coringas = window.coringasAtivos[t.id] || []; });
+    
     if(window.partidaAtualId) await db.from('partidas').update({ times_json: window.timesSorteadosObjs }).eq('id', window.partidaAtualId);
 
     let msg = ``; escolhidos.forEach(c => msg += `<strong>${escapeHTML(c.jogador.nome)}</strong> (do ${escapeHTML(c.timeOriginalNome)})<br>`); 
     await customAlert("🎭 Coringas Sorteados", msg, "Continuar", "var(--primary)");
+
     salvarEstadoCompleto(); renderizarEscalacaoPublicaSumula();
 }
 
@@ -1106,4 +1149,106 @@ async function carregarEstatisticasGerais() {
         const bodyRanking = document.getElementById('body-ranking-anual'); 
         if(bodyRanking) { let rankArr = Object.entries(rankingAnual).sort((a,b) => { if(b[1].gols !== a[1].gols) return b[1].gols - a[1].gols; return b[1].presencas - a[1].presencas; }); if(rankArr.length === 0) bodyRanking.innerHTML = '<tr><td colspan="3" style="color:var(--text-muted);">Sem histórico no ano.</td></tr>'; else { let htmlRank = ''; rankArr.forEach((r, i) => { let ic = i===0?'🌟':'👤'; htmlRank += `<tr><td>${ic} <strong>${escapeHTML(r[0])}</strong></td><td style="font-weight:700; color:var(--primary);">${r[1].gols}</td><td style="color:var(--text-muted);">${r[1].presencas}</td></tr>`; }); bodyRanking.innerHTML = htmlRank; } }
     } catch(e) {}
+}
+
+function atualizarFinanceiro() {
+    if(window.isModoPublico) return;
+    gerarRelatorioMensal(); salvarEstadoCompleto();
+    
+    if(window.partidaAtualId) {
+        let vConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
+        let vMens = parseFloat(document.getElementById('valor-mensalista').value) || 0;
+        db.from('partidas').update({ valor_por_convidado: vConv, valor_por_mensalista: vMens }).eq('id', window.partidaAtualId).then();
+    }
+}
+
+async function adicionarCusto() {
+    let elDesc = document.getElementById('desc-custo'); let desc = elDesc ? elDesc.value : ""; 
+    let elVal = document.getElementById('valor-custo'); let val = elVal ? parseFloat(elVal.value) || 0 : 0;
+    let elTipo = document.getElementById('tipo-custo'); let tipo = elTipo ? elTipo.value : "diario"; 
+    let elOp = document.getElementById('operacao-movimentacao'); let operacao = elOp ? elOp.value : "saida"; 
+    let elData = document.getElementById('data-custo'); let dataInput = elData ? elData.value : "";
+
+    if(!desc || val <= 0) return alert("Preencha descrição e valor válido.");
+
+    if(!dataInput) { let tzoffset = (new Date()).getTimezoneOffset() * 60000; dataInput = (new Date(Date.now() - tzoffset)).toISOString().split('T')[0]; }
+
+    let novaDespesa = { id: Date.now(), desc: desc, valor: val, tipo: tipo, operacao: operacao, data: tipo === 'mensal' ? dataInput.substring(0, 7) : dataInput };
+
+    window.despesasMensaisGlobais.push(novaDespesa);
+
+    if(currentUser) {
+        try {
+            const btn = document.querySelector('button[onclick="adicionarCusto()"]'); let txtOrigin = ""; if(btn) { txtOrigin = btn.innerText; btn.innerText = "Salvando..."; btn.disabled = true; }
+            const { error } = await db.from('profiles').update({ despesas_mensais_json: window.despesasMensaisGlobais }).eq('id', currentUser.id);
+            if(btn) { btn.innerText = txtOrigin; btn.disabled = false; }
+            if (error) { alert("Erro ao salvar movimentação: " + error.message); window.despesasMensaisGlobais.pop(); } 
+            else { if(elDesc) elDesc.value = ''; if(elVal) elVal.value = ''; if(elData) elData.value = ''; gerarRelatorioMensal(); }
+        } catch(e) {}
+    }
+}
+        
+async function removerCusto(idUnico, indexArrayFallback) { 
+    let conf = await customConfirm("Excluir Movimentação", "Deseja realmente apagar esta movimentação do Livro Caixa?", "Sim, apagar", "Cancelar", "var(--danger)");
+    if(!conf) return;
+    
+    let indexReal = window.despesasMensaisGlobais.findIndex(c => c.id === idUnico);
+    if (indexReal === -1) indexReal = indexArrayFallback;
+    if (indexReal === -1 || indexReal === undefined) return alert("Erro: Movimentação não encontrada.");
+
+    let removido = window.despesasMensaisGlobais.splice(indexReal, 1)[0];
+
+    if(currentUser) {
+        try {
+            const { error } = await db.from('profiles').update({ despesas_mensais_json: window.despesasMensaisGlobais }).eq('id', currentUser.id);
+            if(error) { alert("Erro ao remover do banco: " + error.message); window.despesasMensaisGlobais.splice(indexReal, 0, removido); } 
+            else { gerarRelatorioMensal(); }
+        } catch(e) {}
+    }
+}
+
+async function salvarPartidaComPlacares() {
+    if(!window.partidaAtualId) return alert("Erro: Nenhuma partida ativa encontrada no banco de dados. Por favor, volte em 'Sorteio' e gere as equipes novamente.");
+    let conf = await customConfirm("Finalizar Baba", "Deseja encerrar o baba de hoje e computar a presença de todos os jogadores no banco de dados?", "Sim, Finalizar", "Cancelar", "var(--supabase)");
+    if(!conf) return;
+    
+    const btn = document.getElementById('btn-encerrar-baba'); if(btn) { btn.innerText = "Sincronizando Servidor..."; btn.disabled = true; }
+    try {
+        let artilheiros = {};
+        window.jogosDaRodada.forEach(jogo => {
+            if(jogo.tipo === 'ajuste') { artilheiros[jogo.jogador] = (artilheiros[jogo.jogador] || 0) + jogo.gols; } 
+            else { jogo.gols_a.forEach(nome => { if(nome !== 'Gol Contra') artilheiros[nome] = (artilheiros[nome] || 0) + 1; }); jogo.gols_b.forEach(nome => { if(nome !== 'Gol Contra') artilheiros[nome] = (artilheiros[nome] || 0) + 1; }); }
+        });
+        let presentesPagantes = jogadores.filter(j => j.presente && j.pagou && j.tipo === 'Convidado'); let convidadosPagantes = presentesPagantes.length;
+        let vConv = document.getElementById('valor-convidado'); let valorConv = vConv ? parseFloat(vConv.value) || 0 : 0; 
+        let vMens = document.getElementById('valor-mensalista'); let valorMens = vMens ? parseFloat(vMens.value) || 0 : 0;
+
+        window.filaEquipes = [];
+        const { error: errP } = await db.from('partidas').update({ 
+            renda_convidados: convidadosPagantes, valor_por_convidado: valorConv, valor_por_mensalista: valorMens, custos_json: window.custosDaRodada,
+            artilheiros_json: artilheiros, jogos_json: window.jogosDaRodada, times_json: window.timesSorteadosObjs, fila_json: window.filaEquipes
+        }).eq('id', window.partidaAtualId);
+        
+        if(errP) throw errP;
+
+        await db.from('presencas').delete().eq('partida_id', window.partidaAtualId);
+        let presencasToInsert = [];
+        window.timesSorteadosObjs.forEach((t) => { t.jogadores.forEach(j => presencasToInsert.push({ partida_id: window.partidaAtualId, jogador_id: j.id, pagou: j.pagou || false, equipe: t.nome })); });
+        if (window.reservasSorteados) window.reservasSorteados.forEach(j => presencasToInsert.push({ partida_id: window.partidaAtualId, jogador_id: j.id, pagou: j.pagou || false, equipe: "Reserva" }));
+        if(presencasToInsert.length > 0) await db.from('presencas').insert(presencasToInsert);
+
+        await db.from('jogadores').delete().eq('tipo', 'Convidado').eq('user_id', currentUser.id);
+        window.partidaSalva = true; window.partidaSalvaManual = true; 
+        
+        jogadores.forEach(j => { j.presente = false; j.ordemChegada = 0; j.pagou = false; });
+        salvarEstadoLocal(); atualizarListas(); atualizarFilaUI(); atualizarListaJogosDaRodada(); salvarEstadoCompleto();
+        
+        const instrucoes = document.getElementById('texto-instrucoes-sumula'); if(instrucoes) instrucoes.style.display = 'none';
+        let btnSum = document.getElementById('btn-ir-placares'); if(btnSum) btnSum.innerText = "📝 Ver Súmula Anterior";
+
+        carregarElencoDaNuvem(); gerarRelatorioMensal();
+
+        if(btn) btn.innerText = "✅ Baba Encerrado e Salvo com Sucesso!"; 
+        await customAlert("Sucesso", "O Baba de hoje foi finalizado e os dados salvos com sucesso!", "OK", "var(--supabase)");
+    } catch(err) { alert("Erro de comunicação com o banco: " + err.message); if(btn) { btn.innerText = "Tentar Novamente"; btn.disabled = false; } }
 }
