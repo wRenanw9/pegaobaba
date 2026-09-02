@@ -755,6 +755,7 @@ function atualizarSelectsEquipes() {
 
 function limparGolsTemp(lado) { if(lado === 'A') window.golsTempA = []; else window.golsTempB = []; atualizarPlacarTempUI(); salvarEstadoCompleto(); }
 
+// --- NOVO GPS DO ALERTA DE CORINGA ---
 async function checarTimesCompletosParaJogo() {
     if(window.filaEquipes.length < 2) return true;
     let idA = window.filaEquipes[0]; let idB = window.filaEquipes[1]; let tA = window.timesSorteadosObjs.find(t=>t.id===idA); let tB = window.timesSorteadosObjs.find(t=>t.id===idB); if(!tA || !tB) return true;
@@ -764,7 +765,18 @@ async function checarTimesCompletosParaJogo() {
     if (qA < tamanhoIdeal || qB < tamanhoIdeal) {
         let nomes = []; if(qA < tamanhoIdeal) nomes.push(escapeHTML(tA.nome)); if(qB < tamanhoIdeal) nomes.push(escapeHTML(tB.nome));
         let querSortear = await customConfirm("⚠️ Partida Incompleta!", `A equipe <strong>${nomes.join(' e ')}</strong> está incompleta.<br><br>Sorteie o Coringa antes da bola rolar.`, "🎭 Ir Sortear Coringa", "⚠️ Forçar jogo incompleto", "var(--warning)");
-        if (querSortear) { window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); return false; } return true; 
+        if (querSortear) { 
+            let btnSanfona = document.getElementById('btn-toggle-escalacao');
+            let containerEsc = document.getElementById('container-escalacao-toggled');
+            if (containerEsc && (containerEsc.style.display === 'none' || containerEsc.style.display === '')) {
+                toggleEscalacao(); // Abre a sanfona
+            }
+            if (btnSanfona) {
+                btnSanfona.scrollIntoView({ behavior: 'smooth', block: 'start' }); // Rola direto pro botão da escalação
+            }
+            return false; 
+        } 
+        return true; 
     } return true;
 }
 
@@ -872,7 +884,6 @@ async function adicionarJogoNaSumula() {
 
 function removerJogo(index) { if(window.partidaSalva || window.isModoPublico) return; window.jogosDaRodada.splice(index, 1); atualizarListaJogosDaRodada(); salvarEstadoCompleto(); }
 
-// --- INTELIGÊNCIA MÉDICA: LESÃO COM AUTO-SWAP ---
 function abrirModalLesao() {
     const selLesao = document.getElementById('select-jogador-lesao'); const selAlta = document.getElementById('select-jogador-alta');
     if(!selLesao || !selAlta) return alert("Erro de HTML: Modal não atualizado.");
@@ -906,7 +917,6 @@ async function salvarLesao() {
 
     let msgAlert = `<strong>${escapeHTML(jogador.nome)}</strong> foi movido para o DM.`;
 
-    // 🔄 AUTO-SWAP: Procura quem está no banco pra tapar o buraco
     let reservasDisponiveis = window.reservasSorteados.filter(j => !j.isDM);
     if (reservasDisponiveis.length > 0) {
         reservasDisponiveis.sort((a, b) => (Number(b.nivel)||3) - (Number(a.nivel)||3));
@@ -925,7 +935,7 @@ async function salvarLesao() {
     fecharModalLesao(); salvarEstadoCompleto(); renderizarEscalacaoPublicaSumula();
 }
 
-// --- INTELIGÊNCIA MÉDICA: ALTA COM AUTO-FILL ---
+// --- NOVO: REGRA DO TITULAR NA ALTA MÉDICA ---
 async function darAltaDM() {
     let selAlta = document.getElementById('select-jogador-alta'); if(!selAlta) return;
     let idJog = selAlta.value; if(!idJog) return alert("Selecione um jogador para dar alta.");
@@ -935,23 +945,34 @@ async function darAltaDM() {
         jogador.isDM = false; 
         let msgAlert = `<strong>${escapeHTML(jogador.nome)}</strong> foi liberado pelo DM!`;
         let tamanhoIdeal = currentProfile && currentProfile.jogadores_por_time ? parseInt(currentProfile.jogadores_por_time) : 7;
-        let timeIncompleto = window.timesSorteadosObjs.find(t => t.jogadores.length < tamanhoIdeal);
+        
+        let timeComCoringa = window.timesSorteadosObjs.find(t => window.coringasAtivos && window.coringasAtivos[t.id] && window.coringasAtivos[t.id].length > 0);
 
-        if (timeIncompleto) {
+        if (timeComCoringa) {
             window.reservasSorteados = window.reservasSorteados.filter(j => j.id !== jogador.id);
-            timeIncompleto.jogadores.push(jogador);
-            msgAlert += `<br><br>⚡ Como o <strong>${escapeHTML(timeIncompleto.nome)}</strong> estava incompleto, ele já assumiu a vaga e está titular!`;
+            let coringaExpulso = window.coringasAtivos[timeComCoringa.id].pop();
+            timeComCoringa.jogadores.push(jogador);
+            msgAlert += `<br><br>👑 Ele assumiu a vaga de titular no <strong>${escapeHTML(timeComCoringa.nome)}</strong>, liberando o coringa <strong>${escapeHTML(coringaExpulso.jogador.nome)}</strong>.`;
         } else {
-            msgAlert += `<br><br>O jogador agora está disponível no banco de Reservas para atuar como Coringa.`;
+            let timeIncompleto = window.timesSorteadosObjs.find(t => t.jogadores.length < tamanhoIdeal);
+            if (timeIncompleto) {
+                window.reservasSorteados = window.reservasSorteados.filter(j => j.id !== jogador.id);
+                timeIncompleto.jogadores.push(jogador);
+                msgAlert += `<br><br>⚡ Como o <strong>${escapeHTML(timeIncompleto.nome)}</strong> estava com desfalque, ele já assumiu a vaga e está titular!`;
+            } else {
+                msgAlert += `<br><br>O jogador agora está disponível no banco de Reservas para atuar como Coringa.`;
+            }
         }
 
         await customAlert("🩺 Alta Médica", msgAlert, "OK", "var(--primary)");
+        
+        window.timesSorteadosObjs.forEach(t => { t.coringas = window.coringasAtivos[t.id] || []; });
         if(window.partidaAtualId) await db.from('partidas').update({ times_json: window.timesSorteadosObjs }).eq('id', window.partidaAtualId);
+        
         fecharModalLesao(); salvarEstadoCompleto(); renderizarEscalacaoPublicaSumula();
     }
 }
 
-// --- SORTEIO DE CORINGA: PRIORIDADE AO BANCO ---
 async function sortearCoringasFila(idTimeIncompleto) {
     let timeInc = window.timesSorteadosObjs.find(t => t.id === idTimeIncompleto); let tamanhoIdeal = currentProfile && currentProfile.jogadores_por_time ? parseInt(currentProfile.jogadores_por_time) : 7;
     if(!window.coringasAtivos) window.coringasAtivos = {}; let coringasAtuaisInc = window.coringasAtivos[idTimeIncompleto] || [];
@@ -960,13 +981,9 @@ async function sortearCoringasFila(idTimeIncompleto) {
 
     let todosCoringasEmUso = []; for(let key in window.coringasAtivos) { window.coringasAtivos[key].forEach(c => todosCoringasEmUso.push(c.jogador.id)); }
 
-    // 1. PRIORIDADE ABSOLUTA: Reservas Livres e Saudáveis
     let elegiveisReservas = [];
-    window.reservasSorteados.forEach(j => { 
-        if(!j.isDM && !todosCoringasEmUso.includes(j.id)) { elegiveisReservas.push({ jogador: j, timeOriginalId: -1, timeOriginalNome: "Reserva" }); } 
-    });
+    window.reservasSorteados.forEach(j => { if(!j.isDM && !todosCoringasEmUso.includes(j.id)) { elegiveisReservas.push({ jogador: j, timeOriginalId: -1, timeOriginalNome: "Reserva" }); } });
 
-    // 2. SEGUNDA OPÇÃO: Emprestar de outros times
     let elegiveisOutros = []; let emQuadraIds = window.filaEquipes.slice(0, 2);
     window.filaEquipes.forEach(tId => {
         if(!emQuadraIds.includes(tId) && tId !== idTimeIncompleto) {
@@ -975,35 +992,25 @@ async function sortearCoringasFila(idTimeIncompleto) {
         }
     });
 
-    if((elegiveisReservas.length + elegiveisOutros.length) < faltam) {
-        return await customAlert("Banco Vazio", "Não há jogadores suficientes descansando para completar o time agora.<br><br>Aguarde o jogo atual acabar.", "Entendi", "var(--warning)");
-    }
+    if((elegiveisReservas.length + elegiveisOutros.length) < faltam) { return await customAlert("Banco Vazio", "Não há jogadores suficientes descansando para completar o time agora.<br><br>Aguarde o jogo atual acabar.", "Entendi", "var(--warning)"); }
 
     let escolhidos = [];
-    
-    // Tira os coringas da Reserva (Ordem de Habilidade)
     while (faltam > 0 && elegiveisReservas.length > 0) {
         elegiveisReservas.sort((a, b) => (Number(b.jogador.nivel)||3) - (Number(a.jogador.nivel)||3));
         escolhidos.push(elegiveisReservas.shift());
         faltam--;
     }
 
-    // Se a reserva esgotou e ainda faltar, aplica a matemática pros times de fora
     if (faltam > 0) {
         let somaNotasTimesCompletos = 0; let qtdTimesCompletos = 0;
-        window.timesSorteadosObjs.forEach(t => {
-            if(t.id !== idTimeIncompleto && t.jogadores.length === tamanhoIdeal) { somaNotasTimesCompletos += t.jogadores.reduce((acc, j) => acc + (Number(j.nivel)||3), 0); qtdTimesCompletos++; }
-        });
-
+        window.timesSorteadosObjs.forEach(t => { if(t.id !== idTimeIncompleto && t.jogadores.length === tamanhoIdeal) { somaNotasTimesCompletos += t.jogadores.reduce((acc, j) => acc + (Number(j.nivel)||3), 0); qtdTimesCompletos++; } });
         let notaMediaBaba = qtdTimesCompletos > 0 ? (somaNotasTimesCompletos / qtdTimesCompletos) : (tamanhoIdeal * 3);
         let notaIncAtual = timeInc.jogadores.reduce((acc, j) => acc + (Number(j.nivel)||3), 0) + coringasAtuaisInc.reduce((acc, c) => acc + (Number(c.jogador.nivel)||3), 0);
         let notaEscolhidosReservas = escolhidos.reduce((acc, c) => acc + (Number(c.jogador.nivel)||3), 0);
-        
         let alvo = notaMediaBaba - (notaIncAtual + notaEscolhidosReservas);
 
         elegiveisOutros = embaralhar(elegiveisOutros); elegiveisOutros.sort((a, b) => (Number(b.jogador.nivel)||3) - (Number(a.jogador.nivel)||3));
         let somaEscolhidos = 0;
-        
         for(let i=0; i<faltam; i++) {
             let mediaFaltante = (alvo - somaEscolhidos) / (faltam - i); let closestIdx = 0; let minDiff = 999;
             for(let k=0; k<elegiveisOutros.length; k++) { let diff = Math.abs((Number(elegiveisOutros[k].jogador.nivel)||3) - mediaFaltante); if(diff < minDiff) { minDiff = diff; closestIdx = k; } }
