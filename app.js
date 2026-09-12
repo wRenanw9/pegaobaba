@@ -310,7 +310,6 @@ async function iniciarSorteioComSuspense() {
     setTimeout(() => { sortearTimes(presentes, isAppend); }, 1500);
 }
 
-// --- NOVO: GERENCIADOR DE TABELA DO TORNEIO ---
 function atualizarFilaTorneio() {
     if(window.modoCompeticaoAtual !== 'torneio') return false;
     let validMatches = window.jogosDaRodada.filter(j => j.tipo !== 'ajuste' && j.tipo !== 'modo');
@@ -416,7 +415,6 @@ async function sortearTimes(presentesBrutos, isAppend) {
                 let goleirosChunk = embaralhar(chunk.filter(j => j.posicao === 'Goleiro')); let linhaChunk = embaralhar(chunk.filter(j => j.posicao !== 'Goleiro')); let timesLocais = Array.from({ length: numTimesNoChunk }, () => []);
                 if (incluiGoleiros) { for (let t = 0; t < numTimesNoChunk; t++) { if (goleirosChunk.length > 0 && timesLocais[t].length < capacities[t]) { timesLocais[t].push(goleirosChunk.shift()); } } reservasNovas.push(...goleirosChunk); }
 
-                // O CÉREBRO DE DISTRIBUIÇÃO (GREEDY ALGORITHM)
                 if (equilibrarPosicoes) {
                     const posicoes = ["Zagueiro", "Lateral", "Meia", "Atacante", "Linha"]; const grupos = {}; posicoes.forEach(p => grupos[p] = []);
                     linhaChunk.forEach(j => { if (grupos[j.posicao]) grupos[j.posicao].push(j); else grupos["Linha"].push(j); });
@@ -946,7 +944,7 @@ function atualizarListaJogosDaRodada() {
             if (autoresA || autoresB) detalhesGolsHtml = `<div style="font-size: 11px; color: var(--text-muted); display: flex; justify-content: space-between; margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border);"><span style="flex: 1; text-align: right; padding-right: 10px;">${autoresA ? '⚽ ' + autoresA : ''}</span><span style="flex: 1; text-align: left; padding-left: 10px;">${autoresB ? '⚽ ' + autoresB : ''}</span></div>`;
             
             let penaltisHtml = '';
-            if (j.penaltis_vencedor) {
+            if (j.penaltis_vencedor !== undefined && j.penaltis_vencedor !== null) {
                 let nomeVencedor = (j.penaltis_vencedor === j.equipe_a_id) ? j.equipe_a_nome : j.equipe_b_nome;
                 penaltisHtml = `<div style="font-size: 11px; color: var(--supabase); font-weight: bold; text-align: center; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border);">✅ ${escapeHTML(nomeVencedor)} venceu nos pênaltis</div>`;
             }
@@ -961,22 +959,78 @@ function atualizarListaJogosDaRodada() {
 
 function renderizarPainelDoDiaComJogos(jogosArr, dataStr) {
     let timesStats = {}; let artilheiros = {};
+    let painelDestaque = document.getElementById('painel-torneio-destaque');
+    
+    if (window.modoCompeticaoAtual === 'torneio' && painelDestaque) {
+        let normalMatches = jogosArr.filter(j => j.tipo !== 'ajuste' && j.tipo !== 'modo');
+        let mCount = normalMatches.length;
+        let bannerHtml = '';
+
+        if (mCount > 0 && mCount < 6) {
+            bannerHtml = `<div style="background:var(--primary); color:white; padding:15px; border-radius:8px; text-align:center; margin-bottom:15px;"><strong>🏆 Torneio: Fase de Grupos</strong><br><span style="font-size:12px;">Jogos concluídos: ${mCount}/6</span></div>`;
+        } else if (mCount >= 6 && mCount < 8) {
+            bannerHtml = `<div style="background:var(--warning); color:white; padding:15px; border-radius:8px; text-align:center; margin-bottom:15px; text-shadow: 0 1px 2px rgba(0,0,0,0.2);"><strong>⚔️ FASE MATA-MATA</strong><br><span style="font-size:12px;">Disputando as Semifinais...</span></div>`;
+        } else if (mCount === 8) {
+            let sf1 = normalMatches[6]; let sf2 = normalMatches[7];
+            let getWinner = (m) => {
+               if (m.gols_a.length > m.gols_b.length) return {id: m.equipe_a_id, nome: m.equipe_a_nome};
+               if (m.gols_b.length > m.gols_a.length) return {id: m.equipe_b_id, nome: m.equipe_b_nome};
+               return m.penaltis_vencedor === m.equipe_a_id ? {id: m.equipe_a_id, nome: m.equipe_a_nome} : {id: m.equipe_b_id, nome: m.equipe_b_nome};
+            };
+            let w1 = getWinner(sf1); let w2 = getWinner(sf2);
+            bannerHtml = `<div style="background:linear-gradient(135deg, var(--dark), var(--primary)); color:white; padding:15px; border-radius:8px; text-align:center; margin-bottom:15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"><strong>🔥 A GRANDE FINAL 🔥</strong><br><span style="font-size:16px; font-weight:900;">${escapeHTML(w1.nome)} <span style="color:var(--warning);">X</span> ${escapeHTML(w2.nome)}</span></div>`;
+        } else if (mCount >= 9) {
+            let finalMatch = normalMatches[8];
+            let getResult = (m) => {
+               if (m.gols_a.length > m.gols_b.length) return {win: m.equipe_a_nome, lose: m.equipe_b_nome};
+               if (m.gols_b.length > m.gols_a.length) return {win: m.equipe_b_nome, lose: m.equipe_a_nome};
+               return m.penaltis_vencedor === m.equipe_a_id ? {win: m.equipe_a_nome, lose: m.equipe_b_nome} : {win: m.equipe_b_nome, lose: m.equipe_a_nome};
+            };
+            let res = getResult(finalMatch);
+            bannerHtml = `<div style="background:linear-gradient(135deg, #f59e0b, #d97706); color:white; padding:15px; border-radius:8px; text-align:center; margin-bottom:15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 2px solid #fbbf24;"><div style="font-size:24px; margin-bottom:5px;">🏆 CAMPEÃO</div><div style="font-size:20px; font-weight:900; text-transform:uppercase; margin-bottom:5px; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">${escapeHTML(res.win)}</div><div style="font-size:13px; font-weight:700; opacity:0.9;">🥈 Vice: ${escapeHTML(res.lose)}</div></div>`;
+        }
+        
+        if(mCount > 0) {
+            painelDestaque.innerHTML = bannerHtml;
+            painelDestaque.style.display = 'block';
+        } else {
+            painelDestaque.style.display = 'none';
+        }
+    } else if (painelDestaque) {
+        painelDestaque.style.display = 'none';
+    }
+
+    let normalMatchIndex = 0;
     jogosArr.forEach(j => {
         if(j.tipo === 'ajuste') { artilheiros[j.jogador] = (artilheiros[j.jogador] || 0) + j.gols; return; }
         if(j.tipo === 'modo') return;
-        if(!timesStats[j.equipe_a_nome]) timesStats[j.equipe_a_nome] = { j:0, v:0, e:0, d:0, gp:0, gc:0, pts:0 };
-        if(!timesStats[j.equipe_b_nome]) timesStats[j.equipe_b_nome] = { j:0, v:0, e:0, d:0, gp:0, gc:0, pts:0 };
-        let ga = j.gols_a.length; let gb = j.gols_b.length; let a = timesStats[j.equipe_a_nome]; let b = timesStats[j.equipe_b_nome];
-        a.j++; b.j++; a.gp += ga; a.gc += gb; b.gp += gb; b.gc += ga;
-        if(ga > gb) { a.v++; a.pts+=3; b.d++; } else if(gb > ga) { b.v++; b.pts+=3; a.d++; } else { a.e++; b.e++; a.pts+=1; b.pts+=1; }
+        
         j.gols_a.forEach(nome => { if(nome !== 'Gol Contra') artilheiros[nome] = (artilheiros[nome] || 0) + 1; });
         j.gols_b.forEach(nome => { if(nome !== 'Gol Contra') artilheiros[nome] = (artilheiros[nome] || 0) + 1; });
+
+        let isGroupStage = (window.modoCompeticaoAtual !== 'torneio') || (normalMatchIndex < 6);
+        
+        if (isGroupStage) {
+            if(!timesStats[j.equipe_a_nome]) timesStats[j.equipe_a_nome] = { j:0, v:0, e:0, d:0, gp:0, gc:0, pts:0 };
+            if(!timesStats[j.equipe_b_nome]) timesStats[j.equipe_b_nome] = { j:0, v:0, e:0, d:0, gp:0, gc:0, pts:0 };
+            let ga = j.gols_a.length; let gb = j.gols_b.length; let a = timesStats[j.equipe_a_nome]; let b = timesStats[j.equipe_b_nome];
+            a.j++; b.j++; a.gp += ga; a.gc += gb; b.gp += gb; b.gc += ga;
+            if(ga > gb) { a.v++; a.pts+=3; b.d++; } else if(gb > ga) { b.v++; b.pts+=3; a.d++; } else { a.e++; b.e++; a.pts+=1; b.pts+=1; }
+        }
+        normalMatchIndex++;
     });
+
     let rankTimes = Object.entries(timesStats).sort((a, b) => { if(b[1].pts !== a[1].pts) return b[1].pts - a[1].pts; let sgA = a[1].gp - a[1].gc; let sgB = b[1].gp - b[1].gc; if(sgA !== sgB) return sgB - sgA; return b[1].gp - a[1].gp; });
 
     let dataExibicao = window.dataPartidaAtual || new Date().toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'});
     if (dataStr) { let d = new Date(dataStr); dataExibicao = !isNaN(d.getTime()) ? d.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}) : dataStr; }
-    let tituloClass = document.getElementById('titulo-classificacao-dia'); if(tituloClass) tituloClass.innerText = `🏆 Classificação do dia (${escapeHTML(dataExibicao)})`; 
+    
+    let tituloClass = document.getElementById('titulo-classificacao-dia'); 
+    if(tituloClass) {
+        if(window.modoCompeticaoAtual === 'torneio') { tituloClass.innerText = `🏆 Fase de Grupos (${escapeHTML(dataExibicao)})`; } 
+        else { tituloClass.innerText = `🏆 Classificação do dia (${escapeHTML(dataExibicao)})`; }
+    }
+    
     let tituloArts = document.getElementById('titulo-artilheiros-dia'); if (tituloArts) tituloArts.innerText = `⚽ Artilheiros do dia (${escapeHTML(dataExibicao)})`;
 
     const bodyClass = document.getElementById('body-classificacao');
