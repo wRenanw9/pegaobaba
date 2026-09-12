@@ -107,7 +107,16 @@
                 <button class="btn-limpar" onclick="zerarPresencas()" id="btn-zerar" style="display: block; width:100%; margin-bottom:15px;">🔄 Iniciar Nova Rodada (Zerar Tudo)</button>
                 <div id="lista-presentes"></div>
                 <div style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 20px;">
-                    <label style="font-weight: 600; display: block; margin-bottom: 8px;">Modo de Sorteio:</label>
+                    
+                    <div style="margin-bottom: 15px; background: white; padding: 12px; border-radius: 8px; border: 2px solid var(--border);">
+                        <label style="font-weight: 800; color: var(--dark); display: block; margin-bottom: 8px;">🎮 Formato da Competição:</label>
+                        <select id="modo-competicao" style="margin-bottom: 0; width: 100%; font-weight: 700; color: var(--primary);">
+                            <option value="rei">🔄 Rei da Quadra (Fila Infinita)</option>
+                            <option value="torneio">🏆 Torneio Quadrangular (4 Times)</option>
+                        </select>
+                    </div>
+
+                    <label style="font-weight: 600; display: block; margin-bottom: 8px;">Tamanho dos Times:</label>
                     <select id="modo-sorteio" style="margin-bottom: 10px;">
                         <option value="12">2 times - sem goleiro</option>
                         <option value="14">2 times - com goleiro</option>
@@ -160,24 +169,24 @@
                     
                     <div id="container-status-fila"></div>
 
-                    <!-- PLACAR DE ARENA -->
+                    <!-- PLACAR DE ARENA (VISUAL AJUSTADO PARA NOMES LONGOS) -->
                     <div class="placar-arena hidden-public" id="painel-placar-arena">
-                        <div class="placar-header">
-                            <div class="placar-time">
-                                <select id="sumula_equipe_a" onchange="limparGolsTemp('A')"></select>
+                        <div class="placar-header" style="display: flex; justify-content: space-between; align-items: stretch; gap: 5px;">
+                            <div class="placar-time" style="flex: 1; min-width: 0; padding: 0 2px;">
+                                <select id="sumula_equipe_a" onchange="limparGolsTemp('A')" style="width: 100%; font-size: 12px; font-weight: 800; padding: 8px 2px; text-align: center; box-sizing: border-box;"></select>
                                 <div class="placar-numero" id="placar-num-a">0</div>
                                 <button class="btn-add-gol-arena" onclick="abrirModalGol('A')">⚽ Add Gol</button>
                                 <div class="lista-gols-arena" id="lista-gols-a"></div>
                             </div>
-                            <div class="placar-vs">X</div>
-                            <div class="placar-time">
-                                <select id="sumula_equipe_b" onchange="limparGolsTemp('B')"></select>
+                            <div class="placar-vs" style="flex-shrink: 0; padding: 0 5px;">X</div>
+                            <div class="placar-time" style="flex: 1; min-width: 0; padding: 0 2px;">
+                                <select id="sumula_equipe_b" onchange="limparGolsTemp('B')" style="width: 100%; font-size: 12px; font-weight: 800; padding: 8px 2px; text-align: center; box-sizing: border-box;"></select>
                                 <div class="placar-numero" id="placar-num-b">0</div>
                                 <button class="btn-add-gol-arena" onclick="abrirModalGol('B')">⚽ Add Gol</button>
                                 <div class="lista-gols-arena" id="lista-gols-b"></div>
                             </div>
                         </div>
-                        <button onclick="adicionarJogoNaSumula()" style="background: var(--dark); color: white; width: 100%; border-radius: 8px; padding: 12px; font-weight: 800; font-size: 15px; transition: all 0.2s;">✔️ Confirmar Placar</button>
+                        <button onclick="adicionarJogoNaSumula()" style="background: var(--dark); color: white; width: 100%; border-radius: 8px; padding: 12px; font-weight: 800; font-size: 15px; transition: all 0.2s; margin-top: 10px;">✔️ Confirmar Placar</button>
                     </div>
 
                     <!-- BARRA DE FERRAMENTAS COMPACTA -->
@@ -361,7 +370,7 @@
             </div>
         </div>
 
-        <!-- MODAL DE ALERTAS PROFISSIONAIS (NOVO) -->
+        <!-- MODAIS DO SISTEMA -->
         <div id="modal-confirm-custom" class="modal-overlay" style="display:none; z-index: 99999;">
             <div class="modal-content" style="text-align: center; max-width: 320px; padding: 25px 20px;">
                 <h3 id="modal-confirm-title" style="margin-bottom: 12px; font-size: 18px;">Atenção</h3>
@@ -369,6 +378,18 @@
                 <div style="display: flex; flex-direction: column; gap: 10px;">
                     <button id="modal-confirm-btn-primary" style="padding: 12px; font-size: 15px; font-weight: 800; border: none; border-radius: 8px; cursor: pointer; color: white;"></button>
                     <button id="modal-confirm-btn-secondary" style="padding: 12px; font-size: 14px; font-weight: 700; border-radius: 8px; cursor: pointer; background: transparent;"></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL PÊNALTIS (NOVO) -->
+        <div id="modal-penaltis" class="modal-overlay" style="display:none; z-index: 99999;">
+            <div class="modal-content" style="text-align: center;">
+                <h3 style="margin-bottom: 10px; color: var(--dark);">⚖️ Fim de Jogo Empatado!</h3>
+                <p style="font-size:14px; color:var(--text-muted); margin-bottom:20px;">Quem venceu a disputa de pênaltis?</p>
+                <div style="display: flex; gap: 10px; justify-content: center; flex-direction: column;">
+                    <button id="btn-penalti-a" style="padding: 15px; font-size: 16px; font-weight: bold; background: var(--primary); color: white; border-radius: 8px; border: none;"></button>
+                    <button id="btn-penalti-b" style="padding: 15px; font-size: 16px; font-weight: bold; background: var(--supabase); color: white; border-radius: 8px; border: none;"></button>
                 </div>
             </div>
         </div>
@@ -393,7 +414,7 @@
             </div>
         </div>
 
-        <!-- NOVO MODAL DO DM COM DUAS ABAS (ALTA E LESÃO) -->
+        <!-- MODAL DO DM COM DUAS ABAS (ALTA E LESÃO) -->
         <div id="modal-lesao" class="modal-overlay" style="display:none;">
             <div class="modal-content">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
