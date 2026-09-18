@@ -836,12 +836,20 @@ async function darAltaDM() {
             delete jogador.timeOrigemId; delete jogador.timeOrigemNome;
 
             let substitutoIndex = timeOrigem.jogadores.findIndex(j => j.timeSubstituindoId === timeOrigem.id);
+            let coringasDoTimeOrigem = (window.coringasAtivos && window.coringasAtivos[timeOrigem.id]) || [];
+
             if (timeOrigem.jogadores.length >= tamanhoIdeal && substitutoIndex !== -1) {
                 let substituto = timeOrigem.jogadores.splice(substitutoIndex, 1)[0];
                 delete substituto.timeSubstituindoId;
                 window.reservasSorteados.push(substituto);
                 timeOrigem.jogadores.push(jogador);
                 msgAlert += `<br><br>🔄 Ele voltou para o time original, <strong>${escapeHTML(timeOrigem.nome)}</strong>, e <strong>${escapeHTML(substituto.nome)}</strong> retornou para a Reserva.`;
+            } else if (coringasDoTimeOrigem.length > 0) {
+                // O time original tinha pego um coringa emprestado pra jogar no lugar dele.
+                // O coringa nunca saiu do time dele de verdade, então só precisamos "devolvê-lo" (parar de contar ele em dobro).
+                let coringaLiberado = window.coringasAtivos[timeOrigem.id].pop();
+                timeOrigem.jogadores.push(jogador);
+                msgAlert += `<br><br>🎭 Ele voltou para o time original, <strong>${escapeHTML(timeOrigem.nome)}</strong>, e o coringa <strong>${escapeHTML(coringaLiberado.jogador.nome)}</strong> voltou para o time dele, <strong>${escapeHTML(coringaLiberado.timeOriginalNome)}</strong>.`;
             } else {
                 timeOrigem.jogadores.push(jogador);
                 msgAlert += `<br><br>⚡ Ele voltou para o time original, <strong>${escapeHTML(timeOrigem.nome)}</strong>.`;
