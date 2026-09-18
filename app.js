@@ -798,13 +798,13 @@ function fecharModalLesao() { let modLesao = document.getElementById('modal-lesa
 async function salvarLesao() {
     let selLesao = document.getElementById('select-jogador-lesao'); if(!selLesao) return; let val = selLesao.value; if(!val) return alert("Selecione um jogador que está em quadra.");
     let data = JSON.parse(val); let time = window.timesSorteadosObjs.find(t => t.id === data.timeId); let jIndex = time.jogadores.findIndex(j => j.id === data.jogadorId);
-    let jogador = time.jogadores.splice(jIndex, 1)[0]; jogador.isDM = true; window.reservasSorteados.push(jogador);
+    let jogador = time.jogadores.splice(jIndex, 1)[0]; jogador.isDM = true; jogador.timeOrigemId = time.id; jogador.timeOrigemNome = time.nome; window.reservasSorteados.push(jogador);
 
     let msgAlert = `<strong>${escapeHTML(jogador.nome)}</strong> foi movido para o DM.`;
     let reservasDisponiveis = window.reservasSorteados.filter(j => !j.isDM);
     if (reservasDisponiveis.length > 0) {
         reservasDisponiveis.sort((a, b) => (Number(b.nivel)||3) - (Number(a.nivel)||3)); let substituto = reservasDisponiveis[0];
-        window.reservasSorteados = window.reservasSorteados.filter(j => j.id !== substituto.id); time.jogadores.push(substituto);
+        window.reservasSorteados = window.reservasSorteados.filter(j => j.id !== substituto.id); substituto.timeSubstituindoId = time.id; time.jogadores.push(substituto);
         msgAlert += `<br><br>🔄 <strong>${escapeHTML(substituto.nome)}</strong> (Reserva) assumiu a vaga dele no <strong>${escapeHTML(time.nome)}</strong> automaticamente.`;
     }
 
@@ -825,17 +825,38 @@ async function darAltaDM() {
     if(jogador) {
         jogador.isDM = false; let msgAlert = `<strong>${escapeHTML(jogador.nome)}</strong> foi liberado pelo DM!`;
         let tamanhoIdeal = currentProfile && currentProfile.jogadores_por_time ? parseInt(currentProfile.jogadores_por_time) : 7;
-        let timeComCoringa = window.timesSorteadosObjs.find(t => window.coringasAtivos && window.coringasAtivos[t.id] && window.coringasAtivos[t.id].length > 0);
+        let timeOrigem = jogador.timeOrigemId ? window.timesSorteadosObjs.find(t => t.id === jogador.timeOrigemId) : null;
 
-        if (timeComCoringa) {
+        if (timeOrigem) {
+            // PRIORIDADE: devolver o jogador para o time original dele
             window.reservasSorteados = window.reservasSorteados.filter(j => j.id !== jogador.id);
-            let coringaExpulso = window.coringasAtivos[timeComCoringa.id].pop();
-            timeComCoringa.jogadores.push(jogador);
-            msgAlert += `<br><br>👑 Ele assumiu a vaga de titular no <strong>${escapeHTML(timeComCoringa.nome)}</strong>, devolvendo o coringa <strong>${escapeHTML(coringaExpulso.jogador.nome)}</strong> para o time de origem.`;
+            delete jogador.timeOrigemId; delete jogador.timeOrigemNome;
+
+            let substitutoIndex = timeOrigem.jogadores.findIndex(j => j.timeSubstituindoId === timeOrigem.id);
+            if (timeOrigem.jogadores.length >= tamanhoIdeal && substitutoIndex !== -1) {
+                let substituto = timeOrigem.jogadores.splice(substitutoIndex, 1)[0];
+                delete substituto.timeSubstituindoId;
+                window.reservasSorteados.push(substituto);
+                timeOrigem.jogadores.push(jogador);
+                msgAlert += `<br><br>🔄 Ele voltou para o time original, <strong>${escapeHTML(timeOrigem.nome)}</strong>, e <strong>${escapeHTML(substituto.nome)}</strong> retornou para a Reserva.`;
+            } else {
+                timeOrigem.jogadores.push(jogador);
+                msgAlert += `<br><br>⚡ Ele voltou para o time original, <strong>${escapeHTML(timeOrigem.nome)}</strong>.`;
+            }
         } else {
-            let timeIncompleto = window.timesSorteadosObjs.find(t => t.jogadores.length < tamanhoIdeal);
-            if (timeIncompleto) { window.reservasSorteados = window.reservasSorteados.filter(j => j.id !== jogador.id); timeIncompleto.jogadores.push(jogador); msgAlert += `<br><br>⚡ Como o <strong>${escapeHTML(timeIncompleto.nome)}</strong> estava com desfalque, ele já assumiu a vaga e está titular!`; } 
-            else { msgAlert += `<br><br>O jogador agora está disponível no banco de Reservas para atuar como Coringa.`; }
+            // FALLBACK: usado quando não há time de origem salvo (ex: dados antigos ou o time foi desfeito em novo sorteio)
+            let timeComCoringa = window.timesSorteadosObjs.find(t => window.coringasAtivos && window.coringasAtivos[t.id] && window.coringasAtivos[t.id].length > 0);
+
+            if (timeComCoringa) {
+                window.reservasSorteados = window.reservasSorteados.filter(j => j.id !== jogador.id);
+                let coringaExpulso = window.coringasAtivos[timeComCoringa.id].pop();
+                timeComCoringa.jogadores.push(jogador);
+                msgAlert += `<br><br>👑 Ele assumiu a vaga de titular no <strong>${escapeHTML(timeComCoringa.nome)}</strong>, devolvendo o coringa <strong>${escapeHTML(coringaExpulso.jogador.nome)}</strong> para o time de origem.`;
+            } else {
+                let timeIncompleto = window.timesSorteadosObjs.find(t => t.jogadores.length < tamanhoIdeal);
+                if (timeIncompleto) { window.reservasSorteados = window.reservasSorteados.filter(j => j.id !== jogador.id); timeIncompleto.jogadores.push(jogador); msgAlert += `<br><br>⚡ Como o <strong>${escapeHTML(timeIncompleto.nome)}</strong> estava com desfalque, ele já assumiu a vaga e está titular!`; } 
+                else { msgAlert += `<br><br>O jogador agora está disponível no banco de Reservas para atuar como Coringa.`; }
+            }
         }
 
         await customAlert("🩺 Alta Médica", msgAlert, "OK", "var(--primary)");
@@ -858,7 +879,7 @@ async function sortearCoringasFila(idTimeIncompleto) {
     let elegiveisReservas = []; window.reservasSorteados.forEach(j => { if(!j.isDM && !todosCoringasEmUso.includes(j.id)) { elegiveisReservas.push({ jogador: j, timeOriginalId: -1, timeOriginalNome: "Reserva" }); } });
 
     let elegiveisOutros = []; let emQuadraIds = window.filaEquipes.slice(0, 2);
-    window.filaEquipes.forEach(tId => { if(!emQuadraIds.includes(tId) && tId !== idTimeIncompleto) { let t = window.timesSorteadosObjs.find(x => x.id === tId); if(t) t.jogadores.forEach(j => { if (!todosCoringasEmUso.includes(j.id)) { elegiveisOutros.push({ jogador: j, timeOriginalId: tId, timeOriginalNome: t.nome }); } }); } });
+    window.timesSorteadosObjs.forEach(t => { if(!emQuadraIds.includes(t.id) && t.id !== idTimeIncompleto) { t.jogadores.forEach(j => { if (!todosCoringasEmUso.includes(j.id)) { elegiveisOutros.push({ jogador: j, timeOriginalId: t.id, timeOriginalNome: t.nome }); } }); } });
 
     if((elegiveisReservas.length + elegiveisOutros.length) < faltam) { return await customAlert("Banco Vazio", "Não há jogadores suficientes descansando para completar o time agora.<br><br>Aguarde o jogo atual acabar.", "Entendi", "var(--warning)"); }
 
