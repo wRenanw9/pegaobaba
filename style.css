@@ -109,6 +109,7 @@ button:disabled { background-color: #cbd5e1; cursor: not-allowed; }
 .team-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-top:20px; }
 .team { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-top: 5px solid var(--primary); border: 1px solid var(--border); }
 .input-nome-time { font-size: 16px; font-weight: 700; color: var(--dark); border: none; border-bottom: 2px solid transparent; padding: 5px; margin-bottom: 10px; width: 100%; border-radius: 0; box-shadow: none !important;}
+.input-nome-time:not(:disabled) { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 2px center; padding-right: 18px; }
 .input-nome-time:focus { border-bottom: 2px solid var(--primary); background: var(--light); outline: none; }
 .team ul { list-style: none; padding:0; margin:0;}
 .team li { padding: 6px 0; border-bottom: 1px dashed var(--border); font-size: 14px;}
