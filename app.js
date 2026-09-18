@@ -425,14 +425,17 @@ async function sortearTimes(presentesBrutos, isAppend) {
                 if (equilibrarPosicoes) {
                     const posicoes = ["Zagueiro", "Lateral", "Meia", "Atacante", "Linha"]; const grupos = {}; posicoes.forEach(p => grupos[p] = []);
                     linhaChunk.forEach(j => { if (grupos[j.posicao]) grupos[j.posicao].push(j); else grupos["Linha"].push(j); });
-                    posicoes.forEach(p => grupos[p].sort((a, b) => { if (a.tipo === 'Mensalista' && b.tipo !== 'Mensalista') return -1; if (a.tipo !== 'Mensalista' && b.tipo === 'Mensalista') return 1; return (Number(b.nivel) || 3) - (Number(a.nivel) || 3); }));
+                    posicoes.forEach(p => grupos[p].sort((a, b) => { let diffNivel = (Number(b.nivel) || 3) - (Number(a.nivel) || 3); if (diffNivel !== 0) return diffNivel; if (a.tipo === 'Mensalista' && b.tipo !== 'Mensalista') return -1; if (a.tipo !== 'Mensalista' && b.tipo === 'Mensalista') return 1; return 0; }));
                     
+                    const getQtdCracks = (time) => time.filter(j => (Number(j.nivel) || 3) >= 5).length;
+
                     posicoes.forEach(pos => {
                         grupos[pos].forEach(jogador => {
                             let elegiveis = timesLocais.filter((t, index) => t.length < capacities[index]);
                             if (elegiveis.length === 0) { timesLocais[timesLocais.length - 1].push(jogador); return; }
                             let minTam = Math.min(...elegiveis.map(t => t.length)); let elegiveisTam = elegiveis.filter(t => t.length === minTam);
                             let minPos = Math.min(...elegiveisTam.map(t => getQtdPosicao(t, pos))); let menosPos = elegiveisTam.filter(t => getQtdPosicao(t, pos) === minPos);
+                            if ((Number(jogador.nivel) || 3) >= 5 && menosPos.length > 1) { let minCracks = Math.min(...menosPos.map(t => getQtdCracks(t))); menosPos = menosPos.filter(t => getQtdCracks(t) === minCracks); }
                             menosPos.sort((a, b) => getSomaNotas(a) - getSomaNotas(b)); menosPos[0].push(jogador);
                         });
                     });
