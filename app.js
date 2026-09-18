@@ -60,6 +60,8 @@ function getCorHex(corBase) {
 }
 
 window.timesSorteadosObjs = []; window.reservasSorteados = []; window.partidaSalva = true; window.jogosDaRodada = []; window.filaEquipes = []; window.custosDaRodada = []; window.despesasMensaisGlobais = []; window.isModoPublico = false; window.dataPartidaAtual = null; window.partidaAtualId = null; window.codigoAcessoAtual = null; window.golsTempA = []; window.golsTempB = []; window.coringasAtivos = {}; window.modoCompeticaoAtual = 'rei'; window.faseTorneioTexto = ''; window.suprimirProximoEventoRealtime = false;
+const RODADA_EXPIRA_MS = 6 * 24 * 60 * 60 * 1000; // 6 dias: tempo até uma rodada/partida ser considerada expirada
+function getTamanhoIdealTime() { return currentProfile && currentProfile.jogadores_por_time ? parseInt(currentProfile.jogadores_por_time) : 7; }
 
 window.onload = async function() {
     try {
@@ -153,7 +155,7 @@ function carregarEstadoCompleto() {
 }
 
 function limparEstadoRodada() { window.timesSorteadosObjs = []; window.reservasSorteados = []; window.jogosDaRodada = []; window.filaEquipes = []; window.custosDaRodada = []; window.golsTempA = []; window.golsTempB = []; window.coringasAtivos = {}; window.dataPartidaAtual = null; window.partidaAtualId = null; window.codigoAcessoAtual = null; window.partidaSalva = true; window.modoCompeticaoAtual = 'rei'; window.faseTorneioTexto = ''; localStorage.removeItem('baba_full_state'); }
-function checarReset24h() { let ultimoReset = localStorage.getItem('baba_last_reset'); let agora = Date.now(); if(!ultimoReset || (agora - parseInt(ultimoReset)) > 518400000) { localStorage.removeItem('baba_presencas_temp'); localStorage.setItem('baba_last_reset', agora); return true; } return false; }
+function checarReset24h() { let ultimoReset = localStorage.getItem('baba_last_reset'); let agora = Date.now(); if(!ultimoReset || (agora - parseInt(ultimoReset)) > RODADA_EXPIRA_MS) { localStorage.removeItem('baba_presencas_temp'); localStorage.setItem('baba_last_reset', agora); return true; } return false; }
 function mudarAba(viewId) { document.querySelectorAll('.page-view').forEach(el => el.classList.remove('active')); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); let vId = document.getElementById(viewId); if(vId) vId.classList.add('active'); let navId = viewId.replace('view-', 'nav-'); if(viewId === 'view-admin') navId = 'nav-admin'; if(viewId === 'view-conta') navId = 'nav-conta'; let navEl = document.getElementById(navId); if(navEl) navEl.classList.add('active'); window.scrollTo(0, 0); if(viewId === 'view-estatisticas') carregarEstatisticasGerais(); if(viewId === 'view-placares') renderizarSumula(); if(viewId === 'view-financeiro') atualizarFinanceiro(); if(viewId === 'view-admin') carregarPainelAdmin(); }
 
 async function verificarSessao() { try { const { data: { session } } = await db.auth.getSession(); if (session) { currentUser = session.user; await checarPerfilEValidade(session.user); } else mostrarLogin(); } catch(e) { mostrarLogin(); } }
@@ -196,7 +198,7 @@ async function acessarModoPublico() {
     const codigoInput = document.getElementById('codigo-baba-input'); const codigo = codigoInput ? codigoInput.value.trim().toUpperCase() : ""; if(!codigo) return alert("Digite um código válido."); let authC = document.getElementById('auth-container'); if(authC) authC.style.display = 'none'; let appC = document.getElementById('app-container'); if(appC) { appC.style.display = 'block'; appC.classList.add('public-mode'); } let btnSairP = document.getElementById('btn-sair-publico'); if(btnSairP) btnSairP.style.display = 'block'; window.isModoPublico = true; let dbStatus = document.getElementById('status-db'); if(dbStatus) dbStatus.innerText = "Buscando Baba...";
     const { data: partida, error } = await db.from('partidas').select('*').eq('codigo_acesso', codigo).single(); if(error || !partida) { alert("Baba não encontrado ou código inválido."); sairModoPublico(); return; }
     if (partida.user_id) { const { data: prof } = await db.from('profiles').select('despesas_mensais_json').eq('id', partida.user_id).single(); window.despesasMensaisGlobais = prof ? (safeParse(prof.despesas_mensais_json) || []) : []; }
-    if (partida.created_at) { if (new Date().getTime() - new Date(partida.created_at).getTime() > 518400000) { await customAlert("⚠️ Rodada Expirada", "Este jogo já foi encerrado pelo organizador há muito tempo.", "Sair", "var(--text-muted)"); sairModoPublico(); return; } }
+    if (partida.created_at) { if (new Date().getTime() - new Date(partida.created_at).getTime() > RODADA_EXPIRA_MS) { await customAlert("⚠️ Rodada Expirada", "Este jogo já foi encerrado pelo organizador há muito tempo.", "Sair", "var(--text-muted)"); sairModoPublico(); return; } }
     let topTitle = document.getElementById('top-bar-title'); if(topTitle) topTitle.innerText = escapeHTML(partida.nome_baba) || "Pega o Baba"; if (partida.escudo_url) { let tEsc = document.getElementById('top-bar-escudo'); if(tEsc) { tEsc.src = partida.escudo_url; tEsc.style.display = 'block'; } } else { let tEsc = document.getElementById('top-bar-escudo'); if(tEsc) tEsc.style.display = 'none'; } window.partidaAtualId = partida.id; if(dbStatus) dbStatus.innerText = `Visualizando: ${escapeHTML(codigo)}`; window.custosDaRodada = safeParse(partida.custos_json) || []; let vConv = document.getElementById('valor-convidado'); if(vConv && partida.valor_por_convidado) vConv.value = partida.valor_por_convidado; let vMens = document.getElementById('valor-mensalista'); if(vMens && partida.valor_por_mensalista) vMens.value = partida.valor_por_mensalista; if(partida.data_sorteio) { let d = new Date(partida.data_sorteio); window.dataPartidaAtual = !isNaN(d.getTime()) ? d.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}) : partida.data_sorteio; }
     processarDadosRecebidosNuvem(partida); iniciarOuvinteRealtime(window.partidaAtualId); atualizarListaJogosDaRodada(); mudarAba('view-placares'); window.artilheirosPub = safeParse(partida.artilheiros_json) || {}; renderizarPainelDoDia(); window.history.pushState({}, '', `?code=${codigo}`);
 }
@@ -219,7 +221,7 @@ async function checarPartidaAtivaAdmin() {
         const { data: partidas, error } = await db.from('partidas').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false }).limit(1);
         if (!error && partidas && partidas.length > 0) {
             let p = partidas[0];
-            if (p.created_at && (Date.now() - new Date(p.created_at).getTime()) <= 518400000) { 
+            if (p.created_at && (Date.now() - new Date(p.created_at).getTime()) <= RODADA_EXPIRA_MS) { 
                 if (window.partidaAtualId === p.id && window.timesSorteadosObjs.length > 0) { let vPlac = document.getElementById('view-placares'); if(vPlac && vPlac.classList.contains('active')) renderizarSumula(); let vEst = document.getElementById('view-estatisticas'); if(vEst && vEst.classList.contains('active')) renderizarPainelDoDia(); let vFin = document.getElementById('view-financeiro'); if(vFin && vFin.classList.contains('active')) atualizarFinanceiro(); return; }
                 window.partidaAtualId = p.id; window.codigoAcessoAtual = p.codigo_acesso; window.jogosDaRodada = safeParse(p.jogos_json) || []; window.custosDaRodada = safeParse(p.custos_json) || []; window.filaEquipes = safeParse(p.fila_json) || []; window.golsTempA = []; window.golsTempB = [];
                 
@@ -290,6 +292,8 @@ function atualizarListas() {
 function embaralhar(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } return array; }
 
 async function iniciarSorteioComSuspense() {
+    let btnGerar = document.querySelector('button[onclick="iniciarSorteioComSuspense()"]');
+    if (btnGerar && btnGerar.disabled) return;
     let presentes = jogadores.filter(j => j.presente).sort((a, b) => { if (a.tipo === 'Mensalista' && b.tipo !== 'Mensalista') return -1; if (a.tipo !== 'Mensalista' && b.tipo === 'Mensalista') return 1; return a.ordemChegada - b.ordemChegada; });
     if (presentes.length < 2) return await customAlert("Aviso", "Adicione pelo menos 2 atletas na lista de Prontos.", "OK", "var(--warning)");
     
@@ -309,6 +313,7 @@ async function iniciarSorteioComSuspense() {
     let btnP = document.getElementById('btn-ir-placares'); if(btnP) btnP.style.display = 'none';
     let boxSorteio = document.getElementById('box-codigo-gerado-sorteio'); if(boxSorteio) { boxSorteio.style.display = 'none'; boxSorteio.innerHTML = ''; }
     let res = document.getElementById('resultado'); if(res) res.innerHTML = `<div style="text-align:center; padding:40px; font-weight:bold; color:var(--primary);">Processando Algoritmo...</div>`;
+    if (btnGerar) btnGerar.disabled = true;
     setTimeout(() => { sortearTimes(presentes, isAppend); }, 1500);
 }
 
@@ -369,7 +374,7 @@ async function sortearTimes(presentesBrutos, isAppend) {
         let jogadoresLivres = [...presentesBrutos]; let reservasNovas = [];
         if (!incluiGoleiros) { reservasNovas.push(...jogadoresLivres.filter(j => j.posicao === 'Goleiro')); jogadoresLivres = jogadoresLivres.filter(j => j.posicao !== 'Goleiro'); }
 
-        let tamanhoIdeal = currentProfile && currentProfile.jogadores_por_time ? parseInt(currentProfile.jogadores_por_time) : 7;
+        let tamanhoIdeal = getTamanhoIdealTime();
         let limiteTimesInput = document.getElementById('limite-times-input'); let maxTimes = limiteTimesInput && limiteTimesInput.value ? parseInt(limiteTimesInput.value) : null;
         
         if (isAppend) {
@@ -500,7 +505,8 @@ async function sortearTimes(presentesBrutos, isAppend) {
 
         let btnSum = document.getElementById('btn-ir-placares'); if(btnSum) { btnSum.style.display = 'block'; btnSum.innerText = "📝 Preencher Súmula"; }
         if (isAppend) renderizarSumula();
-    } catch (e) { console.error("Erro no sorteio:", e); customAlert("Erro", "Ocorreu um erro ao gerar os times. Verifique sua conexão e tente novamente.", "OK", "var(--danger)"); let res = document.getElementById('resultado'); if(res) res.innerHTML = ""; }
+        let btnGerarFim = document.querySelector('button[onclick="iniciarSorteioComSuspense()"]'); if (btnGerarFim) btnGerarFim.disabled = false;
+    } catch (e) { console.error("Erro no sorteio:", e); customAlert("Erro", "Ocorreu um erro ao gerar os times. Verifique sua conexão e tente novamente.", "OK", "var(--danger)"); let res = document.getElementById('resultado'); if(res) res.innerHTML = ""; let btnGerarErro = document.querySelector('button[onclick="iniciarSorteioComSuspense()"]'); if (btnGerarErro) btnGerarErro.disabled = false; }
 }
 
 async function criarPartidaInicialNoBanco() {
@@ -575,7 +581,7 @@ function atualizarNomeTime(id, novoNome) { let time = window.timesSorteadosObjs.
 
 window.toggleEscalacao = function() {
     let el = document.getElementById('container-escalacao-toggled'); let btn = document.getElementById('btn-toggle-escalacao');
-    if (el.style.display === 'none' || el.style.display === '') { el.style.display = 'block'; if(btn) btn.innerHTML = '🙈 Ocultar Escalação das Equipes'; } else { el.style.display = 'none'; if(btn) btn.innerHTML = '👁️ Mostrar Escalação das Equipes'; }
+    if (el.style.display === 'none' || el.style.display === '') { el.style.display = 'block'; if(btn) { btn.innerHTML = '🙈 Ocultar Escalação das Equipes'; btn.setAttribute('aria-expanded', 'true'); } } else { el.style.display = 'none'; if(btn) { btn.innerHTML = '👁️ Mostrar Escalação das Equipes'; btn.setAttribute('aria-expanded', 'false'); } }
 };
 
 function renderizarSumula() {
@@ -607,7 +613,7 @@ function atualizarFilaUI() {
 }
 
 function renderizarEscalacaoPublicaSumula() {
-    const containerEscalacao = document.getElementById('lista-escalacao-publica'); if(!containerEscalacao) return; let htmlEscalacao = ""; let tamanhoIdeal = currentProfile && currentProfile.jogadores_por_time ? parseInt(currentProfile.jogadores_por_time) : 7;
+    const containerEscalacao = document.getElementById('lista-escalacao-publica'); if(!containerEscalacao) return; let htmlEscalacao = ""; let tamanhoIdeal = getTamanhoIdealTime();
     let coringasEmprestadosIds = []; window.timesSorteadosObjs.forEach(t => { let cList = t.coringas || (window.coringasAtivos && window.coringasAtivos[t.id]) || []; cList.forEach(c => { if(c.jogador && c.jogador.id) coringasEmprestadosIds.push(c.jogador.id); }); });
             
     window.timesSorteadosObjs.forEach((t) => {
@@ -638,7 +644,7 @@ function limparGolsTemp(lado) { if(lado === 'A') window.golsTempA = []; else win
 async function checarTimesCompletosParaJogo() {
     if(window.filaEquipes.length < 2) return true;
     let idA = window.filaEquipes[0]; let idB = window.filaEquipes[1]; let tA = window.timesSorteadosObjs.find(t=>t.id===idA); let tB = window.timesSorteadosObjs.find(t=>t.id===idB); if(!tA || !tB) return true;
-    let tamanhoIdeal = currentProfile && currentProfile.jogadores_por_time ? parseInt(currentProfile.jogadores_por_time) : 7;
+    let tamanhoIdeal = getTamanhoIdealTime();
     let qA = tA.jogadores.length + (window.coringasAtivos[idA] ? window.coringasAtivos[idA].length : 0); let qB = tB.jogadores.length + (window.coringasAtivos[idB] ? window.coringasAtivos[idB].length : 0);
     
     if (qA < tamanhoIdeal || qB < tamanhoIdeal) {
@@ -827,7 +833,7 @@ async function darAltaDM() {
     
     if(jogador) {
         jogador.isDM = false; let msgAlert = `<strong>${escapeHTML(jogador.nome)}</strong> foi liberado pelo DM!`;
-        let tamanhoIdeal = currentProfile && currentProfile.jogadores_por_time ? parseInt(currentProfile.jogadores_por_time) : 7;
+        let tamanhoIdeal = getTamanhoIdealTime();
         let timeOrigem = jogador.timeOrigemId ? window.timesSorteadosObjs.find(t => t.id === jogador.timeOrigemId) : null;
 
         if (timeOrigem) {
@@ -880,7 +886,7 @@ async function darAltaDM() {
 }
 
 async function sortearCoringasFila(idTimeIncompleto) {
-    let timeInc = window.timesSorteadosObjs.find(t => t.id === idTimeIncompleto); let tamanhoIdeal = currentProfile && currentProfile.jogadores_por_time ? parseInt(currentProfile.jogadores_por_time) : 7;
+    let timeInc = window.timesSorteadosObjs.find(t => t.id === idTimeIncompleto); let tamanhoIdeal = getTamanhoIdealTime();
     if(!window.coringasAtivos) window.coringasAtivos = {}; let coringasAtuaisInc = window.coringasAtivos[idTimeIncompleto] || [];
     let faltam = tamanhoIdeal - (timeInc.jogadores.length + coringasAtuaisInc.length);
     if(faltam <= 0) return await customAlert("Time Completo", "Esta equipe já está com a quantidade ideal de jogadores.", "OK", "var(--primary)");
@@ -1088,7 +1094,7 @@ async function renderizarPainelDoDia() {
                 let ultimaPartida = partidas[0];
                 if (ultimaPartida.created_at) {
                     let diffMs = new Date().getTime() - new Date(ultimaPartida.created_at).getTime();
-                    if (diffMs <= 518400000 && !window.partidaSalvaManual) {
+                    if (diffMs <= RODADA_EXPIRA_MS && !window.partidaSalvaManual) {
                         window.jogosDaRodada = safeParse(ultimaPartida.jogos_json) || [];
                         if (ultimaPartida.data_sorteio) { let d = new Date(ultimaPartida.data_sorteio); window.dataPartidaAtual = !isNaN(d.getTime()) ? d.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}) : ultimaPartida.data_sorteio; }
                         renderizarPainelDoDiaComJogos(window.jogosDaRodada, ultimaPartida.data_sorteio); return;
