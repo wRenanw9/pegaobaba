@@ -97,6 +97,7 @@ function processarDadosRecebidosNuvem(novaPartida) {
     }
 
     if (novaPartida.times_json) { window.timesSorteadosObjs = safeParse(novaPartida.times_json) || []; window.coringasAtivos = {}; window.timesSorteadosObjs.forEach(t => { if (t.coringas && t.coringas.length > 0) window.coringasAtivos[t.id] = t.coringas; }); }
+    window.reservasSorteados = safeParse(novaPartida.reservas_json) || [];
     
     if (window.modoCompeticaoAtual === 'torneio') atualizarFilaTorneio();
     
@@ -226,6 +227,7 @@ async function checarPartidaAtivaAdmin() {
                 if (window.jogosDaRodada.length > 0 && window.jogosDaRodada[0].tipo === 'modo' && window.jogosDaRodada[0].modo === 'torneio') window.modoCompeticaoAtual = 'torneio';
 
                 if (p.times_json) { window.timesSorteadosObjs = safeParse(p.times_json) || []; window.coringasAtivos = {}; window.timesSorteadosObjs.forEach(t => { if(t.coringas && t.coringas.length > 0) window.coringasAtivos[t.id] = t.coringas; }); }
+                window.reservasSorteados = safeParse(p.reservas_json) || [];
                 window.partidaSalva = (window.timesSorteadosObjs.length > 0 && window.filaEquipes.length === 0 && window.jogosDaRodada.length > 0);
                 if (p.data_sorteio) { let d = new Date(p.data_sorteio); window.dataPartidaAtual = !isNaN(d.getTime()) ? d.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}) : p.data_sorteio; }
                 
@@ -473,7 +475,7 @@ async function sortearTimes(presentesBrutos, isAppend) {
         
         if (isAppend) {
             let qJogadores = 0; window.timesSorteadosObjs.forEach(t => qJogadores += t.jogadores.length); if (window.reservasSorteados) qJogadores += window.reservasSorteados.length;
-            await db.from('partidas').update({ times_json: window.timesSorteadosObjs, fila_json: window.filaEquipes, quantidade_jogadores: qJogadores }).eq('id', window.partidaAtualId);
+            await db.from('partidas').update({ times_json: window.timesSorteadosObjs, fila_json: window.filaEquipes, quantidade_jogadores: qJogadores, reservas_json: window.reservasSorteados }).eq('id', window.partidaAtualId);
         } else { await criarPartidaInicialNoBanco(); }
         
         try { salvarEstadoCompleto(); } catch(e) {}
@@ -509,7 +511,7 @@ async function criarPartidaInicialNoBanco() {
         let valM = document.getElementById('valor-mensalista'); let valorMens = valM ? parseFloat(valM.value) || 0 : 0;
         let qJogadoresEmQuadra = 0; window.timesSorteadosObjs.forEach(t => qJogadoresEmQuadra += t.jogadores.length); if (window.reservasSorteados) qJogadoresEmQuadra += window.reservasSorteados.length;
         
-        const { data: pData, error: errP } = await db.from('partidas').insert([{ quantidade_jogadores: qJogadoresEmQuadra, renda_convidados: 0, valor_por_convidado: valorConv, valor_por_mensalista: valorMens, custos_json: window.custosDaRodada, artilheiros_json: {}, jogos_json: window.jogosDaRodada, times_json: window.timesSorteadosObjs, fila_json: window.filaEquipes, codigo_acesso: codigoAleatorio, nome_baba: currentProfile ? currentProfile.nome_baba : "", escudo_url: currentProfile ? currentProfile.escudo_url : "", user_id: currentUser.id }]).select();
+        const { data: pData, error: errP } = await db.from('partidas').insert([{ quantidade_jogadores: qJogadoresEmQuadra, renda_convidados: 0, valor_por_convidado: valorConv, valor_por_mensalista: valorMens, custos_json: window.custosDaRodada, artilheiros_json: {}, jogos_json: window.jogosDaRodada, times_json: window.timesSorteadosObjs, fila_json: window.filaEquipes, reservas_json: window.reservasSorteados, codigo_acesso: codigoAleatorio, nome_baba: currentProfile ? currentProfile.nome_baba : "", escudo_url: currentProfile ? currentProfile.escudo_url : "", user_id: currentUser.id }]).select();
         if (errP) { console.error(errP); alert(`Erro de Conexão com o Banco de Dados: Não foi possível criar a partida no servidor. (${errP.message})`); return; }
         if (pData && pData.length > 0) { window.partidaAtualId = pData[0].id; window.codigoAcessoAtual = codigoAleatorio; } else { const { data: pFetch } = await db.from('partidas').select('id').eq('codigo_acesso', codigoAleatorio).single(); if (pFetch) { window.partidaAtualId = pFetch.id; window.codigoAcessoAtual = codigoAleatorio; } }
         iniciarOuvinteRealtime(window.partidaAtualId); exibirBoxCodigoSorteio(window.codigoAcessoAtual);
@@ -762,7 +764,7 @@ async function adicionarJogoNaSumula() {
         }
 
         window.timesSorteadosObjs.forEach(t => { t.coringas = window.coringasAtivos[t.id] || []; });
-        if(window.partidaAtualId) await db.from('partidas').update({ jogos_json: window.jogosDaRodada, artilheiros_json: artilheiros, fila_json: window.filaEquipes, times_json: window.timesSorteadosObjs }).eq('id', window.partidaAtualId);
+        if(window.partidaAtualId) await db.from('partidas').update({ jogos_json: window.jogosDaRodada, artilheiros_json: artilheiros, fila_json: window.filaEquipes, times_json: window.timesSorteadosObjs, reservas_json: window.reservasSorteados }).eq('id', window.partidaAtualId);
         limparGolsTemp('A'); limparGolsTemp('B'); atualizarSelectsEquipes(); atualizarFilaUI(); atualizarListaJogosDaRodada(); renderizarEscalacaoPublicaSumula(); salvarEstadoCompleto();
     } finally { if(btnConfirmar) { btnConfirmar.innerText = textoOriginal; btnConfirmar.disabled = false; btnConfirmar.style.opacity = "1"; } }
 }
@@ -812,7 +814,7 @@ async function salvarLesao() {
     
     if(window.coringasAtivos) { for(let key in window.coringasAtivos) { window.coringasAtivos[key] = window.coringasAtivos[key].filter(c => c.jogador.id !== jogador.id); } }
     window.timesSorteadosObjs.forEach(t => { t.coringas = window.coringasAtivos[t.id] || []; });
-    if(window.partidaAtualId) await db.from('partidas').update({ times_json: window.timesSorteadosObjs }).eq('id', window.partidaAtualId);
+    if(window.partidaAtualId) await db.from('partidas').update({ times_json: window.timesSorteadosObjs, reservas_json: window.reservasSorteados }).eq('id', window.partidaAtualId);
     
     fecharModalLesao(); salvarEstadoCompleto(); renderizarEscalacaoPublicaSumula();
 }
@@ -862,7 +864,7 @@ async function darAltaDM() {
         await customAlert("🩺 Alta Médica", msgAlert, "OK", "var(--primary)");
         
         window.timesSorteadosObjs.forEach(t => { t.coringas = window.coringasAtivos[t.id] || []; });
-        if(window.partidaAtualId) await db.from('partidas').update({ times_json: window.timesSorteadosObjs }).eq('id', window.partidaAtualId);
+        if(window.partidaAtualId) await db.from('partidas').update({ times_json: window.timesSorteadosObjs, reservas_json: window.reservasSorteados }).eq('id', window.partidaAtualId);
         
         fecharModalLesao(); salvarEstadoCompleto(); renderizarEscalacaoPublicaSumula();
     }
@@ -907,7 +909,7 @@ async function sortearCoringasFila(idTimeIncompleto) {
     window.coringasAtivos[idTimeIncompleto].push(...escolhidos);
     window.timesSorteadosObjs.forEach(t => { t.coringas = window.coringasAtivos[t.id] || []; });
     
-    if(window.partidaAtualId) await db.from('partidas').update({ times_json: window.timesSorteadosObjs }).eq('id', window.partidaAtualId);
+    if(window.partidaAtualId) await db.from('partidas').update({ times_json: window.timesSorteadosObjs, reservas_json: window.reservasSorteados }).eq('id', window.partidaAtualId);
 
     let msg = ``; escolhidos.forEach(c => msg += `<strong>${escapeHTML(c.jogador.nome)}</strong> (do ${escapeHTML(c.timeOriginalNome)})<br>`); 
     await customAlert("🎭 Coringas Sorteados", msg, "Continuar", "var(--primary)");
@@ -1185,7 +1187,7 @@ async function salvarPartidaComPlacares() {
         window.filaEquipes = [];
         const { error: errP } = await db.from('partidas').update({ 
             renda_convidados: convidadosPagantes, valor_por_convidado: valorConv, valor_por_mensalista: valorMens, custos_json: window.custosDaRodada,
-            artilheiros_json: artilheiros, jogos_json: window.jogosDaRodada, times_json: window.timesSorteadosObjs, fila_json: window.filaEquipes
+            artilheiros_json: artilheiros, jogos_json: window.jogosDaRodada, times_json: window.timesSorteadosObjs, fila_json: window.filaEquipes, reservas_json: window.reservasSorteados
         }).eq('id', window.partidaAtualId);
         
         if(errP) throw errP;
