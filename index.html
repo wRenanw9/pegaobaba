@@ -109,7 +109,7 @@
                 <div id="lista-aguardando"></div>
             </div>
 
-            <div class="card hidden-public" style="border: 2px solid var(--primary); background: #f8fafc;">
+            <div class="card hidden-public" style="border: 2px solid var(--primary); background: var(--light);">
                 <h2>Prontos pro Jogo (<span id="total-presentes">0</span>)</h2>
                 <button class="btn-limpar" onclick="zerarPresencas()" id="btn-zerar" style="display: block; width:100%; margin-bottom:15px;">🔄 Iniciar Nova Rodada (Zerar Tudo)</button>
                 <div id="lista-presentes"></div>
@@ -203,7 +203,7 @@
                     </div>
 
                     <!-- BOTÃO SANFONA PARA ESCALAÇÃO -->
-                    <button id="btn-toggle-escalacao" onclick="toggleEscalacao()" aria-expanded="false" aria-controls="container-escalacao-toggled" style="width: 100%; background: #f8fafc; color: var(--primary); border: 1px solid var(--border); padding: 12px; border-radius: 8px; font-weight: bold; margin-bottom: 15px; text-align: center; font-size: 14px; cursor: pointer; transition: 0.2s;">👁️ Mostrar Escalação das Equipes</button>
+                    <button id="btn-toggle-escalacao" onclick="toggleEscalacao()" aria-expanded="false" aria-controls="container-escalacao-toggled" style="width: 100%; background: var(--light); color: var(--primary); border: 1px solid var(--border); padding: 12px; border-radius: 8px; font-weight: bold; margin-bottom: 15px; text-align: center; font-size: 14px; cursor: pointer; transition: 0.2s;">👁️ Mostrar Escalação das Equipes</button>
                     
                     <div id="container-escalacao-toggled" style="display: none; padding-top: 10px;">
                         <!-- AQUI SERÃO RENDERIZADOS OS TIMES E BOTÕES DE CORINGA -->
@@ -252,7 +252,7 @@
             <div id="loading-stats" class="hidden-public" style="text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 20px; display: none;">Buscando histórico na nuvem...</div>
 
             <div class="card-secao-stats hidden-public">
-                <div class="header-secao-stats" style="background: #e0e7ff; color: var(--primary);">
+                <div class="header-secao-stats" style="background: var(--tint-primary); color: var(--primary);">
                     <span>🔥 Artilharia do Mês (Mensalistas)</span>
                     <span id="label-mes-atual" style="font-size: 11px; background: var(--white); padding: 2px 6px; border-radius: 4px;">Atual</span>
                 </div>
@@ -263,7 +263,7 @@
             </div>
 
             <div class="card-secao-stats hidden-public">
-                <div class="header-secao-stats" style="background: #fef3c7; color: var(--warning);">
+                <div class="header-secao-stats" style="background: var(--tint-warning); color: var(--warning);">
                     <span>🌟 Ranking Anual (Mensalistas)</span>
                     <span id="label-ano-atual" style="font-size: 11px; background: var(--white); padding: 2px 6px; border-radius: 4px;">Atual</span>
                 </div>
@@ -442,15 +442,15 @@
                 </div>
                 <p style="font-size:12px; color:var(--text-muted); text-align:center; margin-bottom:15px; margin-top:0;">Controle quem se machucou e quem melhorou.</p>
                 
-                <div style="background: #fee2e2; padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #fca5a5;">
+                <div style="background: var(--tint-danger); padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid rgba(239, 68, 68, 0.35);">
                     <label style="font-size:12px; font-weight:bold; color:var(--danger); display:block; margin-bottom:8px;">❌ Enviar para o DM (Sair do Time)</label>
-                    <select id="select-jogador-lesao" style="margin-bottom: 10px; width: 100%; padding: 10px; font-size: 14px; border-radius:6px; border:1px solid #fca5a5;"></select>
+                    <select id="select-jogador-lesao" style="margin-bottom: 10px; width: 100%; padding: 10px; font-size: 14px; border-radius:6px; border:1px solid rgba(239, 68, 68, 0.35);"></select>
                     <button onclick="salvarLesao()" style="background:var(--danger); width: 100%; padding: 10px; font-size: 14px; border-radius:6px; color: white; border: none; font-weight: bold;">🤕 Mandar pro DM</button>
                 </div>
 
-                <div style="background: #e0f2fe; padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #bae6fd;">
+                <div style="background: var(--tint-info); padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid rgba(14, 165, 233, 0.35);">
                     <label style="font-size:12px; font-weight:bold; color:var(--primary); display:block; margin-bottom:8px;">✅ Dar Alta Médica (Voltar pra Reserva)</label>
-                    <select id="select-jogador-alta" style="margin-bottom: 10px; width: 100%; padding: 10px; font-size: 14px; border-radius:6px; border:1px solid #bae6fd;"></select>
+                    <select id="select-jogador-alta" style="margin-bottom: 10px; width: 100%; padding: 10px; font-size: 14px; border-radius:6px; border:1px solid rgba(14, 165, 233, 0.35);"></select>
                     <button onclick="darAltaDM()" style="background:var(--primary); width: 100%; padding: 10px; font-size: 14px; border-radius:6px; color: white; border: none; font-weight: bold;">🩺 Liberar Jogador</button>
                 </div>
             </div>
