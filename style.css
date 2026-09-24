@@ -5,6 +5,7 @@
     --light: #f8fafc; --white: #ffffff; --whatsapp: #25D366; --danger: #ef4444;
     --warning: #f59e0b; --purple: #8b5cf6; --supabase: #10b981; --pos-color: #64748b;
     --border: #e2e8f0; --nav-height: 65px; --accent-dark: #0f172a;
+    --tint-primary: rgba(79, 70, 229, 0.12); --tint-danger: rgba(239, 68, 68, 0.12); --tint-warning: rgba(245, 158, 11, 0.15); --tint-info: rgba(14, 165, 233, 0.12);
 }
 
 @media (prefers-color-scheme: dark) {
