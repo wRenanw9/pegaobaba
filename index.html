@@ -36,7 +36,7 @@
             
             <button onclick="fazerLogin()" style="margin-bottom: 5px; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.3);">Entrar no Painel</button>
             <div class="auth-divider">OU</div>
-            <button onclick="criarConta()" style="background: white; color: var(--dark); border: 1px solid var(--border);">Criar Nova Conta</button>
+            <button onclick="criarConta()" style="background: var(--white); color: var(--dark); border: 1px solid var(--border);">Criar Nova Conta</button>
             <div id="auth-msg" style="margin-top: 15px; font-size: 14px; text-align: center;"></div>
         </div>
 
@@ -45,7 +45,7 @@
             <p style="font-size: 13px; color: var(--text-muted); text-align: center; margin-top:-10px;">Acompanhe a resenha ao vivo</p>
             <label for="codigo-baba-input" class="sr-only">Código do Baba</label>
 <input type="text" id="codigo-baba-input" placeholder="Digite o Código do Baba" style="text-align: center; font-weight: bold; text-transform: uppercase;">
-            <button onclick="acessarModoPublico()" style="background: var(--dark);">Ver Súmula e Painel</button>
+            <button onclick="acessarModoPublico()" style="background: var(--accent-dark);">Ver Súmula e Painel</button>
         </div>
 
         <div class="dev-signature">
@@ -60,7 +60,7 @@
     <div id="app-container" style="display: none;">
         
         <div class="top-bar">
-            <img id="top-bar-escudo" src="" alt="Escudo do baba" style="display:none; width:35px; height:35px; border-radius:50%; object-fit:cover; margin-right:10px; border: 1px solid var(--border); background:white;">
+            <img id="top-bar-escudo" src="" alt="Escudo do baba" style="display:none; width:35px; height:35px; border-radius:50%; object-fit:cover; margin-right:10px; border: 1px solid var(--border); background: var(--white);">
             <h1 id="top-bar-title">Pega o Baba</h1>
             <div class="top-actions">
                 <div class="status-nuvem" id="status-db">...</div>
@@ -94,7 +94,7 @@
 
             <div class="card hidden-public" style="padding: 15px;">
                 <h2 style="margin-bottom: 10px;">Gestão de Elenco (<span id="total-elenco">0</span>)</h2>
-                <button onclick="exportarElencoPorPosicao()" style="width:100%; margin-bottom:15px; background:white; color:var(--dark); border:1px solid var(--border); font-size:14px; font-weight:600; padding:10px;">📊 Exportar Resumo por Posições</button>
+                <button onclick="exportarElencoPorPosicao()" style="width:100%; margin-bottom:15px; background: var(--white); color:var(--dark); border:1px solid var(--border); font-size:14px; font-weight:600; padding:10px;">📊 Exportar Resumo por Posições</button>
                 <div class="busca-container"><input type="text" id="busca-jogador-elenco" placeholder="🔍 Buscar jogador..." onkeyup="filtrarElencoAdmin()"></div>
                 <div id="lista-elenco-admin"></div>
             </div>
@@ -115,7 +115,7 @@
                 <div id="lista-presentes"></div>
                 <div style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 20px;">
                     
-                    <div style="margin-bottom: 15px; background: white; padding: 12px; border-radius: 8px; border: 2px solid var(--border);">
+                    <div style="margin-bottom: 15px; background: var(--white); padding: 12px; border-radius: 8px; border: 2px solid var(--border);">
                         <label style="font-weight: 800; color: var(--dark); display: block; margin-bottom: 8px;">🎮 Formato da Competição:</label>
                         <select id="modo-competicao" style="margin-bottom: 0; width: 100%; font-weight: 700; color: var(--primary);">
                             <option value="rei">🔄 Rei da Quadra (Fila Infinita)</option>
@@ -131,12 +131,12 @@
                         <option value="todos" selected>Todos - com goleiro</option>
                     </select>
 
-                    <div style="display:flex; gap:10px; align-items:center; background: white; padding:10px; border-radius:8px; border:1px solid var(--border); margin-bottom: 10px;">
+                    <div style="display:flex; gap:10px; align-items:center; background: var(--white); padding:10px; border-radius:8px; border:1px solid var(--border); margin-bottom: 10px;">
                         <label for="limite-times-input" style="font-size:14px; font-weight:600; margin-bottom:0; flex:1;">Máx. de Times:</label>
                         <input type="number" id="limite-times-input" placeholder="Ilimitado" style="margin-bottom:0; width: 100px; text-align: center; padding: 6px;">
                     </div>
 
-                    <div style="display:flex; gap:10px; align-items:flex-start; background: white; padding:10px; border-radius:8px; border:1px solid var(--border); margin-bottom: 10px;">
+                    <div style="display:flex; gap:10px; align-items:flex-start; background: var(--white); padding:10px; border-radius:8px; border:1px solid var(--border); margin-bottom: 10px;">
                         <input type="checkbox" id="equilibrar-posicoes" checked style="width:auto; margin-top:2px;">
                         <label for="equilibrar-posicoes" style="font-size:14px; font-weight:500;">
                             Equilibrar Posições
@@ -144,7 +144,7 @@
                         </label>
                     </div>
 
-                    <div style="display:flex; gap:10px; align-items:flex-start; background: white; padding:10px; border-radius:8px; border:1px solid var(--border);">
+                    <div style="display:flex; gap:10px; align-items:flex-start; background: var(--white); padding:10px; border-radius:8px; border:1px solid var(--border);">
                         <input type="checkbox" id="priorizar-ordem" style="width:auto; margin-top:2px;">
                         <label for="priorizar-ordem" style="font-size:14px; font-weight:500;">
                             Priorizar Ordem de Chegada
@@ -152,7 +152,7 @@
                         </label>
                     </div>
                 </div>
-                <button onclick="iniciarSorteioComSuspense()" style="background: var(--dark); margin-top: 15px; font-size:16px; padding:16px;">🎲 Gerar Equipes</button>
+                <button onclick="iniciarSorteioComSuspense()" style="background: var(--accent-dark); margin-top: 15px; font-size:16px; padding:16px;">🎲 Gerar Equipes</button>
             </div>
 
             <div id="resultado" class="team-container"></div>
@@ -193,7 +193,7 @@
                                 <div class="lista-gols-arena" id="lista-gols-b"></div>
                             </div>
                         </div>
-                        <button onclick="adicionarJogoNaSumula()" style="background: var(--dark); color: white; width: 100%; border-radius: 8px; padding: 12px; font-weight: 800; font-size: 15px; transition: all 0.2s; margin-top: 10px;">✔️ Confirmar Placar</button>
+                        <button onclick="adicionarJogoNaSumula()" style="background: var(--accent-dark); color: white; width: 100%; border-radius: 8px; padding: 12px; font-weight: 800; font-size: 15px; transition: all 0.2s; margin-top: 10px;">✔️ Confirmar Placar</button>
                     </div>
 
                     <!-- BARRA DE FERRAMENTAS COMPACTA -->
@@ -254,7 +254,7 @@
             <div class="card-secao-stats hidden-public">
                 <div class="header-secao-stats" style="background: #e0e7ff; color: var(--primary);">
                     <span>🔥 Artilharia do Mês (Mensalistas)</span>
-                    <span id="label-mes-atual" style="font-size: 11px; background: white; padding: 2px 6px; border-radius: 4px;">Atual</span>
+                    <span id="label-mes-atual" style="font-size: 11px; background: var(--white); padding: 2px 6px; border-radius: 4px;">Atual</span>
                 </div>
                 <table class="tabela-stats">
                     <thead><tr><th>Jogador</th><th style="width:60px;">Gols</th></tr></thead>
@@ -265,7 +265,7 @@
             <div class="card-secao-stats hidden-public">
                 <div class="header-secao-stats" style="background: #fef3c7; color: var(--warning);">
                     <span>🌟 Ranking Anual (Mensalistas)</span>
-                    <span id="label-ano-atual" style="font-size: 11px; background: white; padding: 2px 6px; border-radius: 4px;">Atual</span>
+                    <span id="label-ano-atual" style="font-size: 11px; background: var(--white); padding: 2px 6px; border-radius: 4px;">Atual</span>
                 </div>
                 <div style="overflow-x: auto;">
                     <table class="tabela-stats">
@@ -305,7 +305,7 @@
                     <div style="flex: 1.2;"><label style="font-size: 10px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">Frequência:</label><select id="tipo-custo" style="width:100%; margin:0; padding:10px; font-size:13px;"><option value="diario">Avulso / Pontual</option><option value="mensal">Mensal (Fixo)</option></select></div>
                     <div style="flex: 1;"><label style="font-size: 10px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">Data:</label><input type="date" id="data-custo" style="width:100%; margin:0; padding:10px; font-size:13px;"></div>
                 </div>
-                <button onclick="adicionarCusto()" style="background: var(--dark); padding: 12px; font-size:14px;">Registrar Movimentação</button>
+                <button onclick="adicionarCusto()" style="background: var(--accent-dark); padding: 12px; font-size:14px;">Registrar Movimentação</button>
             </div>
 
             <div class="card-secao-stats hidden-public" id="card-relatorio-mensal">
@@ -320,20 +320,30 @@
             </div>
 
             <div style="display: flex; gap: 10px; margin-top: 20px;" class="no-print hidden-public">
-                <button onclick="window.print()" style="background: var(--dark); flex: 1; font-size: 14px; padding: 14px;">📄 Exportar PDF / Imprimir Relatório</button>
+                <button onclick="window.print()" style="background: var(--accent-dark); flex: 1; font-size: 14px; padding: 14px;">📄 Exportar PDF / Imprimir Relatório</button>
             </div>
         </div>
 
         <!-- ABA: CONTA -->
         <div id="view-conta" class="page-view organizer-only">
             <h2 style="text-align: left; font-size:20px; margin-bottom: 20px;">Minha Conta</h2>
-            
+
+            <div class="card" style="padding: 15px; margin-bottom: 15px;">
+                <h3 style="font-size: 14px; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom: 10px;">🎨 Aparência</h3>
+                <label for="select-tema" class="sr-only">Tema do aplicativo</label>
+                <select id="select-tema" onchange="alterarTema(this.value)" style="margin-bottom: 0;">
+                    <option value="auto">Automático (segue o celular)</option>
+                    <option value="light">☀️ Claro</option>
+                    <option value="dark">🌙 Escuro</option>
+                </select>
+            </div>
+
             <div class="card" style="padding: 15px; margin-bottom: 15px;">
                 <h3 style="font-size: 14px; margin-top:0; border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom: 10px;">🛡️ Escudo do Baba</h3>
                 <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 10px;">Faça o upload do brasão do seu time.</p>
                 <div style="text-align: center; margin-bottom: 10px;"><img id="preview-escudo" src="" alt="Pré-visualização do escudo do baba" style="display:none; width:80px; height:80px; border-radius:50%; object-fit:cover; margin: 0 auto 10px auto; border: 2px solid var(--primary);"></div>
                 <input type="file" id="input-escudo-baba" accept="image/*" style="font-size: 12px; padding: 10px; margin-bottom: 10px; border: 1px dashed var(--border); width: 100%;">
-                <button id="btn-salvar-escudo" onclick="salvarEscudoBaba()" style="background: var(--dark); padding: 10px; font-size: 13px;">Fazer Upload da Imagem</button>
+                <button id="btn-salvar-escudo" onclick="salvarEscudoBaba()" style="background: var(--accent-dark); padding: 10px; font-size: 13px;">Fazer Upload da Imagem</button>
             </div>
 
             <div class="card" style="padding: 15px; margin-bottom: 15px;">
@@ -408,7 +418,7 @@
             <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-gol">
                 <h3 id="titulo-modal-gol">Quem fez o gol?</h3>
                 <div id="lista-jogadores-gol" style="display:flex; flex-direction:column; gap:8px; max-height: 55vh; overflow-y: auto; margin-bottom: 15px; padding-right: 5px;"></div>
-                <button onclick="fecharModalGol()" style="background:white; color:var(--dark); border:1px solid var(--border); padding: 12px; border-radius: 8px; font-weight: 600; width:100%;">Cancelar</button>
+                <button onclick="fecharModalGol()" style="background: var(--white); color:var(--dark); border:1px solid var(--border); padding: 12px; border-radius: 8px; font-weight: 600; width:100%;">Cancelar</button>
             </div>
         </div>
 
@@ -419,7 +429,7 @@
                 <select id="select-jogador-ajuste" style="margin-bottom: 15px; font-weight:bold; width: 100%; padding: 10px;"></select>
                 <input type="number" id="input-gols-ajuste" placeholder="Qtd (ex: 2 ou -1)" value="1" style="font-size: 18px; font-weight:bold; text-align:center; width: 100%; margin-bottom: 15px;">
                 <button onclick="salvarAjusteManual()" style="margin-bottom:10px; background:var(--supabase); width: 100%;">Confirmar Ajuste</button>
-                <button onclick="fecharModalAjuste()" style="background:white; color:var(--dark); border:1px solid var(--border); width: 100%;">Cancelar</button>
+                <button onclick="fecharModalAjuste()" style="background: var(--white); color:var(--dark); border:1px solid var(--border); width: 100%;">Cancelar</button>
             </div>
         </div>
 
