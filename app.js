@@ -726,6 +726,7 @@ async function adicionarJogoNaSumula() {
         });
 
         if (window.modoCompeticaoAtual === 'torneio') {
+            if (window.coringasAtivos) { [idA, idB].forEach(id => { if (window.coringasAtivos[id]) delete window.coringasAtivos[id]; }); window.timesSorteadosObjs.forEach(t => { t.coringas = window.coringasAtivos[t.id] || []; }); }
             atualizarFilaTorneio();
         } else {
             window.filaEquipes = window.filaEquipes.filter(id => id !== idA && id !== idB);
