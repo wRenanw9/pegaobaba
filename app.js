@@ -388,13 +388,19 @@ async function sortearTimes(presentesBrutos, isAppend) {
         
         if (isAppend) {
             jogadoresLivres.sort((a, b) => (Number(b.nivel) || 3) - (Number(a.nivel) || 3));
+            const getSomaNotasInc = (time) => time.jogadores.reduce((acc, j) => acc + (Number(j.nivel) || 3), 0);
+            const getQtdCracksInc = (time) => time.jogadores.filter(j => (Number(j.nivel) || 3) >= 5).length;
+            const getQtdPosInc = (time, pos) => time.jogadores.filter(j => j.posicao === pos).length;
             let incompletos = window.timesSorteadosObjs.filter(t => t.jogadores.length < tamanhoIdeal);
             while (jogadoresLivres.length > 0 && incompletos.length > 0) {
-                incompletos.sort((a, b) => {
-                    if (a.jogadores.length !== b.jogadores.length) return a.jogadores.length - b.jogadores.length;
-                    let scoreA = a.jogadores.reduce((acc, j) => acc + (Number(j.nivel) || 3), 0); let scoreB = b.jogadores.reduce((acc, j) => acc + (Number(j.nivel) || 3), 0); return scoreA - scoreB;
-                });
-                let timeAlvo = incompletos[0]; let jogador = jogadoresLivres.shift(); timeAlvo.jogadores.push(jogador); incompletos = window.timesSorteadosObjs.filter(t => t.jogadores.length < tamanhoIdeal);
+                let jogador = jogadoresLivres.shift();
+                let elegiveis = incompletos;
+                let minPos = Math.min(...elegiveis.map(t => getQtdPosInc(t, jogador.posicao))); let comMenosPos = elegiveis.filter(t => getQtdPosInc(t, jogador.posicao) === minPos);
+                if (comMenosPos.length > 0) elegiveis = comMenosPos;
+                if ((Number(jogador.nivel) || 3) >= 5 && elegiveis.length > 1) { let minCracks = Math.min(...elegiveis.map(getQtdCracksInc)); elegiveis = elegiveis.filter(t => getQtdCracksInc(t) === minCracks); }
+                elegiveis.sort((a, b) => getSomaNotasInc(a) - getSomaNotasInc(b));
+                elegiveis[0].jogadores.push(jogador);
+                incompletos = window.timesSorteadosObjs.filter(t => t.jogadores.length < tamanhoIdeal);
             }
         }
 
@@ -427,6 +433,9 @@ async function sortearTimes(presentesBrutos, isAppend) {
                 let capacities = []; let remaining = chunk.length;
                 if (!priorizarOrdem && (modo === '12' || modo === '14')) { let half = Math.ceil(chunk.length / 2); capacities = [half, chunk.length - half]; } 
                 else { for (let k = 0; k < numTimesNoChunk; k++) { if (remaining >= tamanhoIdeal) { capacities.push(tamanhoIdeal); remaining -= tamanhoIdeal; } else if (remaining > 0) { capacities.push(remaining); remaining = 0; } else { capacities.push(0); } } }
+                // Salvaguarda: em grupos muito pequenos, o cálculo acima pode deixar um time com 0 vagas (e ele some do sorteio).
+                // Isso só redistribui o mínimo pra garantir que todo time formado tenha ao menos 1 jogador; não mexe nos casos normais (ex: 7,7,3).
+                for (let k = 0; k < capacities.length; k++) { while (capacities[k] === 0) { let maxIdx = capacities.indexOf(Math.max(...capacities)); if (capacities[maxIdx] <= 1) break; capacities[maxIdx]--; capacities[k]++; } }
                 
                 let goleirosChunk = embaralhar(chunk.filter(j => j.posicao === 'Goleiro')); let linhaChunk = embaralhar(chunk.filter(j => j.posicao !== 'Goleiro')); let timesLocais = Array.from({ length: numTimesNoChunk }, () => []);
                 if (incluiGoleiros) { for (let t = 0; t < numTimesNoChunk; t++) { if (goleirosChunk.length > 0 && timesLocais[t].length < capacities[t]) { timesLocais[t].push(goleirosChunk.shift()); } } reservasNovas.push(...goleirosChunk); }
