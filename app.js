@@ -254,18 +254,58 @@ async function checarPartidaAtivaAdmin() {
 function prepararEdicao(indexArray) { const j = jogadores[indexArray]; let nomeInp = document.getElementById('nome'); if(nomeInp) nomeInp.value = j.nome; let tipoInp = document.getElementById('tipo'); if(tipoInp) tipoInp.value = j.tipo; let posInp = document.getElementById('posicao'); if(posInp) posInp.value = j.posicao; let nivInp = document.getElementById('nivel'); if(nivInp) nivInp.value = j.nivel; jogadorEdicaoId = j.id; let titForm = document.getElementById('titulo-form'); if(titForm) titForm.innerText = "Editando Jogador"; let cardForm = document.getElementById('card-formulario'); if(cardForm) cardForm.classList.add("editando"); let btnAd = document.getElementById('btn-adicionar'); if(btnAd) btnAd.innerText = "Salvar Alterações"; let btnCanc = document.getElementById('btn-cancelar-edicao'); if(btnCanc) btnCanc.style.display = "block"; window.scrollTo({ top: 0, behavior: 'smooth' }); }
 function cancelarEdicao() { jogadorEdicaoId = null; let nomeInp = document.getElementById('nome'); if(nomeInp) nomeInp.value = ""; let tipoInp = document.getElementById('tipo'); if(tipoInp) tipoInp.value = "Mensalista"; let posInp = document.getElementById('posicao'); if(posInp) posInp.value = "Meia"; let nivInp = document.getElementById('nivel'); if(nivInp) nivInp.value = "3"; let titForm = document.getElementById('titulo-form'); if(titForm) titForm.innerText = "Adicionar ao Elenco"; let cardForm = document.getElementById('card-formulario'); if(cardForm) cardForm.classList.remove("editando"); let btnAd = document.getElementById('btn-adicionar'); if(btnAd) btnAd.innerText = "Incluir Jogador"; let btnCanc = document.getElementById('btn-cancelar-edicao'); if(btnCanc) btnCanc.style.display = "none"; }
 
+function arquivarHistoricoMensalidade(jogador) {
+    if (!jogador || !jogador.pagamentos_json) return [];
+    let elMens = document.getElementById('valor-mensalista'); let valorAtual = elMens ? (parseFloat(elMens.value) || 0) : 0;
+    let entradas = [];
+    for (let mesKeyHist in jogador.pagamentos_json) {
+        let v = jogador.pagamentos_json[mesKeyHist]; if (!v) continue;
+        let valorHistorico = typeof v === 'number' ? v : valorAtual;
+        entradas.push({ id: Date.now() + entradas.length, desc: `Mensalidade (histórico) - ${jogador.nome}`, valor: valorHistorico, tipo: 'mensal', operacao: 'entrada', data: mesKeyHist });
+    }
+    return entradas;
+}
+
 async function adicionarJogador() {
     if (!currentUser) return; const nomeInput = document.getElementById('nome'); const tipoInp = document.getElementById('tipo'); const posicaoInp = document.getElementById('posicao'); const nivelInp = document.getElementById('nivel'); if(!nomeInput || !tipoInp || !posicaoInp || !nivelInp) return;
     const tipo = tipoInp.value; const posicao = posicaoInp.value; const nivel = parseInt(nivelInp.value); const nome = nomeInput.value.trim().replace(/\s+/g, ' '); if (nome === "") return alert("Preencha o nome.");
     const nomeExiste = jogadores.some(j => { let nomeCadastrado = (j.nome || "").trim().toLowerCase(); return nomeCadastrado === nome.toLowerCase() && j.id !== jogadorEdicaoId; });
     if (nomeExiste) return await customAlert("Aviso", "Já existe um jogador cadastrado com este nome!", "OK", "var(--warning)");
     const btn = document.getElementById('btn-adicionar'); if(btn) { btn.innerText = "Processando..."; btn.disabled = true; }
-    if (jogadorEdicaoId) { const { error } = await db.from('jogadores').update({ nome, tipo, posicao, nivel }).eq('id', jogadorEdicaoId); if (!error) { let jIndex = jogadores.findIndex(j => j.id === jogadorEdicaoId); if (jIndex !== -1) { jogadores[jIndex].nome = nome; jogadores[jIndex].tipo = tipo; jogadores[jIndex].posicao = posicao; jogadores[jIndex].nivel = nivel; } cancelarEdicao(); atualizarListas(); } else alert("Erro: " + error.message);
+    if (jogadorEdicaoId) {
+        let jIndex = jogadores.findIndex(j => j.id === jogadorEdicaoId); let jogadorAntes = jIndex !== -1 ? jogadores[jIndex] : null;
+        let precisaArquivar = jogadorAntes && jogadorAntes.tipo === 'Mensalista' && tipo !== 'Mensalista';
+        let entradasArquivo = precisaArquivar ? arquivarHistoricoMensalidade(jogadorAntes) : [];
+        let payloadUpdate = { nome, tipo, posicao, nivel }; if (entradasArquivo.length > 0) payloadUpdate.pagamentos_json = {};
+
+        const { error } = await db.from('jogadores').update(payloadUpdate).eq('id', jogadorEdicaoId);
+        if (!error) {
+            if (entradasArquivo.length > 0 && currentUser) { window.despesasMensaisGlobais.push(...entradasArquivo); const { error: errArq } = await db.from('profiles').update({ despesas_mensais_json: window.despesasMensaisGlobais }).eq('id', currentUser.id); if (errArq) console.error("Falha ao arquivar histórico financeiro:", errArq); }
+            if (jIndex !== -1) { jogadores[jIndex].nome = nome; jogadores[jIndex].tipo = tipo; jogadores[jIndex].posicao = posicao; jogadores[jIndex].nivel = nivel; if (entradasArquivo.length > 0) jogadores[jIndex].pagamentos_json = {}; }
+            cancelarEdicao(); atualizarListas(); atualizarFinanceiro();
+        } else alert("Erro: " + error.message);
     } else { const { data, error } = await db.from('jogadores').insert([{ nome, tipo, posicao, nivel, pagamentos_json: {}, user_id: currentUser.id }]).select(); if (!error) { nomeInput.value = ""; nomeInput.focus(); jogadores.push({ ...data[0], presente: false, ordemChegada: 0, pagou: false }); atualizarListas(); } else alert("Erro: " + error.message); }
     if(btn) { btn.innerText = "Incluir Jogador"; btn.disabled = false; }
 }
 
-async function removerJogador(idNuvem, indexArray) { let conf = await customConfirm("Excluir Jogador", `Tem certeza que deseja remover <strong>${escapeHTML(jogadores[indexArray].nome)}</strong> do elenco permanentemente?`, "Sim, remover", "Cancelar", "var(--danger)"); if(conf) { const { error } = await db.from('jogadores').delete().eq('id', idNuvem); if (!error) { jogadores.splice(indexArray, 1); salvarEstadoLocal(); atualizarListas(); atualizarFinanceiro(); } else alert("Erro ao remover: " + error.message); } }
+async function removerJogador(idNuvem, indexArray) {
+    let jogador = jogadores[indexArray];
+    let conf = await customConfirm("Excluir Jogador", `Tem certeza que deseja remover <strong>${escapeHTML(jogador.nome)}</strong> do elenco permanentemente?`, "Sim, remover", "Cancelar", "var(--danger)");
+    if (!conf) return;
+
+    if (jogador.tipo === 'Mensalista' && currentUser) {
+        let entradasArquivo = arquivarHistoricoMensalidade(jogador);
+        if (entradasArquivo.length > 0) {
+            let backup = [...window.despesasMensaisGlobais];
+            window.despesasMensaisGlobais.push(...entradasArquivo);
+            const { error: errArq } = await db.from('profiles').update({ despesas_mensais_json: window.despesasMensaisGlobais }).eq('id', currentUser.id);
+            if (errArq) { window.despesasMensaisGlobais = backup; return alert("Não foi possível preservar o histórico financeiro antes de remover. O jogador NÃO foi excluído — tente novamente."); }
+        }
+    }
+
+    const { error } = await db.from('jogadores').delete().eq('id', idNuvem);
+    if (!error) { jogadores.splice(indexArray, 1); salvarEstadoLocal(); atualizarListas(); atualizarFinanceiro(); } else alert("Erro ao remover: " + error.message);
+}
 function salvarEstadoLocal() { let estado = {}; jogadores.forEach(j => { if (j.presente || j.pagou) estado[j.id] = { presente: j.presente, ordemChegada: j.ordemChegada, pagou: j.pagou }; }); localStorage.setItem('baba_presencas_temp', JSON.stringify(estado)); }
 
 async function marcarPresenca(indexArray) { if (jogadores[indexArray].tipo === 'Convidado' && !jogadores[indexArray].pagou) return await customAlert("Pagamento Pendente", "O convidado precisa efetuar o pagamento da diária antes de entrar na lista de sorteio.", "Entendi", "var(--warning)"); jogadores[indexArray].presente = true; jogadores[indexArray].ordemChegada = Date.now(); salvarEstadoLocal(); atualizarListas(); }
