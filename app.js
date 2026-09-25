@@ -181,7 +181,7 @@ async function checarPerfilEValidade(user) {
 
 async function fazerLogout() { await db.auth.signOut(); currentProfile = null; currentUser = null; if (supabaseChannel) db.removeChannel(supabaseChannel); if (publicSyncInterval) clearInterval(publicSyncInterval); localStorage.removeItem('baba_full_state'); localStorage.removeItem('baba_presencas_temp'); localStorage.removeItem('baba_last_reset'); limparEstadoRodada(); mostrarLogin(); }
 
-async function carregarPreferenciasFinanceiras() { if (!currentUser) return; try { const { data: pData } = await db.from('partidas').select('valor_por_mensalista, valor_por_convidado').eq('user_id', currentUser.id).order('created_at', { ascending: false }).limit(1); if(pData && pData.length > 0) { let vM = document.getElementById('valor-mensalista'); let vC = document.getElementById('valor-convidado'); if(vM && pData[0].valor_por_mensalista) vM.value = pData[0].valor_por_mensalista; if(vC && pData[0].valor_por_convidado) vC.value = pData[0].valor_por_convidado; } } catch(e) {} }
+function carregarPreferenciasFinanceiras() { if (!currentProfile) return; let vM = document.getElementById('valor-mensalista'); let vC = document.getElementById('valor-convidado'); if(vM && currentProfile.valor_padrao_mensalista != null) vM.value = currentProfile.valor_padrao_mensalista; if(vC && currentProfile.valor_padrao_convidado != null) vC.value = currentProfile.valor_padrao_convidado; }
 
 function mostrarApp() { 
     window.isModoPublico = false; let authC = document.getElementById('auth-container'); if(authC) authC.style.display = 'none'; let appC = document.getElementById('app-container'); if(appC) { appC.style.display = 'block'; appC.classList.remove('public-mode'); } let btnSairP = document.getElementById('btn-sair-publico'); if(btnSairP) btnSairP.style.display = 'none';
@@ -1215,10 +1215,17 @@ async function carregarEstatisticasGerais() {
 function atualizarFinanceiro() {
     if(window.isModoPublico) return;
     gerarRelatorioMensal(); salvarEstadoCompleto();
-    
+
+    let vConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
+    let vMens = parseFloat(document.getElementById('valor-mensalista').value) || 0;
+
+    // Preferência permanente do organizador: salva no perfil sempre que o valor mudar, com ou sem partida ativa no dia.
+    if (currentProfile && currentUser && (parseFloat(currentProfile.valor_padrao_mensalista) !== vMens || parseFloat(currentProfile.valor_padrao_convidado) !== vConv)) {
+        currentProfile.valor_padrao_mensalista = vMens; currentProfile.valor_padrao_convidado = vConv;
+        db.from('profiles').update({ valor_padrao_mensalista: vMens, valor_padrao_convidado: vConv }).eq('id', currentUser.id).then();
+    }
+
     if(window.partidaAtualId) {
-        let vConv = parseFloat(document.getElementById('valor-convidado').value) || 0;
-        let vMens = parseFloat(document.getElementById('valor-mensalista').value) || 0;
         window.suprimirProximoEventoRealtime = true; db.from('partidas').update({ valor_por_convidado: vConv, valor_por_mensalista: vMens }).eq('id', window.partidaAtualId).then();
     }
 }
