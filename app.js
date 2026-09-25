@@ -606,7 +606,13 @@ async function gerarRelatorioMensal() {
     if(currentUser) { const { data: partidas } = await db.from('partidas').select('data_sorteio, created_at, valor_por_convidado, renda_convidados, custos_json').eq('user_id', currentUser.id); if(partidas) { partidas.forEach(p => { let dataRef = p.data_sorteio || p.created_at; if (!dataRef) return; let pMes = dataRef.substring(0, 7); if(pMes === mesKey) partidasDoMes.push(p); else if (pMes < mesKey) { let vConv = p.valor_por_convidado || defConv; saldoAnterior += ((p.renda_convidados || 0) * vConv); (p.custos_json || []).forEach(c => { saldoAnterior -= c.valor; }); } }); } }
     let mensalistas = jogadores.filter(j => j.tipo === 'Mensalista');
     mensalistas.forEach(j => { if(j.pagamentos_json) { for(let mKey in j.pagamentos_json) { let v = j.pagamentos_json[mKey]; if(mKey < mesKey && v) { saldoAnterior += (typeof v === 'number' ? v : valMens); } } } });
-    (window.despesasMensaisGlobais || []).forEach(c => { let cMes = c.data ? c.data.substring(0, 7) : ""; if(cMes && cMes < mesKey) { let op = c.operacao || 'saida'; if (op === 'entrada') saldoAnterior += c.valor; else saldoAnterior -= c.valor; } });
+    const mesesEntre = (mesInicio, mesFimExclusive) => { let [anoIni, mIni] = mesInicio.split('-').map(Number); let [anoFim, mFim] = mesFimExclusive.split('-').map(Number); return (anoFim - anoIni) * 12 + (mFim - mIni); };
+    (window.despesasMensaisGlobais || []).forEach(c => {
+        let cMes = c.data ? c.data.substring(0, 7) : ""; if (!cMes || cMes >= mesKey) return;
+        let op = c.operacao || 'saida'; let vezes = c.tipo === 'mensal' ? Math.max(0, mesesEntre(cMes, mesKey)) : 1;
+        let valorTotal = c.valor * vezes;
+        if (op === 'entrada') saldoAnterior += valorTotal; else saldoAnterior -= valorTotal;
+    });
 
     let html = `<table class="relatorio-tabela"><tr><th colspan="2">👥 Mensalidades Pagas no Mês</th></tr>`; let totalMensalidades = 0;
     if(mensalistas.length === 0) html += `<tr><td colspan="2" style="color:var(--text-muted);">Nenhum mensalista cadastrado.</td></tr>`;
@@ -618,8 +624,9 @@ async function gerarRelatorioMensal() {
 
     let totalCustos = 0; let totalEntradasExtras = 0; let htmlCustosDiarios = `<div class="grid-relatorio-custos">`; let htmlEntradasExtras = `<div class="grid-relatorio-custos">`; let temCustos = false; let temEntradaExtra = false;
     (window.despesasMensaisGlobais || []).forEach((c, indexReal) => {
-        let dIso = c.data || "";
-        if (dIso.substring(0, 7) === mesKey) { let dataBr = (c.data && c.tipo !== 'mensal') ? c.data.split('-').reverse().join('/') : ''; let dStr = dataBr ? ` <span style="color:var(--text-muted); font-size:10px;">(${dataBr})</span>` : ''; let idUnico = c.id || indexReal; let op = c.operacao || 'saida'; let descSafe = escapeHTML(c.desc);
+        let dIso = c.data || ""; let cMes = dIso.substring(0, 7);
+        let aplicaEsteMes = c.tipo === 'mensal' ? (cMes && cMes <= mesKey) : (cMes === mesKey);
+        if (aplicaEsteMes) { let dataBr = (c.data && c.tipo !== 'mensal') ? c.data.split('-').reverse().join('/') : ''; let dStr = c.tipo === 'mensal' ? ` <span style="color:var(--text-muted); font-size:10px;">(🔁 fixo desde ${cMes.split('-').reverse().join('/')})</span>` : (dataBr ? ` <span style="color:var(--text-muted); font-size:10px;">(${dataBr})</span>` : ''); let idUnico = c.id || indexReal; let op = c.operacao || 'saida'; let descSafe = escapeHTML(c.desc);
             if (op === 'entrada') { totalEntradasExtras += c.valor; temEntradaExtra = true; htmlEntradasExtras += `<div class="item-custo-relatorio"><span>${descSafe}${dStr}</span> <span style="display:flex; align-items:center;"><strong class="valor-positivo" style="white-space:nowrap;">+ R$ ${c.valor.toFixed(2)}</strong> <button class="btn-excluir-mini no-print" style="margin-left:8px;" onclick="removerCusto(${idUnico}, ${indexReal})">X</button></span></div>`; } else { totalCustos += c.valor; temCustos = true; htmlCustosDiarios += `<div class="item-custo-relatorio"><span>${descSafe}${dStr}</span> <span style="display:flex; align-items:center;"><strong class="valor-negativo" style="white-space:nowrap;">- R$ ${c.valor.toFixed(2)}</strong> <button class="btn-excluir-mini no-print" style="margin-left:8px;" onclick="removerCusto(${idUnico}, ${indexReal})">X</button></span></div>`; }
         }
     });
