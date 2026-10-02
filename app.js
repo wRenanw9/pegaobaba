@@ -995,8 +995,10 @@ async function sortearCoringasFila(idTimeIncompleto) {
         let posAlvo = posicaoCarente([...timeInc.jogadores, ...coringasAtuaisInc.map(c => c.jogador), ...escolhidos.map(c => c.jogador)]);
         let minDist = Math.min(...elegiveisReservas.map(c => distanciaPosicao(c.jogador.posicao, posAlvo)));
         let candidatos = elegiveisReservas.filter(c => distanciaPosicao(c.jogador.posicao, posAlvo) === minDist);
-        let mediaFaltante = (alvo - somaEscolhidos) / faltamRestante; let melhorCandidato = candidatos[0]; let minDiff = Infinity;
-        candidatos.forEach(c => { let diff = Math.abs((Number(c.jogador.nivel)||3) - mediaFaltante); if (diff < minDiff) { minDiff = diff; melhorCandidato = c; } });
+        let mediaFaltante = (alvo - somaEscolhidos) / faltamRestante;
+        let menorDiff = Math.min(...candidatos.map(c => Math.abs((Number(c.jogador.nivel)||3) - mediaFaltante)));
+        let empatados = candidatos.filter(c => Math.abs((Number(c.jogador.nivel)||3) - mediaFaltante) === menorDiff);
+        let melhorCandidato = empatados[Math.floor(Math.random() * empatados.length)];
         elegiveisReservas.splice(elegiveisReservas.indexOf(melhorCandidato), 1); escolhidos.push(melhorCandidato); somaEscolhidos += (Number(melhorCandidato.jogador.nivel)||3); faltamRestante--;
     }
 
@@ -1005,8 +1007,10 @@ async function sortearCoringasFila(idTimeIncompleto) {
         let posAlvo = posicaoCarente([...timeInc.jogadores, ...coringasAtuaisInc.map(c => c.jogador), ...escolhidos.map(c => c.jogador)]);
         let minDist = Math.min(...elegiveisOutros.map(c => distanciaPosicao(c.jogador.posicao, posAlvo)));
         let candidatos = elegiveisOutros.filter(c => distanciaPosicao(c.jogador.posicao, posAlvo) === minDist);
-        let mediaFaltante = (alvo - somaEscolhidos) / faltamRestante; let melhorCandidato = candidatos[0]; let minDiff = Infinity;
-        candidatos.forEach(c => { let diff = Math.abs((Number(c.jogador.nivel)||3) - mediaFaltante); if (diff < minDiff) { minDiff = diff; melhorCandidato = c; } });
+        let mediaFaltante = (alvo - somaEscolhidos) / faltamRestante;
+        let menorDiff = Math.min(...candidatos.map(c => Math.abs((Number(c.jogador.nivel)||3) - mediaFaltante)));
+        let empatados = candidatos.filter(c => Math.abs((Number(c.jogador.nivel)||3) - mediaFaltante) === menorDiff);
+        let melhorCandidato = empatados[Math.floor(Math.random() * empatados.length)];
         elegiveisOutros.splice(elegiveisOutros.indexOf(melhorCandidato), 1); escolhidos.push(melhorCandidato); somaEscolhidos += (Number(melhorCandidato.jogador.nivel)||3); faltamRestante--;
     }
 
