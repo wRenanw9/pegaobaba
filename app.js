@@ -60,6 +60,7 @@ function getCorHex(corBase) {
 }
 
 window.timesSorteadosObjs = []; window.reservasSorteados = []; window.partidaSalva = true; window.jogosDaRodada = []; window.filaEquipes = []; window.custosDaRodada = []; window.despesasMensaisGlobais = []; window.isModoPublico = false; window.dataPartidaAtual = null; window.partidaAtualId = null; window.codigoAcessoAtual = null; window.golsTempA = []; window.golsTempB = []; window.coringasAtivos = {}; window.modoCompeticaoAtual = 'rei'; window.faseTorneioTexto = ''; window.suprimirProximoEventoRealtime = false;
+window.cronometroRodando = false; window.cronometroInicioTimestamp = null; window.cronometroAcumuladoMs = 0; window.cronometroIntervalId = null;
 const RODADA_EXPIRA_MS = 6 * 24 * 60 * 60 * 1000; // 6 dias: tempo até uma rodada/partida ser considerada expirada
 function getTamanhoIdealTime() { return currentProfile && currentProfile.jogadores_por_time ? parseInt(currentProfile.jogadores_por_time) : 7; }
 
@@ -78,7 +79,7 @@ window.onload = async function() {
         db = window.supabase.createClient(supabaseUrl, supabaseKey);
         const code = new URLSearchParams(window.location.search).get('code');
         if(code) { document.getElementById('codigo-baba-input').value = code; acessarModoPublico(); } 
-        else { carregarEstadoCompleto(); if(checarReset24h()) limparEstadoRodada(); verificarSessao(); }
+        else { carregarEstadoCompleto(); if(checarReset24h()) limparEstadoRodada(); verificarSessao(); restaurarEstadoCronometro(); }
         
         setInterval(async () => {
             let dbStatus = document.getElementById('status-db'); if(!dbStatus || !db) return;
@@ -656,6 +657,43 @@ window.toggleEscalacao = function() {
     if (el.style.display === 'none' || el.style.display === '') { el.style.display = 'block'; if(btn) { btn.innerHTML = '🙈 Ocultar Escalação das Equipes'; btn.setAttribute('aria-expanded', 'true'); } } else { el.style.display = 'none'; if(btn) { btn.innerHTML = '👁️ Mostrar Escalação das Equipes'; btn.setAttribute('aria-expanded', 'false'); } }
 };
 
+function formatarTempoCronometro(ms) { let totalSeg = Math.floor(ms / 1000); let min = Math.floor(totalSeg / 60); let seg = totalSeg % 60; return String(min).padStart(2, '0') + ':' + String(seg).padStart(2, '0'); }
+
+function salvarEstadoCronometro() { try { localStorage.setItem('baba_cronometro', JSON.stringify({ rodando: window.cronometroRodando, inicio: window.cronometroInicioTimestamp, acumulado: window.cronometroAcumuladoMs })); } catch(e) {} }
+
+function atualizarDisplayCronometro() {
+    let display = document.getElementById('cronometro-display'); let btn = document.getElementById('btn-cronometro-toggle'); if (!display) return;
+    let decorrido = window.cronometroAcumuladoMs + (window.cronometroRodando && window.cronometroInicioTimestamp ? (Date.now() - window.cronometroInicioTimestamp) : 0);
+    display.innerText = formatarTempoCronometro(decorrido);
+    if (btn) btn.innerHTML = window.cronometroRodando ? '⏸️ Pausar' : '▶️ Iniciar';
+}
+
+function iniciarPausarCronometro() {
+    if (window.cronometroRodando) {
+        window.cronometroAcumuladoMs += Date.now() - window.cronometroInicioTimestamp; window.cronometroInicioTimestamp = null; window.cronometroRodando = false;
+        if (window.cronometroIntervalId) { clearInterval(window.cronometroIntervalId); window.cronometroIntervalId = null; }
+    } else {
+        window.cronometroInicioTimestamp = Date.now(); window.cronometroRodando = true;
+        window.cronometroIntervalId = setInterval(atualizarDisplayCronometro, 1000);
+    }
+    atualizarDisplayCronometro(); salvarEstadoCronometro();
+}
+
+function zerarCronometro() {
+    if (window.cronometroIntervalId) { clearInterval(window.cronometroIntervalId); window.cronometroIntervalId = null; }
+    window.cronometroRodando = false; window.cronometroInicioTimestamp = null; window.cronometroAcumuladoMs = 0;
+    atualizarDisplayCronometro(); salvarEstadoCronometro();
+}
+
+function restaurarEstadoCronometro() {
+    try {
+        let salvo = JSON.parse(localStorage.getItem('baba_cronometro')); if (!salvo) return;
+        window.cronometroAcumuladoMs = salvo.acumulado || 0;
+        if (salvo.rodando && salvo.inicio) { window.cronometroInicioTimestamp = salvo.inicio; window.cronometroRodando = true; window.cronometroIntervalId = setInterval(atualizarDisplayCronometro, 1000); }
+    } catch(e) {}
+    atualizarDisplayCronometro();
+}
+
 function renderizarSumula() {
     const container = document.getElementById('container-sumula'); const aviso = document.getElementById('aviso-sem-sorteio'); const dataLabel = document.getElementById('data-rodada-label'); const instrucoes = document.getElementById('texto-instrucoes-sumula');
     let hasValidMatch = window.jogosDaRodada.some(j => j.tipo !== 'modo');
@@ -669,17 +707,31 @@ function renderizarSumula() {
     atualizarFilaUI(); atualizarPlacarTempUI(); atualizarListaJogosDaRodada();
 }
 
+function getQtdAtualTime(t) { let coringasTime = (t.coringas && t.coringas.length > 0) ? t.coringas : ((window.coringasAtivos && window.coringasAtivos[t.id]) ? window.coringasAtivos[t.id] : []); return t.jogadores.length + coringasTime.length; }
+
+function alertaTimeIncompletoHtml(t, tamanhoIdeal, urgente) {
+    let qtdAtual = getQtdAtualTime(t); if (window.isModoPublico || qtdAtual >= tamanhoIdeal) return '';
+    let cor = urgente ? 'var(--danger)' : 'var(--warning)'; let tintVar = urgente ? 'var(--tint-danger)' : 'var(--tint-warning)'; let borda = urgente ? 'rgba(239,68,68,0.35)' : 'rgba(245,158,11,0.4)';
+    return `<div style="background: ${tintVar}; border: 1px solid ${borda}; color: ${cor}; font-size: 13px; font-weight: 700; padding: 10px; border-radius: 8px; margin-bottom: 10px; display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap;">⚠️ ${escapeHTML(t.nome)} está com ${qtdAtual}/${tamanhoIdeal} jogadores<button onclick="sortearCoringasFila(${t.id})" style="background:${cor}; color:white; border:none; padding:6px 10px; border-radius:6px; font-size:12px; font-weight:bold; cursor:pointer;">🎭 Sortear Coringa</button></div>`;
+}
+
 function atualizarFilaUI() {
     const containerFila = document.getElementById('container-status-fila'); if(!containerFila) return;
     if(window.partidaSalva === true || !window.timesSorteadosObjs || window.timesSorteadosObjs.length === 0 || window.filaEquipes.length === 0) { containerFila.style.display = 'none'; return; }
     let timeA = window.timesSorteadosObjs.find(t => t.id === window.filaEquipes[0]); let timeB = window.timesSorteadosObjs.find(t => t.id === window.filaEquipes[1]); let proximoTime = window.timesSorteadosObjs.find(t => t.id === window.filaEquipes[2]); let restantesFila = window.filaEquipes.slice(3).map(id => window.timesSorteadosObjs.find(t => t.id === id)?.nome).filter(Boolean);
+    let tamanhoIdeal = getTamanhoIdealTime();
     
     let html = `<div style="background: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 15px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); text-align:center;">`;
     
     if(window.modoCompeticaoAtual === 'torneio' && window.faseTorneioTexto) { html += `<div style="font-size: 13px; font-weight: 800; color: white; background: var(--warning); padding: 5px 12px; border-radius: 12px; margin-bottom: 12px; display: inline-block; text-transform: uppercase; letter-spacing: 0.5px; text-shadow: 0px 1px 2px rgba(0,0,0,0.2); box-shadow: 0 2px 4px rgba(0,0,0,0.1);">${window.faseTorneioTexto}</div>`; }
 
-    if (timeA && timeB) { html += `<div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px; display: flex; align-items: center; justify-content: center; gap: 5px;">⚡ Em Quadra Agora</div><div style="font-size: 15px; font-weight: 800; color: var(--dark); margin-bottom: 12px; background: var(--light); padding: 10px; border-radius: 8px;">${escapeHTML(timeA.nome)} vs ${escapeHTML(timeB.nome)}</div>`; }
-    if (proximoTime) { html += `<div style="font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 5px; display: flex; align-items: center; justify-content: center; gap: 5px;">⏳ Próxima Equipe</div><div style="font-size: 16px; font-weight: 800; color: var(--primary); background: var(--tint-primary); padding: 10px; border-radius: 8px; margin-bottom: ${restantesFila.length > 0 ? '12px' : '0'};">🚀 ${escapeHTML(proximoTime.nome)}</div>`; }
+    if (timeA && timeB) {
+        html += `<div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px; display: flex; align-items: center; justify-content: center; gap: 5px;">⚡ Em Quadra Agora</div><div style="font-size: 15px; font-weight: 800; color: var(--dark); margin-bottom: 12px; background: var(--light); padding: 10px; border-radius: 8px;">${escapeHTML(timeA.nome)} vs ${escapeHTML(timeB.nome)}</div>`;
+        html += alertaTimeIncompletoHtml(timeA, tamanhoIdeal, true); html += alertaTimeIncompletoHtml(timeB, tamanhoIdeal, true);
+    }
+    if (proximoTime) { html += `<div style="font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 5px; display: flex; align-items: center; justify-content: center; gap: 5px;">⏳ Próxima Equipe</div><div style="font-size: 16px; font-weight: 800; color: var(--primary); background: var(--tint-primary); padding: 10px; border-radius: 8px; margin-bottom: 12px;">🚀 ${escapeHTML(proximoTime.nome)}</div>`;
+        html += alertaTimeIncompletoHtml(proximoTime, tamanhoIdeal, false);
+    }
     if (restantesFila.length > 0) { html += `<div style="font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Aguardando na Fila:</div><div style="font-size: 13px; color: var(--dark); font-weight: 500;">${escapeHTML(restantesFila.join(' ➔ '))}</div>`; }
     html += `</div>`; containerFila.innerHTML = html; containerFila.style.display = 'block';
 }
@@ -845,7 +897,7 @@ async function adicionarJogoNaSumula() {
 
         window.timesSorteadosObjs.forEach(t => { t.coringas = window.coringasAtivos[t.id] || []; });
         if(window.partidaAtualId) { window.suprimirProximoEventoRealtime = true; await db.from('partidas').update({ jogos_json: window.jogosDaRodada, artilheiros_json: artilheiros, fila_json: window.filaEquipes, times_json: window.timesSorteadosObjs, reservas_json: window.reservasSorteados }).eq('id', window.partidaAtualId); }
-        limparGolsTemp('A'); limparGolsTemp('B'); atualizarSelectsEquipes(); atualizarFilaUI(); atualizarListaJogosDaRodada(); renderizarEscalacaoPublicaSumula(); salvarEstadoCompleto();
+        limparGolsTemp('A'); limparGolsTemp('B'); atualizarSelectsEquipes(); atualizarFilaUI(); atualizarListaJogosDaRodada(); renderizarEscalacaoPublicaSumula(); salvarEstadoCompleto(); zerarCronometro();
     } finally { if(btnConfirmar) { btnConfirmar.innerText = textoOriginal; btnConfirmar.disabled = false; btnConfirmar.style.opacity = "1"; } }
 }
 
