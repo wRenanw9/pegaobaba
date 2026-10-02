@@ -193,6 +193,11 @@
                                 <div class="lista-gols-arena" id="lista-gols-b"></div>
                             </div>
                         </div>
+                        <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin-top:12px; padding:10px; background:rgba(255,255,255,0.08); border-radius:10px;">
+                            <span id="cronometro-display" aria-live="polite" style="font-size:22px; font-weight:800; color:white; font-variant-numeric:tabular-nums; letter-spacing:1px;">00:00</span>
+                            <button type="button" id="btn-cronometro-toggle" onclick="iniciarPausarCronometro()" style="background:var(--supabase); color:white; border:none; padding:8px 14px; border-radius:6px; font-size:13px; font-weight:bold; cursor:pointer;">▶️ Iniciar</button>
+                            <button type="button" onclick="zerarCronometro()" style="background:rgba(255,255,255,0.15); color:white; border:none; padding:8px 10px; border-radius:6px; font-size:13px; font-weight:bold; cursor:pointer;">↺ Zerar</button>
+                        </div>
                         <button onclick="adicionarJogoNaSumula()" style="background: var(--accent-dark); color: white; width: 100%; border-radius: 8px; padding: 12px; font-weight: 800; font-size: 15px; transition: all 0.2s; margin-top: 10px;">✔️ Confirmar Placar</button>
                     </div>
 
