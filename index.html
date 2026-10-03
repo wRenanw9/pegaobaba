@@ -178,6 +178,11 @@
 
                     <!-- PLACAR DE ARENA (VISUAL AJUSTADO PARA NOMES LONGOS) -->
                     <div class="placar-arena hidden-public" id="painel-placar-arena">
+                        <div style="display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:10px; opacity:0.85;">
+                            <span id="cronometro-display" aria-live="polite" style="font-size:13px; font-weight:700; color:rgba(255,255,255,0.85); font-variant-numeric:tabular-nums; letter-spacing:0.5px;">00:00</span>
+                            <button type="button" id="btn-cronometro-toggle" onclick="iniciarPausarCronometro()" style="background:none; border:1px solid rgba(255,255,255,0.3); color:rgba(255,255,255,0.85); padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600; cursor:pointer;">▶️ Iniciar</button>
+                            <button type="button" onclick="zerarCronometro()" style="background:none; border:1px solid rgba(255,255,255,0.3); color:rgba(255,255,255,0.85); padding:2px 6px; border-radius:10px; font-size:11px; font-weight:600; cursor:pointer;">↺</button>
+                        </div>
                         <div class="placar-header" style="display: flex; justify-content: space-between; align-items: stretch; gap: 5px;">
                             <div class="placar-time" style="flex: 1; min-width: 0; padding: 0 2px;">
                                 <select id="sumula_equipe_a" onchange="limparGolsTemp('A')" style="width: 100%; font-size: 12px; font-weight: 800; padding: 8px 2px; text-align: center; box-sizing: border-box;"></select>
@@ -192,11 +197,6 @@
                                 <button class="btn-add-gol-arena" onclick="abrirModalGol('B')">⚽ Add Gol</button>
                                 <div class="lista-gols-arena" id="lista-gols-b"></div>
                             </div>
-                        </div>
-                        <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin-top:12px; padding:10px; background:rgba(255,255,255,0.08); border-radius:10px;">
-                            <span id="cronometro-display" aria-live="polite" style="font-size:22px; font-weight:800; color:white; font-variant-numeric:tabular-nums; letter-spacing:1px;">00:00</span>
-                            <button type="button" id="btn-cronometro-toggle" onclick="iniciarPausarCronometro()" style="background:var(--supabase); color:white; border:none; padding:8px 14px; border-radius:6px; font-size:13px; font-weight:bold; cursor:pointer;">▶️ Iniciar</button>
-                            <button type="button" onclick="zerarCronometro()" style="background:rgba(255,255,255,0.15); color:white; border:none; padding:8px 10px; border-radius:6px; font-size:13px; font-weight:bold; cursor:pointer;">↺ Zerar</button>
                         </div>
                         <button onclick="adicionarJogoNaSumula()" style="background: var(--accent-dark); color: white; width: 100%; border-radius: 8px; padding: 12px; font-weight: 800; font-size: 15px; transition: all 0.2s; margin-top: 10px;">✔️ Confirmar Placar</button>
                     </div>
