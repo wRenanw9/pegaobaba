@@ -717,7 +717,13 @@ function alertaTimeIncompletoHtml(t, tamanhoIdeal, urgente) {
 
 function atualizarFilaUI() {
     const containerFila = document.getElementById('container-status-fila'); if(!containerFila) return;
-    if(window.partidaSalva === true || !window.timesSorteadosObjs || window.timesSorteadosObjs.length === 0 || window.filaEquipes.length === 0) { containerFila.style.display = 'none'; return; }
+    if(window.partidaSalva === true || !window.timesSorteadosObjs || window.timesSorteadosObjs.length === 0) { containerFila.style.display = 'none'; return; }
+    if(window.filaEquipes.length === 0) {
+        let campeao = getCampeaoTorneio();
+        if (campeao) { containerFila.innerHTML = `<div style="background: var(--tint-warning); border: 1px solid rgba(245,158,11,0.4); border-radius: 12px; padding: 15px; margin-bottom: 20px; text-align:center;"><div style="font-size: 13px; font-weight: 800; color: var(--warning); text-transform: uppercase; margin-bottom: 6px;">🏆 Torneio encerrado</div><div style="font-size: 16px; font-weight: 800; color: var(--dark);">Campeão: ${escapeHTML(campeao)}</div><div style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">Não há mais jogos definidos. Para guardar tudo, use "Finalizar Baba e Salvar Dados".</div></div>`; containerFila.style.display = 'block'; } 
+        else { containerFila.style.display = 'none'; }
+        return;
+    }
     let timeA = window.timesSorteadosObjs.find(t => t.id === window.filaEquipes[0]); let timeB = window.timesSorteadosObjs.find(t => t.id === window.filaEquipes[1]); let proximoTime = window.timesSorteadosObjs.find(t => t.id === window.filaEquipes[2]); let restantesFila = window.filaEquipes.slice(3).map(id => window.timesSorteadosObjs.find(t => t.id === id)?.nome).filter(Boolean);
     let tamanhoIdeal = getTamanhoIdealTime();
     
@@ -760,7 +766,19 @@ function atualizarCoringasUI() { renderizarEscalacaoPublicaSumula(); }
 
 function atualizarSelectsEquipes() {
     let selA = document.getElementById('sumula_equipe_a'); let selB = document.getElementById('sumula_equipe_b'); if(!selA || !selB) return; let options = ''; window.timesSorteadosObjs.forEach((t) => { options += `<option value="${t.id}">${escapeHTML(t.nome)}</option>`; }); selA.innerHTML = options; selB.innerHTML = options;
-    if (window.filaEquipes.length >= 2) { selA.value = window.filaEquipes[0]; selB.value = window.filaEquipes[1]; } atualizarFilaUI();
+    if (window.filaEquipes.length >= 2) { selA.value = window.filaEquipes[0]; selB.value = window.filaEquipes[1]; } 
+    else if (selB.options.length > 1) { selA.selectedIndex = 0; selB.selectedIndex = 1; }
+    atualizarFilaUI();
+}
+
+function getCampeaoTorneio() {
+    if (window.modoCompeticaoAtual !== 'torneio') return null;
+    let validMatches = window.jogosDaRodada.filter(j => j.tipo !== 'ajuste' && j.tipo !== 'modo');
+    if (validMatches.length < 9) return null;
+    let f = validMatches[8];
+    let idVenc = f.gols_a.length > f.gols_b.length ? f.equipe_a_id : (f.gols_b.length > f.gols_a.length ? f.equipe_b_id : f.penaltis_vencedor);
+    let t = window.timesSorteadosObjs.find(x => x.id === idVenc);
+    return t ? t.nome : null;
 }
 
 function limparGolsTemp(lado) { if(lado === 'A') window.golsTempA = []; else window.golsTempB = []; atualizarPlacarTempUI(); salvarEstadoCompleto(); }
@@ -817,6 +835,8 @@ function atualizarPlacarTempUI() {
 function formatarGolsResumo(golsArray) { if(!golsArray || golsArray.length === 0) return ''; let contagem = {}; golsArray.forEach(g => { contagem[g] = (contagem[g] || 0) + 1; }); return Object.entries(contagem).map(([nome, qtd]) => qtd > 1 ? `${escapeHTML(nome)} (${qtd})` : escapeHTML(nome)).join(', '); }
 
 async function adicionarJogoNaSumula() {
+    let campeaoTorneio = getCampeaoTorneio();
+    if (campeaoTorneio) return await customAlert("🏆 Torneio encerrado", `A final já foi jogada e o campeão é <strong>${escapeHTML(campeaoTorneio)}</strong>.<br><br>Não há mais jogos definidos no torneio. Use "Finalizar Baba e Salvar Dados" para guardar tudo.`, "Entendi", "var(--primary)");
     if (!(await checarTimesCompletosParaJogo())) return; 
     
     let selA = document.getElementById('sumula_equipe_a'); let selB = document.getElementById('sumula_equipe_b'); if(!selA || !selB) return;
