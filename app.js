@@ -402,7 +402,19 @@ function torneioTemTerceiro(jogosArr) { let marcador = (jogosArr || window.jogos
 function totalJogosTorneio(jogosArr) { return torneioTemTerceiro(jogosArr) ? 10 : 9; }
 function getPerdedorJogo(m) { let v = getVencedorJogo(m); return v === m.equipe_a_id ? m.equipe_b_id : m.equipe_a_id; }
 
-function getVencedorJogo(m) { return m.gols_a.length > m.gols_b.length ? m.equipe_a_id : (m.gols_b.length > m.gols_a.length ? m.equipe_b_id : m.penaltis_vencedor); }
+function getVencedorJogo(m) {
+    if (m.gols_a.length > m.gols_b.length) return m.equipe_a_id;
+    if (m.gols_b.length > m.gols_a.length) return m.equipe_b_id;
+    if (m.penaltis_vencedor !== undefined && m.penaltis_vencedor !== null) return m.penaltis_vencedor;
+    return m.vantagem_vencedor;
+}
+
+// Vantagem da pontuação: em empate nas semifinais e no 3º lugar, vence quem foi melhor na classificação da fase de grupos.
+function getVantagemPontuacao(idA, idB) {
+    let validMatches = window.jogosDaRodada.filter(j => j.tipo !== 'ajuste' && j.tipo !== 'modo'); let ids = window.timesSorteadosObjs.map(t => t.id);
+    let rank = calcularRankTorneio(validMatches, ids); let posA = rank.findIndex(r => r.id === idA); let posB = rank.findIndex(r => r.id === idB);
+    return posA <= posB ? idA : idB;
+}
 
 // Monta os jogos do torneio (6 de grupo + 2 semifinais + [3º lugar] + final), jogados ou ainda por acontecer.
 function montarTabelaTorneio() {
@@ -420,7 +432,7 @@ function montarTabelaTorneio() {
         else if (terceiro && i === 8) { nomeA = count > 6 ? nomeDe(getPerdedorJogo(validMatches[6])) : 'Perdedor da Semi 1'; nomeB = count > 7 ? nomeDe(getPerdedorJogo(validMatches[7])) : 'Perdedor da Semi 2'; rotulo = '3º lugar'; }
         else { nomeA = count > 6 ? nomeDe(getVencedorJogo(validMatches[6])) : 'Vencedor da Semi 1'; nomeB = count > 7 ? nomeDe(getVencedorJogo(validMatches[7])) : 'Vencedor da Semi 2'; rotulo = 'Final'; }
         let jogo = { num: i + 1, rotulo, nomeA, nomeB, jogado: false, atual: i === count };
-        if (i < count) { let m = validMatches[i]; jogo.jogado = true; jogo.nomeA = m.equipe_a_nome; jogo.nomeB = m.equipe_b_nome; jogo.golsA = m.gols_a.length; jogo.golsB = m.gols_b.length; jogo.vencedorId = getVencedorJogo(m); jogo.idA = m.equipe_a_id; jogo.idB = m.equipe_b_id; jogo.penaltis = (m.penaltis_vencedor !== undefined && m.penaltis_vencedor !== null) ? (m.penaltis_vencedor === m.equipe_a_id ? m.equipe_a_nome : m.equipe_b_nome) : null; }
+        if (i < count) { let m = validMatches[i]; jogo.jogado = true; jogo.nomeA = m.equipe_a_nome; jogo.nomeB = m.equipe_b_nome; jogo.golsA = m.gols_a.length; jogo.golsB = m.gols_b.length; jogo.vencedorId = getVencedorJogo(m); jogo.idA = m.equipe_a_id; jogo.idB = m.equipe_b_id; jogo.penaltis = (m.penaltis_vencedor !== undefined && m.penaltis_vencedor !== null) ? (m.penaltis_vencedor === m.equipe_a_id ? m.equipe_a_nome : m.equipe_b_nome) : null; jogo.vantagem = (jogo.penaltis === null && m.gols_a.length === m.gols_b.length && m.vantagem_vencedor !== undefined && m.vantagem_vencedor !== null) ? (m.vantagem_vencedor === m.equipe_a_id ? m.equipe_a_nome : m.equipe_b_nome) : null; }
         jogos.push(jogo);
     }
     return jogos;
@@ -437,7 +449,7 @@ function atualizarTabelaTorneio() {
         let nomeA = `<span class="nome-time ${j.jogado && j.vencedorId === j.idA ? 'vencedor' : ''}">${escapeHTML(j.nomeA)}</span>`; let nomeB = `<span class="nome-time ${j.jogado && j.vencedorId === j.idB ? 'vencedor' : ''}">${escapeHTML(j.nomeB)}</span>`;
         let meio = j.jogado ? `<span class="placar-mini">${j.golsA} x ${j.golsB}</span>` : `<span class="vs">vs</span>`;
         let status = j.atual ? `<span class="jogo-status">⚡ Agora</span>` : '';
-        let penaltis = j.penaltis ? `<div class="jogo-penaltis">✅ ${escapeHTML(j.penaltis)} venceu nos pênaltis</div>` : '';
+        let penaltis = j.penaltis ? `<div class="jogo-penaltis">✅ ${escapeHTML(j.penaltis)} venceu nos pênaltis</div>` : (j.vantagem ? `<div class="jogo-penaltis">⚖️ ${escapeHTML(j.vantagem)} vence pela vantagem da pontuação</div>` : '');
         html += `<div class="jogo-torneio ${j.atual ? 'atual' : ''} ${j.jogado ? 'jogado' : ''}"><span class="jogo-rotulo">${j.rotulo}</span><div class="jogo-times">${nomeA}${meio}${nomeB}</div>${status}${penaltis}</div>`;
     });
     html += `</details>`; cont.innerHTML = html; cont.style.display = 'block';
@@ -937,14 +949,23 @@ async function adicionarJogoNaSumula() {
     try {
         let isEmpate = (ga === gb); let vencedorPenaltisId = null;
         let validMatchesCount = window.jogosDaRodada.filter(j => j.tipo !== 'ajuste' && j.tipo !== 'modo').length;
-        let isKnockout = (window.modoCompeticaoAtual === 'torneio' && validMatchesCount >= 6);
+        let isMataMata = (window.modoCompeticaoAtual === 'torneio' && validMatchesCount >= 6);
+        let isFinal = (window.modoCompeticaoAtual === 'torneio' && validMatchesCount === totalJogosTorneio() - 1);
+        let vantagemVencedorId = null;
 
-        if (isEmpate && isKnockout) {
+        if (isEmpate && isFinal) {
+            // Só a final vai para os pênaltis.
             vencedorPenaltisId = await perguntarVencedorPenaltis(idA, nomeA, idB, nomeB);
             isEmpate = false; 
+        } else if (isEmpate && isMataMata) {
+            // Semifinais e 3º lugar: empate se resolve pela vantagem da pontuação da fase de grupos.
+            vantagemVencedorId = getVantagemPontuacao(idA, idB); isEmpate = false;
+            let nomeVantagem = escapeHTML(vantagemVencedorId === idA ? nomeA : nomeB);
+            let consequencia = (validMatchesCount === 8 && torneioTemTerceiro()) ? 'fica com o 3º lugar' : 'avança para a próxima fase';
+            await customAlert("⚖️ Empate", `Pela vantagem da pontuação na fase de grupos, o <strong>${nomeVantagem}</strong> ${consequencia}.`, "Entendi", "var(--primary)");
         }
 
-        window.jogosDaRodada.push({ equipe_a_id: idA, equipe_a_nome: nomeA, gols_a: gaList, equipe_b_id: idB, equipe_b_nome: nomeB, gols_b: gbList, penaltis_vencedor: vencedorPenaltisId });
+        window.jogosDaRodada.push({ equipe_a_id: idA, equipe_a_nome: nomeA, gols_a: gaList, equipe_b_id: idB, equipe_b_nome: nomeB, gols_b: gbList, penaltis_vencedor: vencedorPenaltisId, vantagem_vencedor: vantagemVencedorId });
 
         // Guarda quem jogou de coringa nesta partida, para o próximo sorteio evitar repetir os mesmos jogadores.
         window.coringasUltimaPartida = [...((window.coringasAtivos && window.coringasAtivos[idA]) || []), ...((window.coringasAtivos && window.coringasAtivos[idB]) || [])].map(c => c.jogador.id);
@@ -1223,6 +1244,9 @@ function atualizarListaJogosDaRodada() {
             if (j.penaltis_vencedor !== undefined && j.penaltis_vencedor !== null) {
                 let nomeVencedor = (j.penaltis_vencedor === j.equipe_a_id) ? j.equipe_a_nome : j.equipe_b_nome;
                 penaltisHtml = `<div style="font-size: 11px; color: var(--supabase); font-weight: bold; text-align: center; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border);">✅ ${escapeHTML(nomeVencedor)} venceu nos pênaltis</div>`;
+            } else if (j.vantagem_vencedor !== undefined && j.vantagem_vencedor !== null && j.gols_a.length === j.gols_b.length) {
+                let nomeVantagem = (j.vantagem_vencedor === j.equipe_a_id) ? j.equipe_a_nome : j.equipe_b_nome;
+                penaltisHtml = `<div style="font-size: 11px; color: var(--supabase); font-weight: bold; text-align: center; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border);">⚖️ ${escapeHTML(nomeVantagem)} vence pela vantagem da pontuação</div>`;
             }
 
             let cardHtml = `<div style="background: var(--white); padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 8px;"><div style="font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 8px; display: flex; justify-content: space-between;"><span>Partida ${numPartidaCount}</span>${btnExcluirHtml}</div><div style="display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 600;"><div style="flex:1; text-align:right;">${escapeHTML(j.equipe_a_nome)}</div><div class="placar-box" style="margin: 0 10px;">${j.gols_a.length} x ${j.gols_b.length}</div><div style="flex:1; text-align:left;">${escapeHTML(j.equipe_b_nome)}</div></div>${detalhesGolsHtml}${penaltisHtml}</div>`;
@@ -1248,14 +1272,14 @@ function renderizarPainelDoDiaComJogos(jogosArr, dataStr) {
         } else if (mCount >= 6 && mCount < 8) {
             bannerHtml = `<div style="background:var(--warning); color:white; padding:15px; border-radius:8px; text-align:center; margin-bottom:15px; text-shadow: 0 1px 2px rgba(0,0,0,0.2);"><strong>⚔️ FASE MATA-MATA</strong><br><span style="font-size:12px;">Disputando as Semifinais...</span></div>`;
         } else if (terceiro && mCount === 8) {
-            const perdedorNome = (m) => { let v = (m.gols_a.length > m.gols_b.length) ? m.equipe_a_id : ((m.gols_b.length > m.gols_a.length) ? m.equipe_b_id : m.penaltis_vencedor); return v === m.equipe_a_id ? m.equipe_b_nome : m.equipe_a_nome; };
+            const perdedorNome = (m) => { let v = getVencedorJogo(m); return v === m.equipe_a_id ? m.equipe_b_nome : m.equipe_a_nome; };
             bannerHtml = `<div style="background:var(--warning); color:white; padding:15px; border-radius:8px; text-align:center; margin-bottom:15px; text-shadow: 0 1px 2px rgba(0,0,0,0.2);"><strong>🥉 DISPUTA DO 3º LUGAR</strong><br><span style="font-size:16px; font-weight:900;">${escapeHTML(perdedorNome(normalMatches[6]))} X ${escapeHTML(perdedorNome(normalMatches[7]))}</span></div>`;
         } else if (mCount === idxFinal) {
             let sf1 = normalMatches[6]; let sf2 = normalMatches[7];
             let getWinner = (m) => {
                if (m.gols_a.length > m.gols_b.length) return {id: m.equipe_a_id, nome: m.equipe_a_nome};
                if (m.gols_b.length > m.gols_a.length) return {id: m.equipe_b_id, nome: m.equipe_b_nome};
-               return m.penaltis_vencedor === m.equipe_a_id ? {id: m.equipe_a_id, nome: m.equipe_a_nome} : {id: m.equipe_b_id, nome: m.equipe_b_nome};
+               return getVencedorJogo(m) === m.equipe_a_id ? {id: m.equipe_a_id, nome: m.equipe_a_nome} : {id: m.equipe_b_id, nome: m.equipe_b_nome};
             };
             let w1 = getWinner(sf1); let w2 = getWinner(sf2);
             bannerHtml = `<div style="background:linear-gradient(135deg, var(--accent-dark), var(--primary)); color:white; padding:15px; border-radius:8px; text-align:center; margin-bottom:15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"><strong>🔥 A GRANDE FINAL 🔥</strong><br><span style="font-size:16px; font-weight:900;">${escapeHTML(w1.nome)} <span style="color:var(--warning);">X</span> ${escapeHTML(w2.nome)}</span></div>`;
@@ -1264,7 +1288,7 @@ function renderizarPainelDoDiaComJogos(jogosArr, dataStr) {
             let getResult = (m) => {
                if (m.gols_a.length > m.gols_b.length) return {win: m.equipe_a_nome, lose: m.equipe_b_nome};
                if (m.gols_b.length > m.gols_a.length) return {win: m.equipe_b_nome, lose: m.equipe_a_nome};
-               return m.penaltis_vencedor === m.equipe_a_id ? {win: m.equipe_a_nome, lose: m.equipe_b_nome} : {win: m.equipe_b_nome, lose: m.equipe_a_nome};
+               return getVencedorJogo(m) === m.equipe_a_id ? {win: m.equipe_a_nome, lose: m.equipe_b_nome} : {win: m.equipe_b_nome, lose: m.equipe_a_nome};
             };
             let res = getResult(finalMatch);
             bannerHtml = `<div style="background:linear-gradient(135deg, #f59e0b, #d97706); color:white; padding:15px; border-radius:8px; text-align:center; margin-bottom:15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 2px solid #fbbf24;"><div style="font-size:24px; margin-bottom:5px;">🏆 CAMPEÃO</div><div style="font-size:20px; font-weight:900; text-transform:uppercase; margin-bottom:5px; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">${escapeHTML(res.win)}</div><div style="font-size:13px; font-weight:700; opacity:0.9;">🥈 Vice: ${escapeHTML(res.lose)}</div>${terceiro ? `<div style="font-size:13px; font-weight:700; opacity:0.9;">🥉 3º lugar: ${escapeHTML(getResult(normalMatches[8]).win)}</div>` : ''}</div>`;
