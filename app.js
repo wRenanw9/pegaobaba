@@ -441,6 +441,9 @@ function montarTabelaTorneio() {
 function atualizarTabelaTorneio() {
     const cont = document.getElementById('container-tabela-torneio'); if (!cont) return;
     if (window.modoCompeticaoAtual !== 'torneio' || window.partidaSalva === true || !window.timesSorteadosObjs || window.timesSorteadosObjs.length < 4) { cont.style.display = 'none'; cont.innerHTML = ''; return; }
+    let encerrado = torneioEncerrado();
+    if (encerrado && !window.tabelaFimAplicada) { window.tabelaTorneioAberta = false; window.tabelaFimAplicada = true; }
+    else if (!encerrado && window.tabelaFimAplicada) { window.tabelaTorneioAberta = true; window.tabelaFimAplicada = false; }
     let jogos = montarTabelaTorneio(); let jogados = jogos.filter(j => j.jogado).length;
     let html = `<details class="tabela-torneio" ${window.tabelaTorneioAberta === false ? '' : 'open'} ontoggle="window.tabelaTorneioAberta = this.open"><summary>📅 Jogos do torneio <span>${Math.min(jogados, jogos.length)}/${jogos.length} jogados</span></summary>`;
     let faseAtual = '';
@@ -805,8 +808,7 @@ function atualizarFilaUI() {
     const containerFila = document.getElementById('container-status-fila'); if(!containerFila) return;
     if(window.partidaSalva === true || !window.timesSorteadosObjs || window.timesSorteadosObjs.length === 0) { containerFila.style.display = 'none'; return; }
     if(window.filaEquipes.length === 0) {
-        let campeao = getCampeaoTorneio();
-        if (campeao) { containerFila.innerHTML = `<div style="background: var(--tint-warning); border: 1px solid rgba(245,158,11,0.4); border-radius: 12px; padding: 15px; margin-bottom: 20px; text-align:center;"><div style="font-size: 13px; font-weight: 800; color: var(--warning); text-transform: uppercase; margin-bottom: 6px;">🏆 Torneio encerrado</div><div style="font-size: 16px; font-weight: 800; color: var(--dark);">Campeão: ${escapeHTML(campeao)}</div>${(getPodioTorneio() && getPodioTorneio().terceiro) ? `<div style="font-size: 13px; font-weight: 700; color: var(--dark); margin-top: 4px;">🥉 3º lugar: ${escapeHTML(getPodioTorneio().terceiro)}</div>` : ''}${window.isModoPublico ? '' : '<div style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">Não há mais jogos definidos. Para guardar tudo, use "Finalizar Baba e Salvar Dados".</div>'}</div>`; containerFila.style.display = 'block'; } 
+        if (torneioEncerrado()) { containerFila.innerHTML = `<div style="background: var(--tint-warning); border: 1px solid rgba(245,158,11,0.4); border-radius: 12px; padding: 15px; margin-bottom: 20px; text-align:center;"><div style="font-size: 15px; font-weight: 800; color: var(--warning); text-transform: uppercase;">🏆 Torneio encerrado</div><div style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">${window.isModoPublico ? 'Não há mais jogos definidos.' : 'Não há mais jogos definidos. Para guardar tudo, use "Finalizar Baba e Salvar Dados".'}</div></div>`; containerFila.style.display = 'block'; } 
         else { containerFila.style.display = 'none'; }
         return;
     }
@@ -874,6 +876,8 @@ function getPodioTorneio() {
     return podio;
 }
 
+function torneioEncerrado() { return getPodioTorneio() !== null; }
+
 function getCampeaoTorneio() { let p = getPodioTorneio(); return p ? p.campeao : null; }
 
 function limparGolsTemp(lado) { if(lado === 'A') window.golsTempA = []; else window.golsTempB = []; atualizarPlacarTempUI(); salvarEstadoCompleto(); }
@@ -930,8 +934,7 @@ function atualizarPlacarTempUI() {
 function formatarGolsResumo(golsArray) { if(!golsArray || golsArray.length === 0) return ''; let contagem = {}; golsArray.forEach(g => { contagem[g] = (contagem[g] || 0) + 1; }); return Object.entries(contagem).map(([nome, qtd]) => qtd > 1 ? `${escapeHTML(nome)} (${qtd})` : escapeHTML(nome)).join(', '); }
 
 async function adicionarJogoNaSumula() {
-    let campeaoTorneio = getCampeaoTorneio();
-    if (campeaoTorneio) return await customAlert("🏆 Torneio encerrado", `A final já foi jogada e o campeão é <strong>${escapeHTML(campeaoTorneio)}</strong>.<br><br>Não há mais jogos definidos no torneio. Use "Finalizar Baba e Salvar Dados" para guardar tudo.`, "Entendi", "var(--primary)");
+    if (torneioEncerrado()) return await customAlert("🏆 Torneio encerrado", `Todos os jogos do torneio já foram disputados.<br><br>Não há mais jogos definidos. Use "Finalizar Baba e Salvar Dados" para guardar tudo.`, "Entendi", "var(--primary)");
     if (!(await checarTimesCompletosParaJogo())) return; 
     
     let selA = document.getElementById('sumula_equipe_a'); let selB = document.getElementById('sumula_equipe_b'); if(!selA || !selB) return;
@@ -1218,7 +1221,7 @@ async function salvarAjusteManual() {
 }
 
 function atualizarListaJogosDaRodada() {
-    const painelArena = document.getElementById('painel-placar-arena'); if(painelArena) painelArena.style.display = window.partidaSalva ? 'none' : 'block';
+    const painelArena = document.getElementById('painel-placar-arena'); if(painelArena) painelArena.style.display = (window.partidaSalva || torneioEncerrado()) ? 'none' : 'block';
     const btnEncerrar = document.getElementById('btn-encerrar-baba'); if(btnEncerrar) btnEncerrar.style.display = window.partidaSalva ? 'none' : 'block';
     const lista = document.getElementById('lista-jogos-registrados'); if(!lista) return;
     
