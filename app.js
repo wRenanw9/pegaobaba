@@ -447,7 +447,7 @@ async function sortearTimes(presentesBrutos, isAppend) {
                 let minPos = Math.min(...elegiveis.map(t => getQtdPosInc(t, jogador.posicao))); let comMenosPos = elegiveis.filter(t => getQtdPosInc(t, jogador.posicao) === minPos);
                 if (comMenosPos.length > 0) elegiveis = comMenosPos;
                 if ((Number(jogador.nivel) || 3) >= 5 && elegiveis.length > 1) { let minCracks = Math.min(...elegiveis.map(getQtdCracksInc)); elegiveis = elegiveis.filter(t => getQtdCracksInc(t) === minCracks); }
-                elegiveis.sort((a, b) => getSomaNotasInc(a) - getSomaNotasInc(b));
+                embaralhar(elegiveis); elegiveis.sort((a, b) => getSomaNotasInc(a) - getSomaNotasInc(b));
                 elegiveis[0].jogadores.push(jogador);
                 incompletos = window.timesSorteadosObjs.filter(t => t.jogadores.length < tamanhoIdeal);
             }
@@ -500,7 +500,7 @@ async function sortearTimes(presentesBrutos, isAppend) {
                             if (elegiveis.length === 0) { timesLocais[timesLocais.length - 1].push(jogador); return; }
                             let minPos = Math.min(...elegiveis.map(t => getQtdPosicao(t, pos))); let menosPos = elegiveis.filter(t => getQtdPosicao(t, pos) === minPos);
                             if ((Number(jogador.nivel) || 3) >= 5 && menosPos.length > 1) { let minCracks = Math.min(...menosPos.map(t => getQtdCracks(t))); menosPos = menosPos.filter(t => getQtdCracks(t) === minCracks); }
-                            menosPos.sort((a, b) => getSomaNotas(a) - getSomaNotas(b)); menosPos[0].push(jogador);
+                            embaralhar(menosPos); menosPos.sort((a, b) => getSomaNotas(a) - getSomaNotas(b)); menosPos[0].push(jogador);
                         });
                     });
                 } else {
@@ -509,7 +509,7 @@ async function sortearTimes(presentesBrutos, isAppend) {
                         let elegiveis = timesLocais.filter((t, index) => t.length < capacities[index]);
                         if (elegiveis.length === 0) { timesLocais[timesLocais.length - 1].push(jogador); return; }
                         if ((Number(jogador.nivel) || 3) >= 5 && elegiveis.length > 1) { let minCracks = Math.min(...elegiveis.map(t => getQtdCracks(t))); elegiveis = elegiveis.filter(t => getQtdCracks(t) === minCracks); }
-                        elegiveis.sort((a, b) => getSomaNotas(a) - getSomaNotas(b)); elegiveis[0].push(jogador);
+                        embaralhar(elegiveis); elegiveis.sort((a, b) => getSomaNotas(a) - getSomaNotas(b)); elegiveis[0].push(jogador);
                     });
                 }
 
