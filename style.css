@@ -239,7 +239,7 @@ body:not(.public-mode) .public-only { display: none !important; }
 .jogo-torneio { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 6px; background: var(--light); }
 .jogo-torneio.atual { border-color: var(--warning); background: var(--tint-warning); }
 .jogo-torneio.jogado { opacity: 0.9; }
-.jogo-torneio .jogo-rotulo { flex: 0 0 50px; font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; line-height: 1.2; }
+.jogo-torneio .jogo-rotulo { flex: 0 0 58px; white-space: nowrap; font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; line-height: 1.2; }
 .jogo-torneio .jogo-times { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 2px 6px; font-size: 13px; font-weight: 700; color: var(--dark); text-align: center; }
 .jogo-torneio .nome-time { white-space: nowrap; }
 .jogo-torneio .nome-time.vencedor { color: var(--supabase); }
