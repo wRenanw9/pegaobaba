@@ -110,10 +110,10 @@ function processarDadosRecebidosNuvem(novaPartida) {
         window.modoCompeticaoAtual = 'torneio';
     }
 
-    // Fila vazia normalmente significa "baba encerrado". Mas no torneio com os 9 jogos feitos a fila fica vazia por definição:
+    // Fila vazia normalmente significa "baba encerrado". Mas no torneio com todos os jogos feitos a fila fica vazia por definição:
     // nesse caso o baba continua visível (tabela completa e campeão) para quem acompanha pelo link.
     let qtdJogosValidos = window.jogosDaRodada.filter(j => j.tipo !== 'ajuste' && j.tipo !== 'modo').length;
-    let torneioCompleto = (window.modoCompeticaoAtual === 'torneio' && qtdJogosValidos >= 9);
+    let torneioCompleto = (window.modoCompeticaoAtual === 'torneio' && qtdJogosValidos >= totalJogosTorneio());
     window.partidaSalva = (window.filaEquipes.length === 0 && window.jogosDaRodada.length > 0 && !torneioCompleto);
 
     if (novaPartida.times_json) { window.timesSorteadosObjs = safeParse(novaPartida.times_json) || []; window.coringasAtivos = {}; window.timesSorteadosObjs.forEach(t => { if (t.coringas && t.coringas.length > 0) window.coringasAtivos[t.id] = t.coringas; }); }
@@ -397,20 +397,27 @@ function calcularRankTorneio(validMatches, ids) {
     return Object.values(stats).sort((a,b) => { if(b.pts !== a.pts) return b.pts - a.pts; if(b.sg !== a.sg) return b.sg - a.sg; return b.gp - a.gp; });
 }
 
+// Torneios novos trazem no marcador inicial "terceiroLugar: true". Os antigos (sem o campo) continuam com 9 jogos.
+function torneioTemTerceiro(jogosArr) { let marcador = (jogosArr || window.jogosDaRodada || []).find(j => j.tipo === 'modo'); return !!(marcador && marcador.terceiroLugar); }
+function totalJogosTorneio(jogosArr) { return torneioTemTerceiro(jogosArr) ? 10 : 9; }
+function getPerdedorJogo(m) { let v = getVencedorJogo(m); return v === m.equipe_a_id ? m.equipe_b_id : m.equipe_a_id; }
+
 function getVencedorJogo(m) { return m.gols_a.length > m.gols_b.length ? m.equipe_a_id : (m.gols_b.length > m.gols_a.length ? m.equipe_b_id : m.penaltis_vencedor); }
 
-// Monta os 9 jogos do torneio (6 de grupo + 2 semifinais + final), jogados ou ainda por acontecer.
+// Monta os jogos do torneio (6 de grupo + 2 semifinais + [3º lugar] + final), jogados ou ainda por acontecer.
 function montarTabelaTorneio() {
     let validMatches = window.jogosDaRodada.filter(j => j.tipo !== 'ajuste' && j.tipo !== 'modo'); let count = validMatches.length;
     let ids = window.timesSorteadosObjs.map(t => t.id); if (ids.length < 4) return [];
     const nomeDe = (id) => { let t = window.timesSorteadosObjs.find(x => x.id === id); return t ? t.nome : '—'; };
     const [A, B, C, D] = ids; const confrontosGrupo = [[A,B], [C,D], [A,C], [B,D], [A,D], [B,C]];
     let rank = count >= 6 ? calcularRankTorneio(validMatches, ids) : null; let jogos = [];
-    for (let i = 0; i < 9; i++) {
+    let terceiro = torneioTemTerceiro(); let total = totalJogosTorneio(); let idxFinal = total - 1;
+    for (let i = 0; i < total; i++) {
         let nomeA, nomeB, rotulo;
         if (i < 6) { nomeA = nomeDe(confrontosGrupo[i][0]); nomeB = nomeDe(confrontosGrupo[i][1]); rotulo = 'Jogo ' + (i + 1); }
         else if (i === 6) { nomeA = rank ? nomeDe(rank[0].id) : '1º colocado'; nomeB = rank ? nomeDe(rank[3].id) : '4º colocado'; rotulo = 'Semi 1'; }
         else if (i === 7) { nomeA = rank ? nomeDe(rank[1].id) : '2º colocado'; nomeB = rank ? nomeDe(rank[2].id) : '3º colocado'; rotulo = 'Semi 2'; }
+        else if (terceiro && i === 8) { nomeA = count > 6 ? nomeDe(getPerdedorJogo(validMatches[6])) : 'Perdedor da Semi 1'; nomeB = count > 7 ? nomeDe(getPerdedorJogo(validMatches[7])) : 'Perdedor da Semi 2'; rotulo = '3º lugar'; }
         else { nomeA = count > 6 ? nomeDe(getVencedorJogo(validMatches[6])) : 'Vencedor da Semi 1'; nomeB = count > 7 ? nomeDe(getVencedorJogo(validMatches[7])) : 'Vencedor da Semi 2'; rotulo = 'Final'; }
         let jogo = { num: i + 1, rotulo, nomeA, nomeB, jogado: false, atual: i === count };
         if (i < count) { let m = validMatches[i]; jogo.jogado = true; jogo.nomeA = m.equipe_a_nome; jogo.nomeB = m.equipe_b_nome; jogo.golsA = m.gols_a.length; jogo.golsB = m.gols_b.length; jogo.vencedorId = getVencedorJogo(m); jogo.idA = m.equipe_a_id; jogo.idB = m.equipe_b_id; jogo.penaltis = (m.penaltis_vencedor !== undefined && m.penaltis_vencedor !== null) ? (m.penaltis_vencedor === m.equipe_a_id ? m.equipe_a_nome : m.equipe_b_nome) : null; }
@@ -423,7 +430,7 @@ function atualizarTabelaTorneio() {
     const cont = document.getElementById('container-tabela-torneio'); if (!cont) return;
     if (window.modoCompeticaoAtual !== 'torneio' || window.partidaSalva === true || !window.timesSorteadosObjs || window.timesSorteadosObjs.length < 4) { cont.style.display = 'none'; cont.innerHTML = ''; return; }
     let jogos = montarTabelaTorneio(); let jogados = jogos.filter(j => j.jogado).length;
-    let html = `<details class="tabela-torneio" ${window.tabelaTorneioAberta === false ? '' : 'open'} ontoggle="window.tabelaTorneioAberta = this.open"><summary>📅 Jogos do torneio <span>${Math.min(jogados, 9)}/9 jogados</span></summary>`;
+    let html = `<details class="tabela-torneio" ${window.tabelaTorneioAberta === false ? '' : 'open'} ontoggle="window.tabelaTorneioAberta = this.open"><summary>📅 Jogos do torneio <span>${Math.min(jogados, jogos.length)}/${jogos.length} jogados</span></summary>`;
     let faseAtual = '';
     jogos.forEach(j => {
         let fase = j.num <= 6 ? 'Fase de grupos' : 'Mata-mata'; if (fase !== faseAtual) { html += `<div class="tabela-torneio-fase">${fase}</div>`; faseAtual = fase; }
@@ -457,9 +464,11 @@ function atualizarFilaTorneio() {
 
         if (count === 6) { window.filaEquipes = [rank[0].id, rank[3].id, rank[1].id, rank[2].id]; faseStr = "Semifinal 1"; }
         else if (count === 7) { window.filaEquipes = [rank[1].id, rank[2].id]; faseStr = "Semifinal 2"; }
-        else if (count === 8) {
-            let sf1 = validMatches[6]; let w1 = (sf1.gols_a.length > sf1.gols_b.length) ? sf1.equipe_a_id : ((sf1.gols_b.length > sf1.gols_a.length) ? sf1.equipe_b_id : sf1.penaltis_vencedor);
-            let sf2 = validMatches[7]; let w2 = (sf2.gols_a.length > sf2.gols_b.length) ? sf2.equipe_a_id : ((sf2.gols_b.length > sf2.gols_a.length) ? sf2.equipe_b_id : sf2.penaltis_vencedor);
+        else if (count === 8 && torneioTemTerceiro()) {
+            window.filaEquipes = [getPerdedorJogo(validMatches[6]), getPerdedorJogo(validMatches[7])]; faseStr = "🥉 Disputa de 3º lugar";
+        }
+        else if (count === totalJogosTorneio() - 1) {
+            let w1 = getVencedorJogo(validMatches[6]); let w2 = getVencedorJogo(validMatches[7]);
             window.filaEquipes = [w1, w2]; faseStr = "🏆 Grande Final";
         }
         else { window.filaEquipes = []; faseStr = "🏆 Campeão Definido!"; }
@@ -587,7 +596,7 @@ async function sortearTimes(presentesBrutos, isAppend) {
             }
             window.modoCompeticaoAtual = modoComp;
             window.timesSorteadosObjs = []; window.reservasSorteados = []; window.partidaSalva = false; window.partidaSalvaManual = false; window.jogosDaRodada = []; window.filaEquipes = []; window.golsTempA = []; window.golsTempB = []; window.partidaAtualId = null; window.codigoAcessoAtual = null; window.coringasAtivos = {}; window.coringasUltimaPartida = []; window.coringasContagem = {};
-            if (modoComp === 'torneio') { window.jogosDaRodada.push({ tipo: 'modo', modo: 'torneio' }); }
+            if (modoComp === 'torneio') { let terceiroCb = document.getElementById('terceiro-lugar'); window.jogosDaRodada.push({ tipo: 'modo', modo: 'torneio', terceiroLugar: terceiroCb ? terceiroCb.checked : true }); }
         }
 
         let offsetId = isAppend ? window.timesSorteadosObjs.length : 0;
@@ -785,7 +794,7 @@ function atualizarFilaUI() {
     if(window.partidaSalva === true || !window.timesSorteadosObjs || window.timesSorteadosObjs.length === 0) { containerFila.style.display = 'none'; return; }
     if(window.filaEquipes.length === 0) {
         let campeao = getCampeaoTorneio();
-        if (campeao) { containerFila.innerHTML = `<div style="background: var(--tint-warning); border: 1px solid rgba(245,158,11,0.4); border-radius: 12px; padding: 15px; margin-bottom: 20px; text-align:center;"><div style="font-size: 13px; font-weight: 800; color: var(--warning); text-transform: uppercase; margin-bottom: 6px;">🏆 Torneio encerrado</div><div style="font-size: 16px; font-weight: 800; color: var(--dark);">Campeão: ${escapeHTML(campeao)}</div>${window.isModoPublico ? '' : '<div style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">Não há mais jogos definidos. Para guardar tudo, use "Finalizar Baba e Salvar Dados".</div>'}</div>`; containerFila.style.display = 'block'; } 
+        if (campeao) { containerFila.innerHTML = `<div style="background: var(--tint-warning); border: 1px solid rgba(245,158,11,0.4); border-radius: 12px; padding: 15px; margin-bottom: 20px; text-align:center;"><div style="font-size: 13px; font-weight: 800; color: var(--warning); text-transform: uppercase; margin-bottom: 6px;">🏆 Torneio encerrado</div><div style="font-size: 16px; font-weight: 800; color: var(--dark);">Campeão: ${escapeHTML(campeao)}</div>${(getPodioTorneio() && getPodioTorneio().terceiro) ? `<div style="font-size: 13px; font-weight: 700; color: var(--dark); margin-top: 4px;">🥉 3º lugar: ${escapeHTML(getPodioTorneio().terceiro)}</div>` : ''}${window.isModoPublico ? '' : '<div style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">Não há mais jogos definidos. Para guardar tudo, use "Finalizar Baba e Salvar Dados".</div>'}</div>`; containerFila.style.display = 'block'; } 
         else { containerFila.style.display = 'none'; }
         return;
     }
@@ -843,15 +852,17 @@ function atualizarNomesPlacar() {
     });
 }
 
-function getCampeaoTorneio() {
+function getPodioTorneio() {
     if (window.modoCompeticaoAtual !== 'torneio') return null;
     let validMatches = window.jogosDaRodada.filter(j => j.tipo !== 'ajuste' && j.tipo !== 'modo');
-    if (validMatches.length < 9) return null;
-    let f = validMatches[8];
-    let idVenc = f.gols_a.length > f.gols_b.length ? f.equipe_a_id : (f.gols_b.length > f.gols_a.length ? f.equipe_b_id : f.penaltis_vencedor);
-    let t = window.timesSorteadosObjs.find(x => x.id === idVenc);
-    return t ? t.nome : null;
+    let total = totalJogosTorneio(); if (validMatches.length < total) return null;
+    const nomeDe = (id) => { let t = window.timesSorteadosObjs.find(x => x.id === id); return t ? t.nome : null; };
+    let final = validMatches[total - 1]; let podio = { campeao: nomeDe(getVencedorJogo(final)), vice: nomeDe(getPerdedorJogo(final)), terceiro: null };
+    if (torneioTemTerceiro()) podio.terceiro = nomeDe(getVencedorJogo(validMatches[8]));
+    return podio;
 }
+
+function getCampeaoTorneio() { let p = getPodioTorneio(); return p ? p.campeao : null; }
 
 function limparGolsTemp(lado) { if(lado === 'A') window.golsTempA = []; else window.golsTempB = []; atualizarPlacarTempUI(); salvarEstadoCompleto(); }
 
@@ -1230,12 +1241,16 @@ function renderizarPainelDoDiaComJogos(jogosArr, dataStr) {
         let normalMatches = jogosArr.filter(j => j.tipo !== 'ajuste' && j.tipo !== 'modo');
         let mCount = normalMatches.length;
         let bannerHtml = '';
+        let terceiro = torneioTemTerceiro(jogosArr); let idxFinal = terceiro ? 9 : 8;
 
         if (mCount > 0 && mCount < 6) {
             bannerHtml = `<div style="background:var(--primary); color:white; padding:15px; border-radius:8px; text-align:center; margin-bottom:15px;"><strong>🏆 Torneio: Fase de Grupos</strong><br><span style="font-size:12px;">Jogos concluídos: ${mCount}/6</span></div>`;
         } else if (mCount >= 6 && mCount < 8) {
             bannerHtml = `<div style="background:var(--warning); color:white; padding:15px; border-radius:8px; text-align:center; margin-bottom:15px; text-shadow: 0 1px 2px rgba(0,0,0,0.2);"><strong>⚔️ FASE MATA-MATA</strong><br><span style="font-size:12px;">Disputando as Semifinais...</span></div>`;
-        } else if (mCount === 8) {
+        } else if (terceiro && mCount === 8) {
+            const perdedorNome = (m) => { let v = (m.gols_a.length > m.gols_b.length) ? m.equipe_a_id : ((m.gols_b.length > m.gols_a.length) ? m.equipe_b_id : m.penaltis_vencedor); return v === m.equipe_a_id ? m.equipe_b_nome : m.equipe_a_nome; };
+            bannerHtml = `<div style="background:var(--warning); color:white; padding:15px; border-radius:8px; text-align:center; margin-bottom:15px; text-shadow: 0 1px 2px rgba(0,0,0,0.2);"><strong>🥉 DISPUTA DO 3º LUGAR</strong><br><span style="font-size:16px; font-weight:900;">${escapeHTML(perdedorNome(normalMatches[6]))} X ${escapeHTML(perdedorNome(normalMatches[7]))}</span></div>`;
+        } else if (mCount === idxFinal) {
             let sf1 = normalMatches[6]; let sf2 = normalMatches[7];
             let getWinner = (m) => {
                if (m.gols_a.length > m.gols_b.length) return {id: m.equipe_a_id, nome: m.equipe_a_nome};
@@ -1244,15 +1259,15 @@ function renderizarPainelDoDiaComJogos(jogosArr, dataStr) {
             };
             let w1 = getWinner(sf1); let w2 = getWinner(sf2);
             bannerHtml = `<div style="background:linear-gradient(135deg, var(--accent-dark), var(--primary)); color:white; padding:15px; border-radius:8px; text-align:center; margin-bottom:15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"><strong>🔥 A GRANDE FINAL 🔥</strong><br><span style="font-size:16px; font-weight:900;">${escapeHTML(w1.nome)} <span style="color:var(--warning);">X</span> ${escapeHTML(w2.nome)}</span></div>`;
-        } else if (mCount >= 9) {
-            let finalMatch = normalMatches[8];
+        } else if (mCount > idxFinal) {
+            let finalMatch = normalMatches[idxFinal];
             let getResult = (m) => {
                if (m.gols_a.length > m.gols_b.length) return {win: m.equipe_a_nome, lose: m.equipe_b_nome};
                if (m.gols_b.length > m.gols_a.length) return {win: m.equipe_b_nome, lose: m.equipe_a_nome};
                return m.penaltis_vencedor === m.equipe_a_id ? {win: m.equipe_a_nome, lose: m.equipe_b_nome} : {win: m.equipe_b_nome, lose: m.equipe_a_nome};
             };
             let res = getResult(finalMatch);
-            bannerHtml = `<div style="background:linear-gradient(135deg, #f59e0b, #d97706); color:white; padding:15px; border-radius:8px; text-align:center; margin-bottom:15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 2px solid #fbbf24;"><div style="font-size:24px; margin-bottom:5px;">🏆 CAMPEÃO</div><div style="font-size:20px; font-weight:900; text-transform:uppercase; margin-bottom:5px; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">${escapeHTML(res.win)}</div><div style="font-size:13px; font-weight:700; opacity:0.9;">🥈 Vice: ${escapeHTML(res.lose)}</div></div>`;
+            bannerHtml = `<div style="background:linear-gradient(135deg, #f59e0b, #d97706); color:white; padding:15px; border-radius:8px; text-align:center; margin-bottom:15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 2px solid #fbbf24;"><div style="font-size:24px; margin-bottom:5px;">🏆 CAMPEÃO</div><div style="font-size:20px; font-weight:900; text-transform:uppercase; margin-bottom:5px; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">${escapeHTML(res.win)}</div><div style="font-size:13px; font-weight:700; opacity:0.9;">🥈 Vice: ${escapeHTML(res.lose)}</div>${terceiro ? `<div style="font-size:13px; font-weight:700; opacity:0.9;">🥉 3º lugar: ${escapeHTML(getResult(normalMatches[8]).win)}</div>` : ''}</div>`;
         }
         
         if(mCount > 0) {
