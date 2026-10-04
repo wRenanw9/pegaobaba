@@ -60,7 +60,7 @@ function getCorHex(corBase) {
 }
 
 window.timesSorteadosObjs = []; window.reservasSorteados = []; window.partidaSalva = true; window.jogosDaRodada = []; window.filaEquipes = []; window.custosDaRodada = []; window.despesasMensaisGlobais = []; window.isModoPublico = false; window.dataPartidaAtual = null; window.partidaAtualId = null; window.codigoAcessoAtual = null; window.golsTempA = []; window.golsTempB = []; window.coringasAtivos = {}; window.modoCompeticaoAtual = 'rei'; window.faseTorneioTexto = ''; window.suprimirProximoEventoRealtime = false;
-window.coringasUltimaPartida = [];
+window.coringasUltimaPartida = []; window.coringasContagem = {};
 window.cronometroRodando = false; window.cronometroInicioTimestamp = null; window.cronometroAcumuladoMs = 0; window.cronometroIntervalId = null;
 const RODADA_EXPIRA_MS = 6 * 24 * 60 * 60 * 1000; // 6 dias: tempo até uma rodada/partida ser considerada expirada
 function getTamanhoIdealTime() { return currentProfile && currentProfile.jogadores_por_time ? parseInt(currentProfile.jogadores_por_time) : 7; }
@@ -121,7 +121,7 @@ function processarDadosRecebidosNuvem(novaPartida) {
 
 function salvarEstadoCompleto() {
     if(window.isModoPublico) return;
-    try { localStorage.setItem('baba_full_state', JSON.stringify({ timesSorteadosObjs: window.timesSorteadosObjs, reservasSorteados: window.reservasSorteados, jogosDaRodada: window.jogosDaRodada, filaEquipes: window.filaEquipes, partidaSalva: window.partidaSalva, custosDaRodada: window.custosDaRodada, despesasMensaisGlobais: window.despesasMensaisGlobais, dataPartidaAtual: window.dataPartidaAtual, partidaAtualId: window.partidaAtualId, codigoAcessoAtual: window.codigoAcessoAtual, valorMensalistaAtual: document.getElementById('valor-mensalista').value, valorConvidadoAtual: document.getElementById('valor-convidado').value, golsTempA: window.golsTempA, golsTempB: window.golsTempB, coringasAtivos: window.coringasAtivos, coringasUltimaPartida: window.coringasUltimaPartida })); } catch(e) {}
+    try { localStorage.setItem('baba_full_state', JSON.stringify({ timesSorteadosObjs: window.timesSorteadosObjs, reservasSorteados: window.reservasSorteados, jogosDaRodada: window.jogosDaRodada, filaEquipes: window.filaEquipes, partidaSalva: window.partidaSalva, custosDaRodada: window.custosDaRodada, despesasMensaisGlobais: window.despesasMensaisGlobais, dataPartidaAtual: window.dataPartidaAtual, partidaAtualId: window.partidaAtualId, codigoAcessoAtual: window.codigoAcessoAtual, valorMensalistaAtual: document.getElementById('valor-mensalista').value, valorConvidadoAtual: document.getElementById('valor-convidado').value, golsTempA: window.golsTempA, golsTempB: window.golsTempB, coringasAtivos: window.coringasAtivos, coringasUltimaPartida: window.coringasUltimaPartida, coringasContagem: window.coringasContagem })); } catch(e) {}
 }
 
 function carregarEstadoCompleto() {
@@ -129,7 +129,7 @@ function carregarEstadoCompleto() {
     if(saved) {
         try {
             const state = JSON.parse(saved);
-            window.timesSorteadosObjs = state.timesSorteadosObjs || []; window.reservasSorteados = state.reservasSorteados || []; window.jogosDaRodada = state.jogosDaRodada || []; window.filaEquipes = state.filaEquipes || []; window.partidaSalva = state.partidaSalva !== undefined ? state.partidaSalva : true; window.custosDaRodada = state.custosDaRodada || []; window.despesasMensaisGlobais = state.despesasMensaisGlobais || []; window.dataPartidaAtual = state.dataPartidaAtual || null; window.partidaAtualId = state.partidaAtualId || null; window.codigoAcessoAtual = state.codigoAcessoAtual || null; window.golsTempA = state.golsTempA || []; window.golsTempB = state.golsTempB || []; window.coringasAtivos = state.coringasAtivos || {}; window.coringasUltimaPartida = state.coringasUltimaPartida || [];
+            window.timesSorteadosObjs = state.timesSorteadosObjs || []; window.reservasSorteados = state.reservasSorteados || []; window.jogosDaRodada = state.jogosDaRodada || []; window.filaEquipes = state.filaEquipes || []; window.partidaSalva = state.partidaSalva !== undefined ? state.partidaSalva : true; window.custosDaRodada = state.custosDaRodada || []; window.despesasMensaisGlobais = state.despesasMensaisGlobais || []; window.dataPartidaAtual = state.dataPartidaAtual || null; window.partidaAtualId = state.partidaAtualId || null; window.codigoAcessoAtual = state.codigoAcessoAtual || null; window.golsTempA = state.golsTempA || []; window.golsTempB = state.golsTempB || []; window.coringasAtivos = state.coringasAtivos || {}; window.coringasUltimaPartida = state.coringasUltimaPartida || []; window.coringasContagem = state.coringasContagem || {};
             
             window.modoCompeticaoAtual = 'rei';
             if (window.jogosDaRodada.length > 0 && window.jogosDaRodada[0].tipo === 'modo' && window.jogosDaRodada[0].modo === 'torneio') {
@@ -165,7 +165,7 @@ function carregarEstadoCompleto() {
     }
 }
 
-function limparEstadoRodada() { window.timesSorteadosObjs = []; window.reservasSorteados = []; window.jogosDaRodada = []; window.filaEquipes = []; window.custosDaRodada = []; window.golsTempA = []; window.golsTempB = []; window.coringasAtivos = {}; window.coringasUltimaPartida = []; window.dataPartidaAtual = null; window.partidaAtualId = null; window.codigoAcessoAtual = null; window.partidaSalva = true; window.modoCompeticaoAtual = 'rei'; window.faseTorneioTexto = ''; localStorage.removeItem('baba_full_state'); }
+function limparEstadoRodada() { window.timesSorteadosObjs = []; window.reservasSorteados = []; window.jogosDaRodada = []; window.filaEquipes = []; window.custosDaRodada = []; window.golsTempA = []; window.golsTempB = []; window.coringasAtivos = {}; window.coringasUltimaPartida = []; window.coringasContagem = {}; window.dataPartidaAtual = null; window.partidaAtualId = null; window.codigoAcessoAtual = null; window.partidaSalva = true; window.modoCompeticaoAtual = 'rei'; window.faseTorneioTexto = ''; localStorage.removeItem('baba_full_state'); }
 function checarReset24h() { let ultimoReset = localStorage.getItem('baba_last_reset'); let agora = Date.now(); if(!ultimoReset || (agora - parseInt(ultimoReset)) > RODADA_EXPIRA_MS) { localStorage.removeItem('baba_presencas_temp'); localStorage.setItem('baba_last_reset', agora); return true; } return false; }
 function mudarAba(viewId) { document.querySelectorAll('.page-view').forEach(el => el.classList.remove('active')); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); let vId = document.getElementById(viewId); if(vId) vId.classList.add('active'); let navId = viewId.replace('view-', 'nav-'); if(viewId === 'view-admin') navId = 'nav-admin'; if(viewId === 'view-conta') navId = 'nav-conta'; let navEl = document.getElementById(navId); if(navEl) navEl.classList.add('active'); window.scrollTo(0, 0); if(viewId === 'view-estatisticas') carregarEstatisticasGerais(); if(viewId === 'view-placares') renderizarSumula(); if(viewId === 'view-financeiro') atualizarFinanceiro(); if(viewId === 'view-admin') carregarPainelAdmin(); }
 
@@ -535,7 +535,7 @@ async function sortearTimes(presentesBrutos, isAppend) {
                 modoComp = 'rei';
             }
             window.modoCompeticaoAtual = modoComp;
-            window.timesSorteadosObjs = []; window.reservasSorteados = []; window.partidaSalva = false; window.partidaSalvaManual = false; window.jogosDaRodada = []; window.filaEquipes = []; window.golsTempA = []; window.golsTempB = []; window.partidaAtualId = null; window.codigoAcessoAtual = null; window.coringasAtivos = {};
+            window.timesSorteadosObjs = []; window.reservasSorteados = []; window.partidaSalva = false; window.partidaSalvaManual = false; window.jogosDaRodada = []; window.filaEquipes = []; window.golsTempA = []; window.golsTempB = []; window.partidaAtualId = null; window.codigoAcessoAtual = null; window.coringasAtivos = {}; window.coringasUltimaPartida = []; window.coringasContagem = {};
             if (modoComp === 'torneio') { window.jogosDaRodada.push({ tipo: 'modo', modo: 'torneio' }); }
         }
 
@@ -885,6 +885,7 @@ async function adicionarJogoNaSumula() {
 
         // Guarda quem jogou de coringa nesta partida, para o próximo sorteio evitar repetir os mesmos jogadores.
         window.coringasUltimaPartida = [...((window.coringasAtivos && window.coringasAtivos[idA]) || []), ...((window.coringasAtivos && window.coringasAtivos[idB]) || [])].map(c => c.jogador.id);
+        if (!window.coringasContagem) window.coringasContagem = {}; window.coringasUltimaPartida.forEach(id => { window.coringasContagem[id] = (window.coringasContagem[id] || 0) + 1; });
         
         let artilheiros = {};
         window.jogosDaRodada.forEach(jogo => {
@@ -1076,27 +1077,22 @@ async function sortearCoringasFila(idTimeIncompleto) {
 
     let escolhidos = []; let somaEscolhidos = 0; let faltamRestante = faltam;
 
-    // Quem foi coringa na partida anterior só é sorteado de novo se não houver mais ninguém disponível.
-    let recentes = new Set(window.coringasUltimaPartida || []);
-    const ehRecente = (c) => recentes.has(c.jogador.id);
-
-    // Ordem de prioridade dos grupos: reservas e depois times descansando (sem repetidos), e só por último os repetidos.
-    const grupos = [
-        elegiveisReservas.filter(c => !ehRecente(c)),
-        elegiveisOutros.filter(c => !ehRecente(c)),
-        elegiveisReservas.filter(c => ehRecente(c)),
-        elegiveisOutros.filter(c => ehRecente(c))
-    ];
-
-    // Em cada grupo, escolhe quem tem a nota mais próxima do que falta para igualar a média do baba. Empate é sorteado.
-    for (const pool of grupos) {
-        while (faltamRestante > 0 && pool.length > 0) {
-            let mediaFaltante = (alvo - somaEscolhidos) / faltamRestante;
-            let menorDiff = Math.min(...pool.map(c => Math.abs((Number(c.jogador.nivel)||3) - mediaFaltante)));
-            let empatados = pool.filter(c => Math.abs((Number(c.jogador.nivel)||3) - mediaFaltante) === menorDiff);
-            let melhorCandidato = empatados[Math.floor(Math.random() * empatados.length)];
-            pool.splice(pool.indexOf(melhorCandidato), 1); escolhidos.push(melhorCandidato); somaEscolhidos += (Number(melhorCandidato.jogador.nivel)||3); faltamRestante--;
-        }
+    // Rodízio: reservas e jogadores de times descansando competem no mesmo grupo.
+    // 1) Quem foi coringa na partida anterior só entra se não houver mais ninguém.
+    // 2) Entre os que têm a nota até 1 ponto de distância do ideal, joga quem foi coringa MENOS vezes neste baba.
+    // 3) Persistindo o empate, vence a nota mais próxima do ideal, e depois sorteio.
+    const TOLERANCIA_NOTA = 1;
+    let recentes = new Set(window.coringasUltimaPartida || []); let contagem = window.coringasContagem || {};
+    let candidatosTodos = [...elegiveisReservas, ...elegiveisOutros];
+    while (faltamRestante > 0 && candidatosTodos.length > 0) {
+        let mediaFaltante = (alvo - somaEscolhidos) / faltamRestante;
+        let diffDe = (c) => Math.abs((Number(c.jogador.nivel) || 3) - mediaFaltante);
+        let semRepetir = candidatosTodos.filter(c => !recentes.has(c.jogador.id)); let base = semRepetir.length > 0 ? semRepetir : candidatosTodos;
+        let menorDiff = Math.min(...base.map(diffDe)); let faixa = base.filter(c => diffDe(c) <= menorDiff + TOLERANCIA_NOTA);
+        let menorUso = Math.min(...faixa.map(c => contagem[c.jogador.id] || 0)); let menosUsados = faixa.filter(c => (contagem[c.jogador.id] || 0) === menorUso);
+        let melhorDiff = Math.min(...menosUsados.map(diffDe)); let empatados = menosUsados.filter(c => diffDe(c) === melhorDiff);
+        let escolhido = empatados[Math.floor(Math.random() * empatados.length)];
+        candidatosTodos.splice(candidatosTodos.indexOf(escolhido), 1); escolhidos.push(escolhido); somaEscolhidos += (Number(escolhido.jogador.nivel) || 3); faltamRestante--;
     }
 
     if(!window.coringasAtivos[idTimeIncompleto]) window.coringasAtivos[idTimeIncompleto] = [];
