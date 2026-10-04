@@ -102,12 +102,19 @@ function processarDadosRecebidosNuvem(novaPartida) {
     if (window.isModoPublico && !novaPartida.codigo_acesso) { customAlert("Fim de Jogo", "O organizador encerrou a rodada.", "Sair", "var(--text-muted)").then(() => sairModoPublico()); return; }
     if (novaPartida.jogos_json) window.jogosDaRodada = safeParse(novaPartida.jogos_json);
     if (novaPartida.artilheiros_json) window.artilheirosPub = safeParse(novaPartida.artilheiros_json);
-    window.filaEquipes = safeParse(novaPartida.fila_json) || []; window.partidaSalva = (window.filaEquipes.length === 0 && window.jogosDaRodada.length > 0);
+    // Se a atualização não trouxer a fila (coluna não alterada), mantém a que já temos em vez de zerar.
+    window.filaEquipes = (novaPartida.fila_json !== undefined) ? (safeParse(novaPartida.fila_json) || []) : (window.filaEquipes || []);
     
     window.modoCompeticaoAtual = 'rei';
     if (window.jogosDaRodada.length > 0 && window.jogosDaRodada[0].tipo === 'modo' && window.jogosDaRodada[0].modo === 'torneio') {
         window.modoCompeticaoAtual = 'torneio';
     }
+
+    // Fila vazia normalmente significa "baba encerrado". Mas no torneio com os 9 jogos feitos a fila fica vazia por definição:
+    // nesse caso o baba continua visível (tabela completa e campeão) para quem acompanha pelo link.
+    let qtdJogosValidos = window.jogosDaRodada.filter(j => j.tipo !== 'ajuste' && j.tipo !== 'modo').length;
+    let torneioCompleto = (window.modoCompeticaoAtual === 'torneio' && qtdJogosValidos >= 9);
+    window.partidaSalva = (window.filaEquipes.length === 0 && window.jogosDaRodada.length > 0 && !torneioCompleto);
 
     if (novaPartida.times_json) { window.timesSorteadosObjs = safeParse(novaPartida.times_json) || []; window.coringasAtivos = {}; window.timesSorteadosObjs.forEach(t => { if (t.coringas && t.coringas.length > 0) window.coringasAtivos[t.id] = t.coringas; }); }
     window.reservasSorteados = safeParse(novaPartida.reservas_json) || [];
@@ -778,7 +785,7 @@ function atualizarFilaUI() {
     if(window.partidaSalva === true || !window.timesSorteadosObjs || window.timesSorteadosObjs.length === 0) { containerFila.style.display = 'none'; return; }
     if(window.filaEquipes.length === 0) {
         let campeao = getCampeaoTorneio();
-        if (campeao) { containerFila.innerHTML = `<div style="background: var(--tint-warning); border: 1px solid rgba(245,158,11,0.4); border-radius: 12px; padding: 15px; margin-bottom: 20px; text-align:center;"><div style="font-size: 13px; font-weight: 800; color: var(--warning); text-transform: uppercase; margin-bottom: 6px;">🏆 Torneio encerrado</div><div style="font-size: 16px; font-weight: 800; color: var(--dark);">Campeão: ${escapeHTML(campeao)}</div><div style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">Não há mais jogos definidos. Para guardar tudo, use "Finalizar Baba e Salvar Dados".</div></div>`; containerFila.style.display = 'block'; } 
+        if (campeao) { containerFila.innerHTML = `<div style="background: var(--tint-warning); border: 1px solid rgba(245,158,11,0.4); border-radius: 12px; padding: 15px; margin-bottom: 20px; text-align:center;"><div style="font-size: 13px; font-weight: 800; color: var(--warning); text-transform: uppercase; margin-bottom: 6px;">🏆 Torneio encerrado</div><div style="font-size: 16px; font-weight: 800; color: var(--dark);">Campeão: ${escapeHTML(campeao)}</div>${window.isModoPublico ? '' : '<div style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">Não há mais jogos definidos. Para guardar tudo, use "Finalizar Baba e Salvar Dados".</div>'}</div>`; containerFila.style.display = 'block'; } 
         else { containerFila.style.display = 'none'; }
         return;
     }
