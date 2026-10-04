@@ -375,6 +375,60 @@ async function iniciarSorteioComSuspense() {
     setTimeout(() => { sortearTimes(presentes, isAppend); }, 1500);
 }
 
+// Classificação da fase de grupos (primeiros 6 jogos): pontos, saldo de gols e gols pró.
+function calcularRankTorneio(validMatches, ids) {
+    let stats = {};
+    ids.forEach(id => stats[id] = {id: id, pts:0, v:0, e:0, d:0, gp:0, gc:0, sg:0});
+    for(let i=0; i<6; i++) {
+        let m = validMatches[i]; let ga = m.gols_a.length; let gb = m.gols_b.length;
+        stats[m.equipe_a_id].gp += ga; stats[m.equipe_a_id].gc += gb; stats[m.equipe_b_id].gp += gb; stats[m.equipe_b_id].gc += ga;
+        if(ga > gb) { stats[m.equipe_a_id].pts+=3; stats[m.equipe_a_id].v++; stats[m.equipe_b_id].d++; }
+        else if(gb > ga) { stats[m.equipe_b_id].pts+=3; stats[m.equipe_b_id].v++; stats[m.equipe_a_id].d++; }
+        else { stats[m.equipe_a_id].pts+=1; stats[m.equipe_b_id].pts+=1; stats[m.equipe_a_id].e++; stats[m.equipe_b_id].e++; }
+    }
+    ids.forEach(id => stats[id].sg = stats[id].gp - stats[id].gc);
+    return Object.values(stats).sort((a,b) => { if(b.pts !== a.pts) return b.pts - a.pts; if(b.sg !== a.sg) return b.sg - a.sg; return b.gp - a.gp; });
+}
+
+function getVencedorJogo(m) { return m.gols_a.length > m.gols_b.length ? m.equipe_a_id : (m.gols_b.length > m.gols_a.length ? m.equipe_b_id : m.penaltis_vencedor); }
+
+// Monta os 9 jogos do torneio (6 de grupo + 2 semifinais + final), jogados ou ainda por acontecer.
+function montarTabelaTorneio() {
+    let validMatches = window.jogosDaRodada.filter(j => j.tipo !== 'ajuste' && j.tipo !== 'modo'); let count = validMatches.length;
+    let ids = window.timesSorteadosObjs.map(t => t.id); if (ids.length < 4) return [];
+    const nomeDe = (id) => { let t = window.timesSorteadosObjs.find(x => x.id === id); return t ? t.nome : '—'; };
+    const [A, B, C, D] = ids; const confrontosGrupo = [[A,B], [C,D], [A,C], [B,D], [A,D], [B,C]];
+    let rank = count >= 6 ? calcularRankTorneio(validMatches, ids) : null; let jogos = [];
+    for (let i = 0; i < 9; i++) {
+        let nomeA, nomeB, rotulo;
+        if (i < 6) { nomeA = nomeDe(confrontosGrupo[i][0]); nomeB = nomeDe(confrontosGrupo[i][1]); rotulo = 'Jogo ' + (i + 1); }
+        else if (i === 6) { nomeA = rank ? nomeDe(rank[0].id) : '1º colocado'; nomeB = rank ? nomeDe(rank[3].id) : '4º colocado'; rotulo = 'Semi 1'; }
+        else if (i === 7) { nomeA = rank ? nomeDe(rank[1].id) : '2º colocado'; nomeB = rank ? nomeDe(rank[2].id) : '3º colocado'; rotulo = 'Semi 2'; }
+        else { nomeA = count > 6 ? nomeDe(getVencedorJogo(validMatches[6])) : 'Vencedor da Semi 1'; nomeB = count > 7 ? nomeDe(getVencedorJogo(validMatches[7])) : 'Vencedor da Semi 2'; rotulo = 'Final'; }
+        let jogo = { num: i + 1, rotulo, nomeA, nomeB, jogado: false, atual: i === count };
+        if (i < count) { let m = validMatches[i]; jogo.jogado = true; jogo.nomeA = m.equipe_a_nome; jogo.nomeB = m.equipe_b_nome; jogo.golsA = m.gols_a.length; jogo.golsB = m.gols_b.length; jogo.vencedorId = getVencedorJogo(m); jogo.idA = m.equipe_a_id; jogo.idB = m.equipe_b_id; jogo.penaltis = (m.penaltis_vencedor !== undefined && m.penaltis_vencedor !== null) ? (m.penaltis_vencedor === m.equipe_a_id ? m.equipe_a_nome : m.equipe_b_nome) : null; }
+        jogos.push(jogo);
+    }
+    return jogos;
+}
+
+function atualizarTabelaTorneio() {
+    const cont = document.getElementById('container-tabela-torneio'); if (!cont) return;
+    if (window.modoCompeticaoAtual !== 'torneio' || window.partidaSalva === true || !window.timesSorteadosObjs || window.timesSorteadosObjs.length < 4) { cont.style.display = 'none'; cont.innerHTML = ''; return; }
+    let jogos = montarTabelaTorneio(); let jogados = jogos.filter(j => j.jogado).length;
+    let html = `<details class="tabela-torneio" ${window.tabelaTorneioAberta === false ? '' : 'open'} ontoggle="window.tabelaTorneioAberta = this.open"><summary>📅 Jogos do torneio <span>${Math.min(jogados, 9)}/9 jogados</span></summary>`;
+    let faseAtual = '';
+    jogos.forEach(j => {
+        let fase = j.num <= 6 ? 'Fase de grupos' : 'Mata-mata'; if (fase !== faseAtual) { html += `<div class="tabela-torneio-fase">${fase}</div>`; faseAtual = fase; }
+        let nomeA = `<span class="nome-time ${j.jogado && j.vencedorId === j.idA ? 'vencedor' : ''}">${escapeHTML(j.nomeA)}</span>`; let nomeB = `<span class="nome-time ${j.jogado && j.vencedorId === j.idB ? 'vencedor' : ''}">${escapeHTML(j.nomeB)}</span>`;
+        let meio = j.jogado ? `<span class="placar-mini">${j.golsA} x ${j.golsB}</span>` : `<span class="vs">vs</span>`;
+        let status = j.atual ? `<span class="jogo-status">⚡ Agora</span>` : '';
+        let penaltis = j.penaltis ? `<div class="jogo-penaltis">✅ ${escapeHTML(j.penaltis)} venceu nos pênaltis</div>` : '';
+        html += `<div class="jogo-torneio ${j.atual ? 'atual' : ''} ${j.jogado ? 'jogado' : ''}"><span class="jogo-rotulo">${j.rotulo}</span><div class="jogo-times">${nomeA}${meio}${nomeB}</div>${status}${penaltis}</div>`;
+    });
+    html += `</details>`; cont.innerHTML = html; cont.style.display = 'block';
+}
+
 function atualizarFilaTorneio() {
     if(window.modoCompeticaoAtual !== 'torneio') return false;
     let validMatches = window.jogosDaRodada.filter(j => j.tipo !== 'ajuste' && j.tipo !== 'modo');
@@ -392,17 +446,7 @@ function atualizarFilaTorneio() {
     else if (count === 4) { window.filaEquipes = [A, D, B, C]; faseStr = "Grupos (Jogo 5/6)"; }
     else if (count === 5) { window.filaEquipes = [B, C]; faseStr = "Grupos (Último Jogo)"; }
     else if (count >= 6) {
-        let stats = {};
-        ids.forEach(id => stats[id] = {id: id, pts:0, v:0, e:0, d:0, gp:0, gc:0, sg:0});
-        for(let i=0; i<6; i++) {
-            let m = validMatches[i]; let ga = m.gols_a.length; let gb = m.gols_b.length;
-            stats[m.equipe_a_id].gp += ga; stats[m.equipe_a_id].gc += gb; stats[m.equipe_b_id].gp += gb; stats[m.equipe_b_id].gc += ga;
-            if(ga > gb) { stats[m.equipe_a_id].pts+=3; stats[m.equipe_a_id].v++; stats[m.equipe_b_id].d++; }
-            else if(gb > ga) { stats[m.equipe_b_id].pts+=3; stats[m.equipe_b_id].v++; stats[m.equipe_a_id].d++; }
-            else { stats[m.equipe_a_id].pts+=1; stats[m.equipe_b_id].pts+=1; stats[m.equipe_a_id].e++; stats[m.equipe_b_id].e++; }
-        }
-        ids.forEach(id => stats[id].sg = stats[id].gp - stats[id].gc);
-        let rank = Object.values(stats).sort((a,b) => { if(b.pts !== a.pts) return b.pts - a.pts; if(b.sg !== a.sg) return b.sg - a.sg; return b.gp - a.gp; });
+        let rank = calcularRankTorneio(validMatches, ids);
 
         if (count === 6) { window.filaEquipes = [rank[0].id, rank[3].id, rank[1].id, rank[2].id]; faseStr = "Semifinal 1"; }
         else if (count === 7) { window.filaEquipes = [rank[1].id, rank[2].id]; faseStr = "Semifinal 2"; }
@@ -729,6 +773,7 @@ function alertaTimeIncompletoHtml(t, tamanhoIdeal, urgente) {
 }
 
 function atualizarFilaUI() {
+    atualizarTabelaTorneio();
     const containerFila = document.getElementById('container-status-fila'); if(!containerFila) return;
     if(window.partidaSalva === true || !window.timesSorteadosObjs || window.timesSorteadosObjs.length === 0) { containerFila.style.display = 'none'; return; }
     if(window.filaEquipes.length === 0) {
