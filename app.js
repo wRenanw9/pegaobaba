@@ -444,6 +444,7 @@ async function sortearTimes(presentesBrutos, isAppend) {
             while (jogadoresLivres.length > 0 && incompletos.length > 0) {
                 let jogador = jogadoresLivres.shift();
                 let elegiveis = incompletos;
+                if ((Number(jogador.nivel) || 3) >= 6) { const seisInc = (t) => t.jogadores.filter(j => (Number(j.nivel) || 3) >= 6).length; let minSeis = Math.min(...elegiveis.map(seisInc)); elegiveis = elegiveis.filter(t => seisInc(t) === minSeis); }
                 let minPos = Math.min(...elegiveis.map(t => getQtdPosInc(t, jogador.posicao))); let comMenosPos = elegiveis.filter(t => getQtdPosInc(t, jogador.posicao) === minPos);
                 if (comMenosPos.length > 0) elegiveis = comMenosPos;
                 if ((Number(jogador.nivel) || 3) >= 5 && elegiveis.length > 1) { let minCracks = Math.min(...elegiveis.map(getQtdCracksInc)); elegiveis = elegiveis.filter(t => getQtdCracksInc(t) === minCracks); }
@@ -488,6 +489,17 @@ async function sortearTimes(presentesBrutos, isAppend) {
                 
                 let goleirosChunk = embaralhar(chunk.filter(j => j.posicao === 'Goleiro')); let linhaChunk = embaralhar(chunk.filter(j => j.posicao !== 'Goleiro')); let timesLocais = Array.from({ length: numTimesNoChunk }, () => []);
                 if (incluiGoleiros) { for (let t = 0; t < numTimesNoChunk; t++) { if (goleirosChunk.length > 0 && timesLocais[t].length < capacities[t]) { timesLocais[t].push(goleirosChunk.shift()); } } reservasNovas.push(...goleirosChunk); }
+
+                // Jogadores "Fora de Série" (nota 6) são distribuídos primeiro, um por time. Só repetem no mesmo time se houver mais nota 6 do que times.
+                const ehForaDeSerie = (j) => (Number(j.nivel) || 3) >= 6; const getQtdForaDeSerie = (time) => time.filter(ehForaDeSerie).length;
+                let foraDeSerie = embaralhar(linhaChunk.filter(ehForaDeSerie)); linhaChunk = linhaChunk.filter(j => !ehForaDeSerie(j));
+                foraDeSerie.forEach(jogador => {
+                    let elegiveis = timesLocais.filter((t, index) => t.length < capacities[index]);
+                    if (elegiveis.length === 0) { timesLocais[timesLocais.length - 1].push(jogador); return; }
+                    let minSeis = Math.min(...elegiveis.map(getQtdForaDeSerie)); elegiveis = elegiveis.filter(t => getQtdForaDeSerie(t) === minSeis);
+                    if (equilibrarPosicoes) { let minPos = Math.min(...elegiveis.map(t => getQtdPosicao(t, jogador.posicao))); elegiveis = elegiveis.filter(t => getQtdPosicao(t, jogador.posicao) === minPos); }
+                    embaralhar(elegiveis); elegiveis.sort((a, b) => getSomaNotas(a) - getSomaNotas(b)); elegiveis[0].push(jogador);
+                });
 
                 if (equilibrarPosicoes) {
                     const posicoes = ["Zagueiro", "Lateral", "Meia", "Atacante", "Linha"]; const grupos = {}; posicoes.forEach(p => grupos[p] = []);
