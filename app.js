@@ -733,13 +733,13 @@ function atualizarFilaUI() {
     if(window.modoCompeticaoAtual === 'torneio' && window.faseTorneioTexto) { html += `<div style="font-size: 13px; font-weight: 800; color: white; background: var(--warning); padding: 5px 12px; border-radius: 12px; margin-bottom: 12px; display: inline-block; text-transform: uppercase; letter-spacing: 0.5px; text-shadow: 0px 1px 2px rgba(0,0,0,0.2); box-shadow: 0 2px 4px rgba(0,0,0,0.1);">${window.faseTorneioTexto}</div>`; }
 
     if (timeA && timeB) {
-        html += `<div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px; display: flex; align-items: center; justify-content: center; gap: 5px;">⚡ Em Quadra Agora</div><div style="font-size: 15px; font-weight: 800; color: var(--dark); margin-bottom: 12px; background: var(--light); padding: 10px; border-radius: 8px;">${escapeHTML(timeA.nome)} vs ${escapeHTML(timeB.nome)}</div>`;
+        html += `<div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px; display: flex; align-items: center; justify-content: center; gap: 5px;">⚡ Em Quadra Agora</div><div class="status-confronto"><span class="nome-time">${escapeHTML(timeA.nome)}</span><span class="vs">vs</span><span class="nome-time">${escapeHTML(timeB.nome)}</span></div>`;
         html += alertaTimeIncompletoHtml(timeA, tamanhoIdeal, true); html += alertaTimeIncompletoHtml(timeB, tamanhoIdeal, true);
     }
-    if (proximoTime) { html += `<div style="font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 5px; display: flex; align-items: center; justify-content: center; gap: 5px;">⏳ Próxima Equipe</div><div style="font-size: 16px; font-weight: 800; color: var(--primary); background: var(--tint-primary); padding: 10px; border-radius: 8px; margin-bottom: 12px;">🚀 ${escapeHTML(proximoTime.nome)}</div>`;
+    if (proximoTime) { html += `<div style="font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 5px; display: flex; align-items: center; justify-content: center; gap: 5px;">⏳ Próxima Equipe</div><div style="font-size: clamp(13px, 4vw, 16px); font-weight: 800; color: var(--primary); background: var(--tint-primary); padding: 10px 8px; border-radius: 8px; margin-bottom: 12px; white-space: nowrap;">🚀 ${escapeHTML(proximoTime.nome)}</div>`;
         html += alertaTimeIncompletoHtml(proximoTime, tamanhoIdeal, false);
     }
-    if (restantesFila.length > 0) { html += `<div style="font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Aguardando na Fila:</div><div style="font-size: 13px; color: var(--dark); font-weight: 500;">${escapeHTML(restantesFila.join(' ➔ '))}</div>`; }
+    if (restantesFila.length > 0) { html += `<div style="font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Aguardando na Fila:</div><div class="status-fila-lista">${restantesFila.map(n => `<span class="nome-time">${escapeHTML(n)}</span>`).join('<span>➔</span>')}</div>`; }
     html += `</div>`; containerFila.innerHTML = html; containerFila.style.display = 'block';
 }
 
@@ -769,7 +769,14 @@ function atualizarSelectsEquipes() {
     let selA = document.getElementById('sumula_equipe_a'); let selB = document.getElementById('sumula_equipe_b'); if(!selA || !selB) return; let options = ''; window.timesSorteadosObjs.forEach((t) => { options += `<option value="${t.id}">${escapeHTML(t.nome)}</option>`; }); selA.innerHTML = options; selB.innerHTML = options;
     if (window.filaEquipes.length >= 2) { selA.value = window.filaEquipes[0]; selB.value = window.filaEquipes[1]; } 
     else if (selB.options.length > 1) { selA.selectedIndex = 0; selB.selectedIndex = 1; }
-    atualizarFilaUI();
+    atualizarNomesPlacar(); atualizarFilaUI();
+}
+
+function atualizarNomesPlacar() {
+    [['sumula_equipe_a', 'placar-nome-a'], ['sumula_equipe_b', 'placar-nome-b']].forEach(([selId, nomeId]) => {
+        let sel = document.getElementById(selId); let el = document.getElementById(nomeId); if (!sel || !el) return;
+        el.textContent = (sel.options.length > 0 && sel.selectedIndex >= 0) ? sel.options[sel.selectedIndex].text : '—'; if (el.parentElement) el.parentElement.classList.toggle('longo', el.textContent.length > 19);
+    });
 }
 
 function getCampeaoTorneio() {
