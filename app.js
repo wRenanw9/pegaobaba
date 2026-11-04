@@ -360,6 +360,50 @@ function atualizarListas() {
 
 function embaralhar(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } return array; }
 
+// Ajuste fino depois da distribuição: troca jogadores entre times enquanto isso diminuir a diferença de força.
+// Só troca goleiro com goleiro e, com "equilibrar posições", jogador da mesma posição; nunca deixa mais desigual a divisão de
+// Fora de Série (nota 6) e de craques (nota 5+). Critério: menor diferença entre o time mais forte e o mais fraco, depois a menor dispersão.
+// Time incompleto (vai receber coringa) entra na conta com cada vaga valendo a nota média dos jogadores de linha do sorteio.
+function refinarEquilibrioTimes(times, equilibrarPosicoes) {
+    const nota = (j) => Number(j.nivel) || 3;
+    let linha = times.flat().filter(j => j.posicao !== 'Goleiro'); let mediaLinha = linha.length > 0 ? linha.reduce((acc, j) => acc + nota(j), 0) / linha.length : 3;
+    let tamanhoMax = Math.max(...times.map(t => t.length));
+    const soma = (t) => t.reduce((acc, j) => acc + nota(j), 0) + (tamanhoMax - t.length) * mediaLinha;
+    const posicoesConhecidas = ["Goleiro", "Zagueiro", "Lateral", "Meia", "Atacante"];
+    const grupoTroca = (j) => j.posicao === 'Goleiro' ? 'Goleiro' : (equilibrarPosicoes ? (posicoesConhecidas.includes(j.posicao) ? j.posicao : 'Linha') : 'Linha');
+    const amplitude = (valores) => Math.max(...valores) - Math.min(...valores);
+    const avaliar = (somas) => { let media = somas.reduce((a, b) => a + b, 0) / somas.length; return [Math.round(amplitude(somas) * 1000) / 1000, somas.reduce((acc, s) => acc + (s - media) ** 2, 0)]; };
+    const melhor = (a, b) => a[0] < b[0] || (a[0] === b[0] && a[1] < b[1] - 1e-9);
+    const contar = (t, regra) => t.filter(regra).length; const ehFora = (j) => nota(j) >= 6; const ehCraque = (j) => nota(j) >= 5;
+
+    let indices = []; times.forEach((t, i) => { if (t.length > 0) indices.push(i); });
+    if (indices.length >= 2) {
+        for (let rodada = 0; rodada < 200; rodada++) {
+            let somas = indices.map(i => soma(times[i])); let atual = avaliar(somas);
+            if (atual[0] === 0) break;
+            let ampFora = amplitude(indices.map(i => contar(times[i], ehFora))); let ampCraque = amplitude(indices.map(i => contar(times[i], ehCraque)));
+            let melhores = []; let melhorAval = atual;
+            for (let a = 0; a < indices.length; a++) for (let b = a + 1; b < indices.length; b++) {
+                let tA = times[indices[a]]; let tB = times[indices[b]];
+                tA.forEach((x, ix) => tB.forEach((y, iy) => {
+                    let delta = nota(x) - nota(y); if (delta === 0 || grupoTroca(x) !== grupoTroca(y)) return;
+                    let novasSomas = [...somas]; novasSomas[a] -= delta; novasSomas[b] += delta; let aval = avaliar(novasSomas);
+                    if (!melhor(aval, melhorAval) && !(melhores.length > 0 && aval[0] === melhorAval[0] && Math.abs(aval[1] - melhorAval[1]) < 1e-9)) return;
+                    // Confere se a troca não concentra Fora de Série ou craques num time.
+                    let contagemApos = (regra) => indices.map((i, k) => contar(times[i], regra) - (k === a ? (regra(x) ? 1 : 0) - (regra(y) ? 1 : 0) : 0) + (k === b ? (regra(x) ? 1 : 0) - (regra(y) ? 1 : 0) : 0));
+                    if (amplitude(contagemApos(ehFora)) > ampFora || amplitude(contagemApos(ehCraque)) > ampCraque) return;
+                    if (melhor(aval, melhorAval)) { melhorAval = aval; melhores = []; }
+                    melhores.push([a, ix, b, iy]);
+                }));
+            }
+            if (melhores.length === 0) break;
+            // Entre trocas igualmente boas, sorteia uma (o sorteio continua variando de uma rodada para outra).
+            let [a, ix, b, iy] = melhores[Math.floor(Math.random() * melhores.length)]; let tA = times[indices[a]]; let tB = times[indices[b]];
+            [tA[ix], tB[iy]] = [tB[iy], tA[ix]];
+        }
+    }
+}
+
 async function iniciarSorteioComSuspense() {
     let btnGerar = document.querySelector('button[onclick="iniciarSorteioComSuspense()"]');
     if (btnGerar && btnGerar.disabled) return;
@@ -604,6 +648,7 @@ async function sortearTimes(presentesBrutos, isAppend) {
                     });
                 }
 
+                refinarEquilibrioTimes(timesLocais, equilibrarPosicoes);
                 timesLocais = timesLocais.filter(t => t.length > 0); timesNovos.push(...timesLocais);
             }
         }
