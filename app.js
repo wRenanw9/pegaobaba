@@ -806,6 +806,11 @@ function alertaTimeIncompletoHtml(t, tamanhoIdeal, urgente) {
     return `<div style="background: ${tintVar}; border: 1px solid ${borda}; color: ${cor}; font-size: 13px; font-weight: 700; padding: 10px; border-radius: 8px; margin-bottom: 10px; display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap;">⚠️ ${escapeHTML(t.nome)} está com ${qtdAtual}/${tamanhoIdeal} jogadores<button onclick="sortearCoringasFila(${t.id})" style="background:${cor}; color:white; border:none; padding:6px 10px; border-radius:6px; font-size:12px; font-weight:bold; cursor:pointer;">🎭 Sortear Coringa</button></div>`;
 }
 
+function textoSorteioEmpate(jogo) {
+    let primeiro = jogo.sorteio_empate === jogo.equipe_a_id ? jogo.equipe_a_nome : jogo.equipe_b_nome; let segundo = jogo.sorteio_empate === jogo.equipe_a_id ? jogo.equipe_b_nome : jogo.equipe_a_nome;
+    return `🎲 Empate — sorteio (50% / 50%): <strong>${escapeHTML(primeiro)}</strong> volta antes do <strong>${escapeHTML(segundo)}</strong>`;
+}
+
 function atualizarFilaUI() {
     atualizarTabelaTorneio();
     const containerFila = document.getElementById('container-status-fila'); if(!containerFila) return;
@@ -821,6 +826,10 @@ function atualizarFilaUI() {
     let html = `<div style="background: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 15px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); text-align:center;">`;
     
     if(window.modoCompeticaoAtual === 'torneio' && window.faseTorneioTexto) { html += `<div style="font-size: 13px; font-weight: 800; color: white; background: var(--warning); padding: 5px 12px; border-radius: 12px; margin-bottom: 12px; display: inline-block; text-transform: uppercase; letter-spacing: 0.5px; text-shadow: 0px 1px 2px rgba(0,0,0,0.2); box-shadow: 0 2px 4px rgba(0,0,0,0.1);">${window.faseTorneioTexto}</div>`; }
+
+    // Se a última partida terminou empatada, mostra a todos como o sorteio definiu a fila.
+    let ultimoJogo = window.jogosDaRodada.filter(j => j.tipo !== 'ajuste' && j.tipo !== 'modo').pop();
+    if (ultimoJogo && ultimoJogo.sorteio_empate !== undefined && ultimoJogo.sorteio_empate !== null) { html += `<div style="font-size: 12px; color: var(--text-muted); background: var(--light); border: 1px dashed var(--border); border-radius: 8px; padding: 8px; margin-bottom: 12px;">${textoSorteioEmpate(ultimoJogo)}</div>`; }
 
     if (timeA && timeB) {
         html += `<div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px; display: flex; align-items: center; justify-content: center; gap: 5px;">⚡ Em Quadra Agora</div><div class="status-confronto"><span class="nome-time">${escapeHTML(timeA.nome)}</span><span class="vs">vs</span><span class="nome-time">${escapeHTML(timeB.nome)}</span></div>`;
@@ -993,9 +1002,11 @@ async function adicionarJogoNaSumula() {
             if (ga > gb || vencedorPenaltisId === idA) { window.filaEquipes.unshift(idA); window.filaEquipes.push(idB); idWinner = idA; idLoser = idB; } 
             else if (gb > ga || vencedorPenaltisId === idB) { window.filaEquipes.unshift(idB); window.filaEquipes.push(idA); idWinner = idB; idLoser = idA; } 
             else {
-                let caraOuCoroa = Math.random() > 0.5; let pFim = caraOuCoroa ? idA : idB; let sFim = caraOuCoroa ? idB : idA; window.filaEquipes.push(pFim, sFim); 
+                let caraOuCoroa = Math.random() > 0.5; let pFim = caraOuCoroa ? idA : idB; let sFim = caraOuCoroa ? idB : idA; window.filaEquipes.push(pFim, sFim);
+                // Transparência: o resultado do sorteio fica gravado na partida e aparece para todos (fila e histórico).
+                window.jogosDaRodada[window.jogosDaRodada.length - 1].sorteio_empate = pFim;
                 let nomePfim = escapeHTML(window.timesSorteadosObjs.find(t=>t.id === pFim).nome); let nomeSfim = escapeHTML(window.timesSorteadosObjs.find(t=>t.id === sFim).nome);
-                await customAlert("⚖️ EMPATE!", `As duas equipes saem da quadra.<br><br>Sorteio da fila: o <strong>${nomePfim}</strong> volta para a quadra antes do <strong>${nomeSfim}</strong>.`, "Continuar", "var(--text-muted)");
+                await customAlert("⚖️ EMPATE!", `As duas equipes saem da quadra.<br><br>Sorteio da fila (cara ou coroa, 50% para cada): o <strong>${nomePfim}</strong> volta para a quadra antes do <strong>${nomeSfim}</strong>.<br><br><span style="font-size:12px; color:var(--text-muted);">O resultado fica registrado na súmula e visível para os jogadores.</span>`, "Continuar", "var(--text-muted)");
                 
                 let nextTeam1 = window.filaEquipes[0]; let nextTeam2 = window.filaEquipes[1];
                 if(window.coringasAtivos) {
@@ -1253,6 +1264,8 @@ function atualizarListaJogosDaRodada() {
             } else if (j.vantagem_vencedor !== undefined && j.vantagem_vencedor !== null && j.gols_a.length === j.gols_b.length) {
                 let nomeVantagem = (j.vantagem_vencedor === j.equipe_a_id) ? j.equipe_a_nome : j.equipe_b_nome;
                 penaltisHtml = `<div style="font-size: 11px; color: var(--supabase); font-weight: bold; text-align: center; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border);">⚖️ ${escapeHTML(nomeVantagem)} vence pela vantagem da pontuação</div>`;
+            } else if (j.sorteio_empate !== undefined && j.sorteio_empate !== null) {
+                penaltisHtml = `<div style="font-size: 11px; color: var(--text-muted); font-weight: bold; text-align: center; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border);">${textoSorteioEmpate(j)}</div>`;
             }
 
             let cardHtml = `<div style="background: var(--white); padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 8px;"><div style="font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 8px; display: flex; justify-content: space-between;"><span>Partida ${numPartidaCount}</span>${btnExcluirHtml}</div><div style="display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 600;"><div style="flex:1; text-align:right;">${escapeHTML(j.equipe_a_nome)}</div><div class="placar-box" style="margin: 0 10px;">${j.gols_a.length} x ${j.gols_b.length}</div><div style="flex:1; text-align:left;">${escapeHTML(j.equipe_b_nome)}</div></div>${detalhesGolsHtml}${penaltisHtml}</div>`;
