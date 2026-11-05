@@ -1001,6 +1001,10 @@ function alertaTimeIncompletoHtml(t, tamanhoIdeal, urgente) {
 
 function textoSorteioEmpate(jogo) {
     let primeiro = jogo.sorteio_empate === jogo.equipe_a_id ? jogo.equipe_a_nome : jogo.equipe_b_nome; let segundo = jogo.sorteio_empate === jogo.equipe_a_id ? jogo.equipe_b_nome : jogo.equipe_a_nome;
+    if (jogo.criterio_empate === 'menos_jogos') {
+        let n = (id) => (jogo.jogos_no_dia || {})[id]; let idSegundo = jogo.sorteio_empate === jogo.equipe_a_id ? jogo.equipe_b_id : jogo.equipe_a_id;
+        return `⚖️ Empate — jogou menos hoje: <strong>${escapeHTML(primeiro)}</strong> (${n(jogo.sorteio_empate)}) volta antes do <strong>${escapeHTML(segundo)}</strong> (${n(idSegundo)})`;
+    }
     return `🎲 Empate — sorteio (50% / 50%): <strong>${escapeHTML(primeiro)}</strong> volta antes do <strong>${escapeHTML(segundo)}</strong>`;
 }
 
@@ -1195,11 +1199,17 @@ async function adicionarJogoNaSumula() {
             if (ga > gb || vencedorPenaltisId === idA) { window.filaEquipes.unshift(idA); window.filaEquipes.push(idB); idWinner = idA; idLoser = idB; } 
             else if (gb > ga || vencedorPenaltisId === idB) { window.filaEquipes.unshift(idB); window.filaEquipes.push(idA); idWinner = idB; idLoser = idA; } 
             else {
-                let caraOuCoroa = Math.random() > 0.5; let pFim = caraOuCoroa ? idA : idB; let sFim = caraOuCoroa ? idB : idA; window.filaEquipes.push(pFim, sFim);
-                // Transparência: o resultado do sorteio fica gravado na partida e aparece para todos (fila e histórico).
-                window.jogosDaRodada[window.jogosDaRodada.length - 1].sorteio_empate = pFim;
+                // Empate: volta antes quem jogou MENOS partidas no dia (contando esta). Se jogaram o mesmo tanto, cara ou coroa.
+                const partidasNoDia = (id) => window.jogosDaRodada.filter(j => j.tipo !== 'ajuste' && j.tipo !== 'modo' && (j.equipe_a_id === id || j.equipe_b_id === id)).length;
+                let jogosA = partidasNoDia(idA); let jogosB = partidasNoDia(idB); let criterio = jogosA === jogosB ? 'sorteio' : 'menos_jogos';
+                let aPrimeiro = criterio === 'sorteio' ? Math.random() > 0.5 : jogosA < jogosB;
+                let pFim = aPrimeiro ? idA : idB; let sFim = aPrimeiro ? idB : idA; window.filaEquipes.push(pFim, sFim);
+                // Transparência: o resultado e o motivo ficam gravados na partida e aparecem para todos (fila e histórico).
+                let jogoAtual = window.jogosDaRodada[window.jogosDaRodada.length - 1];
+                jogoAtual.sorteio_empate = pFim; jogoAtual.criterio_empate = criterio; jogoAtual.jogos_no_dia = { [idA]: jogosA, [idB]: jogosB };
                 let nomePfim = escapeHTML(window.timesSorteadosObjs.find(t=>t.id === pFim).nome); let nomeSfim = escapeHTML(window.timesSorteadosObjs.find(t=>t.id === sFim).nome);
-                await customAlert("⚖️ EMPATE!", `As duas equipes saem da quadra.<br><br>Sorteio da fila (cara ou coroa, 50% para cada): o <strong>${nomePfim}</strong> volta para a quadra antes do <strong>${nomeSfim}</strong>.<br><br><span style="font-size:12px; color:var(--text-muted);">O resultado fica registrado na súmula e visível para os jogadores.</span>`, "Continuar", "var(--text-muted)");
+                let motivo = criterio === 'menos_jogos' ? `Quem jogou menos hoje volta primeiro: o <strong>${nomePfim}</strong> (${partidasNoDia(pFim)} partida${partidasNoDia(pFim) > 1 ? 's' : ''}) volta para a quadra antes do <strong>${nomeSfim}</strong> (${partidasNoDia(sFim)} partidas).` : `Os dois jogaram ${jogosA} partida${jogosA > 1 ? 's' : ''} hoje, então foi sorteio (cara ou coroa, 50% para cada): o <strong>${nomePfim}</strong> volta para a quadra antes do <strong>${nomeSfim}</strong>.`;
+                await customAlert("⚖️ EMPATE!", `As duas equipes saem da quadra.<br><br>${motivo}<br><br><span style="font-size:12px; color:var(--text-muted);">O resultado fica registrado na súmula e visível para os jogadores.</span>`, "Continuar", "var(--text-muted)");
                 
                 let nextTeam1 = window.filaEquipes[0]; let nextTeam2 = window.filaEquipes[1];
                 if(window.coringasAtivos) {
