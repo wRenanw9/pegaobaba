@@ -84,9 +84,15 @@ window.onload = async function() {
         
         setInterval(async () => {
             let dbStatus = document.getElementById('status-db'); if(!dbStatus || !db) return;
-            try { const { error } = await db.from('profiles').select('id').limit(1); if(!error && dbStatus.innerText === "Off-line") { dbStatus.innerText = "Online"; dbStatus.style.backgroundColor = "var(--supabase)"; } } 
-            catch(e) { if(dbStatus.innerText !== "Off-line" && dbStatus.innerText !== "Buscando Baba..." && dbStatus.innerText !== "Sincronizando...") { dbStatus.innerText = "Off-line"; dbStatus.style.backgroundColor = "var(--danger)"; } }
+            // O Supabase não "estoura" erro quando cai a internet: ele devolve { error }. Por isso o teste olha o error.
+            let semConexao = false; try { const { error } = await db.from('partidas').select('id').limit(1); semConexao = !!error; } catch(e) { semConexao = true; }
+            if (semConexao) { if (dbStatus.innerText !== "Off-line") { window.textoStatusAntesOffline = dbStatus.innerText; dbStatus.innerText = "Off-line"; dbStatus.style.backgroundColor = "var(--danger)"; } }
+            else {
+                if (dbStatus.innerText === "Off-line") { dbStatus.innerText = (window.isModoPublico && window.textoStatusAntesOffline) ? window.textoStatusAntesOffline : "Online"; dbStatus.style.backgroundColor = "var(--supabase)"; }
+                if (window.sincronizacaoPendente) sincronizarPartidaPendente();
+            }
         }, 10000);
+        window.addEventListener('online', () => { if (window.sincronizacaoPendente) sincronizarPartidaPendente(); });
 
     } catch(e) { console.error("Falha ao iniciar app:", e); }
 };
@@ -143,6 +149,40 @@ function hidratarJogadoresDaPartida() {
     for (let key in (window.coringasAtivos || {})) window.coringasAtivos[key].forEach(c => completar(c.jogador));
 }
 
+function calcularArtilheiros(jogos) {
+    let artilheiros = {};
+    (jogos || []).forEach(jogo => {
+        if (jogo.tipo === 'ajuste') { artilheiros[jogo.jogador] = (artilheiros[jogo.jogador] || 0) + jogo.gols; }
+        else if (jogo.tipo !== 'modo') { jogo.gols_a.forEach(n => { if (n !== 'Gol Contra') artilheiros[n] = (artilheiros[n] || 0) + 1; }); jogo.gols_b.forEach(n => { if (n !== 'Gol Contra') artilheiros[n] = (artilheiros[n] || 0) + 1; }); }
+    });
+    return artilheiros;
+}
+
+// Grava a partida no servidor conferindo o resultado. Se falhar (sem internet), a alteração fica neste aparelho,
+// aparece um aviso e o app reenvia a partida inteira assim que a conexão voltar.
+async function gravarPartida(campos) {
+    if (!window.partidaAtualId) return true;
+    // Com algo pendente, qualquer gravação leva a partida inteira (senão o aviso sumiria sem o placar ter sido enviado).
+    if (window.sincronizacaoPendente && !window.partidaSalva) campos = { jogos_json: window.jogosDaRodada, artilheiros_json: calcularArtilheiros(window.jogosDaRodada), fila_json: window.filaEquipes, times_json: timesParaBanco(), reservas_json: reservasParaBanco(), ...campos };
+    window.suprimirProximoEventoRealtime = true; let erro = null;
+    try { ({ error: erro } = await db.from('partidas').update(campos).eq('id', window.partidaAtualId)); } catch(e) { erro = e; }
+    if (erro) { window.suprimirProximoEventoRealtime = false; window.sincronizacaoPendente = true; mostrarAvisoSincronizacao(true); return false; }
+    if (window.sincronizacaoPendente) { window.sincronizacaoPendente = false; mostrarAvisoSincronizacao(false); }
+    return true;
+}
+async function sincronizarPartidaPendente() {
+    if (!window.sincronizacaoPendente || window.sincronizandoAgora || !window.partidaAtualId || window.partidaSalva || window.isModoPublico) return;
+    window.sincronizandoAgora = true;
+    try { await gravarPartida({ jogos_json: window.jogosDaRodada, artilheiros_json: calcularArtilheiros(window.jogosDaRodada), fila_json: window.filaEquipes, times_json: timesParaBanco(), reservas_json: reservasParaBanco() }); }
+    finally { window.sincronizandoAgora = false; }
+}
+function mostrarAvisoSincronizacao(pendente) {
+    let aviso = document.getElementById('aviso-sincronizacao');
+    if (!aviso) { aviso = document.createElement('div'); aviso.id = 'aviso-sincronizacao'; aviso.style.cssText = 'position:fixed; top:0; left:0; right:0; z-index:9999; padding:10px 14px; font-size:13px; font-weight:600; text-align:center; color:white; box-shadow:0 2px 6px rgba(0,0,0,0.2);'; document.body.appendChild(aviso); }
+    if (pendente) { aviso.style.background = 'var(--danger)'; aviso.innerHTML = `⚠️ Sem conexão: a última alteração está só neste aparelho e os jogadores ainda não a veem. O app reenvia sozinho quando a internet voltar. <button onclick="sincronizarPartidaPendente()" style="margin-left:8px; width:auto; padding:4px 10px; font-size:12px; background:white; color:var(--danger); border-radius:6px;">Tentar agora</button>`; aviso.style.display = 'block'; }
+    else { aviso.style.background = 'var(--supabase)'; aviso.innerHTML = '✅ Conexão de volta: tudo enviado ao servidor.'; aviso.style.display = 'block'; setTimeout(() => { if (!window.sincronizacaoPendente) aviso.style.display = 'none'; }, 3000); }
+}
+
 function salvarEstadoCompleto() {
     if(window.isModoPublico) return;
     try { localStorage.setItem('baba_full_state', JSON.stringify({ timesSorteadosObjs: window.timesSorteadosObjs, reservasSorteados: window.reservasSorteados, jogosDaRodada: window.jogosDaRodada, filaEquipes: window.filaEquipes, partidaSalva: window.partidaSalva, custosDaRodada: window.custosDaRodada, despesasMensaisGlobais: window.despesasMensaisGlobais, dataPartidaAtual: window.dataPartidaAtual, partidaAtualId: window.partidaAtualId, codigoAcessoAtual: window.codigoAcessoAtual, valorMensalistaAtual: document.getElementById('valor-mensalista').value, valorConvidadoAtual: document.getElementById('valor-convidado').value, golsTempA: window.golsTempA, golsTempB: window.golsTempB, coringasAtivos: window.coringasAtivos, coringasUltimaPartida: window.coringasUltimaPartida, coringasContagem: window.coringasContagem })); } catch(e) {}
@@ -190,7 +230,15 @@ function carregarEstadoCompleto() {
 }
 
 function limparEstadoRodada() { window.timesSorteadosObjs = []; window.reservasSorteados = []; window.jogosDaRodada = []; window.filaEquipes = []; window.custosDaRodada = []; window.golsTempA = []; window.golsTempB = []; window.coringasAtivos = {}; window.coringasUltimaPartida = []; window.coringasContagem = {}; window.dataPartidaAtual = null; window.partidaAtualId = null; window.codigoAcessoAtual = null; window.partidaSalva = true; window.modoCompeticaoAtual = 'rei'; window.faseTorneioTexto = ''; localStorage.removeItem('baba_full_state'); }
-function checarReset24h() { let ultimoReset = localStorage.getItem('baba_last_reset'); let agora = Date.now(); if(!ultimoReset || (agora - parseInt(ultimoReset)) > RODADA_EXPIRA_MS) { localStorage.removeItem('baba_presencas_temp'); localStorage.setItem('baba_last_reset', agora); return true; } return false; }
+// Limpeza semanal da lista de chegada. Não roda com baba em andamento (alguém marcou "Chegou" nas últimas 12 horas),
+// para não apagar a ordem de chegada se a página recarregar no meio do jogo.
+function checarReset24h() {
+    let ultimoReset = localStorage.getItem('baba_last_reset'); let agora = Date.now();
+    if (ultimoReset && (agora - parseInt(ultimoReset)) <= RODADA_EXPIRA_MS) return false;
+    let estado = {}; try { estado = JSON.parse(localStorage.getItem('baba_presencas_temp')) || {}; } catch(e) {}
+    if (Object.values(estado).some(e => e && e.presente && e.ordemChegada && (agora - e.ordemChegada) < 12 * 60 * 60 * 1000)) return false;
+    localStorage.removeItem('baba_presencas_temp'); localStorage.setItem('baba_last_reset', agora); return true;
+}
 function mudarAba(viewId) { document.querySelectorAll('.page-view').forEach(el => el.classList.remove('active')); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); let vId = document.getElementById(viewId); if(vId) vId.classList.add('active'); let navId = viewId.replace('view-', 'nav-'); if(viewId === 'view-admin') navId = 'nav-admin'; if(viewId === 'view-conta') navId = 'nav-conta'; let navEl = document.getElementById(navId); if(navEl) navEl.classList.add('active'); window.scrollTo(0, 0); if(viewId === 'view-estatisticas') carregarEstatisticasGerais(); if(viewId === 'view-placares') renderizarSumula(); if(viewId === 'view-financeiro') atualizarFinanceiro(); if(viewId === 'view-admin') carregarPainelAdmin(); }
 
 async function verificarSessao() { try { const { data: { session } } = await db.auth.getSession(); if (session) { currentUser = session.user; await checarPerfilEValidade(session.user); } else mostrarLogin(); } catch(e) { mostrarLogin(); } }
@@ -370,11 +418,17 @@ async function marcarTodosPresentes() { let convidadosPendentes = 0; let countAd
 function desmarcarPresenca(indexArray) { jogadores[indexArray].presente = false; jogadores[indexArray].ordemChegada = 0; salvarEstadoLocal(); atualizarListas(); atualizarFinanceiro(); }
 async function alternarMensalidade(idNuvem, indexArray) {
     const j = jogadores[indexArray]; const mesKey = mesLocal();
-    if (!j.pagamentos_json) j.pagamentos_json = {};
+    if (!j.pagamentos_json) j.pagamentos_json = {}; let valorAntes = j.pagamentos_json[mesKey];
     if (j.pagamentos_json[mesKey]) { delete j.pagamentos_json[mesKey]; }
-    else { let elMens = document.getElementById('valor-mensalista'); let valorPagoAgora = elMens ? (parseFloat(elMens.value) || 0) : 0; j.pagamentos_json[mesKey] = valorPagoAgora; }
+    else { let elMens = document.getElementById('valor-mensalista'); let valorPagoAgora = elMens ? (parseFloat(elMens.value) || 0) : 0; j.pagamentos_json[mesKey] = valorPagoAgora || true; }
     atualizarListas(); atualizarFinanceiro();
-    await db.from('jogadores').update({ pagamentos_json: j.pagamentos_json }).eq('id', idNuvem);
+    let erro = null; try { ({ error: erro } = await db.from('jogadores').update({ pagamentos_json: j.pagamentos_json }).eq('id', idNuvem)); } catch(e) { erro = e; }
+    if (erro) {
+        // Desfaz na tela para não mostrar "Pago" (ou "Pendente") que o servidor não recebeu.
+        if (valorAntes === undefined) delete j.pagamentos_json[mesKey]; else j.pagamentos_json[mesKey] = valorAntes;
+        atualizarListas(); atualizarFinanceiro();
+        alert(`Não foi possível salvar a mensalidade de ${j.nome}. Verifique a internet e tente de novo.`);
+    }
 }
 // Diária do convidado vai direto para o caixa (banco) ao marcar "Pago" e sai dele ao desmarcar.
 async function alternarPagamentoDiaria(indexArray) {
@@ -722,7 +776,7 @@ async function sortearTimes(presentesBrutos, isAppend) {
                 modoComp = 'rei';
             }
             window.modoCompeticaoAtual = modoComp;
-            window.timesSorteadosObjs = []; window.reservasSorteados = []; window.partidaSalva = false; window.partidaSalvaManual = false; window.jogosDaRodada = []; window.filaEquipes = []; window.golsTempA = []; window.golsTempB = []; window.partidaAtualId = null; window.codigoAcessoAtual = null; window.coringasAtivos = {}; window.coringasUltimaPartida = []; window.coringasContagem = {};
+            window.timesSorteadosObjs = []; window.reservasSorteados = []; window.partidaSalva = false; window.partidaSalvaManual = false; window.jogosDaRodada = []; window.filaEquipes = []; window.golsTempA = []; window.golsTempB = []; window.partidaAtualId = null; window.codigoAcessoAtual = null; window.coringasAtivos = {}; window.sincronizacaoPendente = false; let avisoSinc = document.getElementById("aviso-sincronizacao"); if (avisoSinc) avisoSinc.style.display = "none"; window.coringasUltimaPartida = []; window.coringasContagem = {};
             if (modoComp === 'torneio') { let terceiroCb = document.getElementById('terceiro-lugar'); window.jogosDaRodada.push({ tipo: 'modo', modo: 'torneio', terceiroLugar: terceiroCb ? terceiroCb.checked : true }); }
         }
 
@@ -746,7 +800,7 @@ async function sortearTimes(presentesBrutos, isAppend) {
         
         if (isAppend) {
             let qJogadores = 0; window.timesSorteadosObjs.forEach(t => qJogadores += t.jogadores.length); if (window.reservasSorteados) qJogadores += window.reservasSorteados.length;
-            window.suprimirProximoEventoRealtime = true; await db.from('partidas').update({ times_json: timesParaBanco(), fila_json: window.filaEquipes, quantidade_jogadores: qJogadores, reservas_json: reservasParaBanco() }).eq('id', window.partidaAtualId);
+            await gravarPartida({ times_json: timesParaBanco(), fila_json: window.filaEquipes, quantidade_jogadores: qJogadores, reservas_json: reservasParaBanco() });
         } else { await criarPartidaInicialNoBanco(); }
         
         try { salvarEstadoCompleto(); } catch(e) {}
@@ -1161,16 +1215,21 @@ async function adicionarJogoNaSumula() {
         }
 
         window.timesSorteadosObjs.forEach(t => { t.coringas = window.coringasAtivos[t.id] || []; });
-        if(window.partidaAtualId) { window.suprimirProximoEventoRealtime = true; await db.from('partidas').update({ jogos_json: window.jogosDaRodada, artilheiros_json: artilheiros, fila_json: window.filaEquipes, times_json: timesParaBanco(), reservas_json: reservasParaBanco() }).eq('id', window.partidaAtualId); }
+        if(window.partidaAtualId) { await gravarPartida({ jogos_json: window.jogosDaRodada, artilheiros_json: artilheiros, fila_json: window.filaEquipes, times_json: timesParaBanco(), reservas_json: reservasParaBanco() }); }
         limparGolsTemp('A'); limparGolsTemp('B'); atualizarSelectsEquipes(); atualizarFilaUI(); atualizarListaJogosDaRodada(); renderizarEscalacaoPublicaSumula(); salvarEstadoCompleto(); zerarCronometro();
     } finally { if(btnConfirmar) { btnConfirmar.innerText = textoOriginal; btnConfirmar.disabled = false; btnConfirmar.style.opacity = "1"; } }
 }
 
-function removerJogo(index) { 
-    if(window.partidaSalva || window.isModoPublico) return; 
-    window.jogosDaRodada.splice(index, 1); 
+async function removerJogo(index) {
+    if(window.partidaSalva || window.isModoPublico) return;
+    let jogo = window.jogosDaRodada[index]; if (!jogo) return;
+    let descricao = jogo.tipo === 'ajuste' ? `o ajuste de gols de <strong>${escapeHTML(jogo.jogador)}</strong>` : `a partida <strong>${escapeHTML(jogo.equipe_a_nome)} ${jogo.gols_a.length} x ${jogo.gols_b.length} ${escapeHTML(jogo.equipe_b_nome)}</strong>`;
+    let aviso = (window.modoCompeticaoAtual !== 'torneio' && jogo.tipo !== 'ajuste') ? '<br><br>Os gols saem da artilharia. A fila de times <strong>não volta sozinha</strong>: confira as equipes do próximo jogo.' : '<br><br>Os gols saem da artilharia.';
+    if (!(await customConfirm("Excluir do histórico", `Deseja excluir ${descricao}?${aviso}`, "Sim, excluir", "Cancelar", "var(--danger)"))) return;
+    window.jogosDaRodada.splice(index, 1);
     if (window.modoCompeticaoAtual === 'torneio') { atualizarFilaTorneio(); atualizarSelectsEquipes(); }
-    atualizarListaJogosDaRodada(); salvarEstadoCompleto(); 
+    atualizarListaJogosDaRodada(); salvarEstadoCompleto();
+    await gravarPartida({ jogos_json: window.jogosDaRodada, artilheiros_json: calcularArtilheiros(window.jogosDaRodada), fila_json: window.filaEquipes });
 }
 
 function abrirModalLesao() {
@@ -1211,7 +1270,7 @@ async function salvarLesao() {
     
     if(window.coringasAtivos) { for(let key in window.coringasAtivos) { window.coringasAtivos[key] = window.coringasAtivos[key].filter(c => c.jogador.id !== jogador.id); } }
     window.timesSorteadosObjs.forEach(t => { t.coringas = window.coringasAtivos[t.id] || []; });
-    if(window.partidaAtualId) { window.suprimirProximoEventoRealtime = true; await db.from('partidas').update({ times_json: timesParaBanco(), reservas_json: reservasParaBanco() }).eq('id', window.partidaAtualId); }
+    if(window.partidaAtualId) { await gravarPartida({ times_json: timesParaBanco(), reservas_json: reservasParaBanco() }); }
     
     fecharModalLesao(); salvarEstadoCompleto(); renderizarEscalacaoPublicaSumula(); atualizarFilaUI();
 }
@@ -1269,7 +1328,7 @@ async function darAltaDM() {
         await customAlert("🩺 Alta Médica", msgAlert, "OK", "var(--primary)");
         
         window.timesSorteadosObjs.forEach(t => { t.coringas = window.coringasAtivos[t.id] || []; });
-        if(window.partidaAtualId) { window.suprimirProximoEventoRealtime = true; await db.from('partidas').update({ times_json: timesParaBanco(), reservas_json: reservasParaBanco() }).eq('id', window.partidaAtualId); }
+        if(window.partidaAtualId) { await gravarPartida({ times_json: timesParaBanco(), reservas_json: reservasParaBanco() }); }
         
         fecharModalLesao(); salvarEstadoCompleto(); renderizarEscalacaoPublicaSumula(); atualizarFilaUI();
     }
@@ -1320,7 +1379,7 @@ async function sortearCoringasFila(idTimeIncompleto) {
     window.coringasAtivos[idTimeIncompleto].push(...escolhidos);
     window.timesSorteadosObjs.forEach(t => { t.coringas = window.coringasAtivos[t.id] || []; });
     
-    if(window.partidaAtualId) { window.suprimirProximoEventoRealtime = true; await db.from('partidas').update({ times_json: timesParaBanco(), reservas_json: reservasParaBanco() }).eq('id', window.partidaAtualId); }
+    if(window.partidaAtualId) { await gravarPartida({ times_json: timesParaBanco(), reservas_json: reservasParaBanco() }); }
 
     let msg = ``; escolhidos.forEach(c => msg += `<strong>${escapeHTML(c.jogador.nome)}</strong> (do ${escapeHTML(c.timeOriginalNome)})<br>`); 
     await customAlert("🎭 Coringas Sorteados", msg, "Continuar", "var(--primary)");
@@ -1350,7 +1409,7 @@ async function salvarAjusteManual() {
         else if (jogo.tipo !== 'modo') { jogo.gols_a.forEach(n => { if(n !== 'Gol Contra') artilheiros[n] = (artilheiros[n] || 0) + 1; }); jogo.gols_b.forEach(n => { if(n !== 'Gol Contra') artilheiros[n] = (artilheiros[n] || 0) + 1; }); }
     });
 
-    if(window.partidaAtualId) { window.suprimirProximoEventoRealtime = true; await db.from('partidas').update({ jogos_json: window.jogosDaRodada, artilheiros_json: artilheiros }).eq('id', window.partidaAtualId); }
+    if(window.partidaAtualId) { await gravarPartida({ jogos_json: window.jogosDaRodada, artilheiros_json: artilheiros }); }
     fecharModalAjuste(); atualizarListaJogosDaRodada(); salvarEstadoCompleto();
 }
 
@@ -1518,8 +1577,11 @@ async function carregarEstatisticasGerais() {
         let lMes = document.getElementById('label-mes-atual'); if(lMes) lMes.innerText = hoje.toLocaleString('pt-BR', { month: 'long' }); 
         let lAno = document.getElementById('label-ano-atual'); if(lAno) lAno.innerText = anoAtual;
         
-        const { data: partidas } = await db.from('partidas').select('id, data_sorteio, artilheiros_json').gte('data_sorteio', startOfYear).eq('user_id', currentUser.id);
-        const { data: presencas } = await db.from('presencas').select('partida_id, jogadores(nome, tipo, user_id)');
+        // O Supabase devolve no máximo 1000 linhas por consulta: busca em páginas, só das partidas do ano deste organizador.
+        const buscarTodos = async (montar) => { let todos = []; for (let de = 0; ; de += 1000) { const { data, error } = await montar().range(de, de + 999); if (error) throw error; todos.push(...(data || [])); if (!data || data.length < 1000) break; } return todos; };
+        const partidas = await buscarTodos(() => db.from('partidas').select('id, data_sorteio, artilheiros_json').gte('data_sorteio', startOfYear).eq('user_id', currentUser.id).order('id'));
+        let idsPartidas = partidas.map(p => p.id); const presencas = [];
+        for (let i = 0; i < idsPartidas.length; i += 100) presencas.push(...await buscarTodos(() => db.from('presencas').select('partida_id, jogadores(nome, tipo, user_id)').in('partida_id', idsPartidas.slice(i, i + 100)).order('id')));
 
         let mensalistasPorPartida = {}; let artilhariaMes = {}; let rankingAnual = {};
         if(presencas) { presencas.forEach(p => { if (p.jogadores && p.jogadores.user_id === currentUser.id && p.jogadores.tipo === 'Mensalista') { if(!mensalistasPorPartida[p.partida_id]) mensalistasPorPartida[p.partida_id] = new Set(); mensalistasPorPartida[p.partida_id].add(p.jogadores.nome); } }); }
