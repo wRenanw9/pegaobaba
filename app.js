@@ -95,7 +95,7 @@ function iniciarOuvinteRealtime(partidaId) {
     if (!partidaId) return;
     if (supabaseChannel) db.removeChannel(supabaseChannel);
     supabaseChannel = db.channel('partida_' + partidaId).on('postgres_changes', { event: '*', schema: 'public', table: 'partidas', filter: `id=eq.${partidaId}` }, payload => { if (window.suprimirProximoEventoRealtime) { window.suprimirProximoEventoRealtime = false; return; } const novaPartida = payload.new; if (novaPartida) processarDadosRecebidosNuvem(novaPartida); }).subscribe();
-    if (window.isModoPublico && !publicSyncInterval) { publicSyncInterval = setInterval(async () => { if (!window.partidaAtualId) return; try { const { data: p } = await db.from('partidas').select('*').eq('id', window.partidaAtualId).single(); if (p) processarDadosRecebidosNuvem(p); } catch(e) {} }, 4000); }
+    if (window.isModoPublico && !publicSyncInterval) { publicSyncInterval = setInterval(async () => { if (!window.partidaAtualId) return; try { const { data: p, error } = await db.from('partidas').select('*').eq('id', window.partidaAtualId).single(); if (p) processarDadosRecebidosNuvem(p); else if (error && error.code === 'PGRST116') { clearInterval(publicSyncInterval); publicSyncInterval = null; processarDadosRecebidosNuvem({ codigo_acesso: null }); } } catch(e) {} }, 4000); }
 }
 
 function processarDadosRecebidosNuvem(novaPartida) {
@@ -117,13 +117,30 @@ function processarDadosRecebidosNuvem(novaPartida) {
     window.partidaSalva = (window.filaEquipes.length === 0 && window.jogosDaRodada.length > 0 && !torneioCompleto);
 
     if (novaPartida.times_json) { window.timesSorteadosObjs = safeParse(novaPartida.times_json) || []; window.coringasAtivos = {}; window.timesSorteadosObjs.forEach(t => { if (t.coringas && t.coringas.length > 0) window.coringasAtivos[t.id] = t.coringas; }); }
-    window.reservasSorteados = safeParse(novaPartida.reservas_json) || [];
-    
+    window.reservasSorteados = safeParse(novaPartida.reservas_json) || []; hidratarJogadoresDaPartida();
+
     if (window.modoCompeticaoAtual === 'torneio') atualizarFilaTorneio();
-    
+
     atualizarFilaUI(); renderizarSumula();
     let vEst = document.getElementById('view-estatisticas'); if (vEst && vEst.classList.contains('active')) renderizarPainelDoDia();
     let vFin = document.getElementById('view-financeiro'); if (vFin && vFin.classList.contains('active')) gerarRelatorioMensal();
+}
+
+// A partida é pública (quem tem o código lê tudo): nela vão só nome, posição e tipo de cada jogador.
+// Nota, mensalidades e pagamento ficam apenas no elenco do organizador e voltam com hidratarJogadoresDaPartida().
+function jogadorPublico(j) {
+    if (!j) return j; let pub = { id: j.id, nome: j.nome, posicao: j.posicao, tipo: j.tipo };
+    ['isDM', 'timeOrigemId', 'timeOrigemNome', 'timeSubstituindoId'].forEach(k => { if (j[k] !== undefined) pub[k] = j[k]; });
+    return pub;
+}
+function timesParaBanco() { return window.timesSorteadosObjs.map(t => ({ ...t, jogadores: t.jogadores.map(jogadorPublico), coringas: (t.coringas || []).map(c => ({ ...c, jogador: jogadorPublico(c.jogador) })) })); }
+function reservasParaBanco() { return (window.reservasSorteados || []).map(jogadorPublico); }
+function hidratarJogadoresDaPartida() {
+    if (window.isModoPublico) return;
+    const completar = (j) => { if (!j) return; let doElenco = jogadores.find(x => x.id === j.id); if (doElenco && j.nivel === undefined) j.nivel = doElenco.nivel; };
+    window.timesSorteadosObjs.forEach(t => { t.jogadores.forEach(completar); (t.coringas || []).forEach(c => completar(c.jogador)); });
+    (window.reservasSorteados || []).forEach(completar);
+    for (let key in (window.coringasAtivos || {})) window.coringasAtivos[key].forEach(c => completar(c.jogador));
 }
 
 function salvarEstadoCompleto() {
@@ -249,7 +266,7 @@ async function checarPartidaAtivaAdmin() {
                 if (window.jogosDaRodada.length > 0 && window.jogosDaRodada[0].tipo === 'modo' && window.jogosDaRodada[0].modo === 'torneio') window.modoCompeticaoAtual = 'torneio';
 
                 if (p.times_json) { window.timesSorteadosObjs = safeParse(p.times_json) || []; window.coringasAtivos = {}; window.timesSorteadosObjs.forEach(t => { if(t.coringas && t.coringas.length > 0) window.coringasAtivos[t.id] = t.coringas; }); }
-                window.reservasSorteados = safeParse(p.reservas_json) || [];
+                window.reservasSorteados = safeParse(p.reservas_json) || []; hidratarJogadoresDaPartida();
                 window.partidaSalva = (window.timesSorteadosObjs.length > 0 && window.filaEquipes.length === 0 && window.jogosDaRodada.length > 0);
                 if (p.data_sorteio) { let d = new Date(p.data_sorteio); window.dataPartidaAtual = !isNaN(d.getTime()) ? d.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}) : p.data_sorteio; }
                 
@@ -729,7 +746,7 @@ async function sortearTimes(presentesBrutos, isAppend) {
         
         if (isAppend) {
             let qJogadores = 0; window.timesSorteadosObjs.forEach(t => qJogadores += t.jogadores.length); if (window.reservasSorteados) qJogadores += window.reservasSorteados.length;
-            window.suprimirProximoEventoRealtime = true; await db.from('partidas').update({ times_json: window.timesSorteadosObjs, fila_json: window.filaEquipes, quantidade_jogadores: qJogadores, reservas_json: window.reservasSorteados }).eq('id', window.partidaAtualId);
+            window.suprimirProximoEventoRealtime = true; await db.from('partidas').update({ times_json: timesParaBanco(), fila_json: window.filaEquipes, quantidade_jogadores: qJogadores, reservas_json: reservasParaBanco() }).eq('id', window.partidaAtualId);
         } else { await criarPartidaInicialNoBanco(); }
         
         try { salvarEstadoCompleto(); } catch(e) {}
@@ -767,7 +784,7 @@ async function criarPartidaInicialNoBanco() {
         let qJogadoresEmQuadra = 0; window.timesSorteadosObjs.forEach(t => qJogadoresEmQuadra += t.jogadores.length); if (window.reservasSorteados) qJogadoresEmQuadra += window.reservasSorteados.length;
         
         window.suprimirProximoEventoRealtime = true;
-        const { data: pData, error: errP } = await db.from('partidas').insert([{ quantidade_jogadores: qJogadoresEmQuadra, renda_convidados: 0, valor_por_convidado: valorConv, valor_por_mensalista: valorMens, custos_json: window.custosDaRodada, artilheiros_json: {}, jogos_json: window.jogosDaRodada, times_json: window.timesSorteadosObjs, fila_json: window.filaEquipes, reservas_json: window.reservasSorteados, codigo_acesso: codigoAleatorio, nome_baba: currentProfile ? currentProfile.nome_baba : "", escudo_url: currentProfile ? currentProfile.escudo_url : "", user_id: currentUser.id }]).select();
+        const { data: pData, error: errP } = await db.from('partidas').insert([{ quantidade_jogadores: qJogadoresEmQuadra, renda_convidados: 0, valor_por_convidado: valorConv, valor_por_mensalista: valorMens, custos_json: window.custosDaRodada, artilheiros_json: {}, jogos_json: window.jogosDaRodada, times_json: timesParaBanco(), fila_json: window.filaEquipes, reservas_json: reservasParaBanco(), codigo_acesso: codigoAleatorio, nome_baba: currentProfile ? currentProfile.nome_baba : "", escudo_url: currentProfile ? currentProfile.escudo_url : "", user_id: currentUser.id }]).select();
         if (errP) { console.error(errP); alert(`Erro de Conexão com o Banco de Dados: Não foi possível criar a partida no servidor. (${errP.message})`); return; }
         if (pData && pData.length > 0) { window.partidaAtualId = pData[0].id; window.codigoAcessoAtual = codigoAleatorio; } else { const { data: pFetch } = await db.from('partidas').select('id').eq('codigo_acesso', codigoAleatorio).single(); if (pFetch) { window.partidaAtualId = pFetch.id; window.codigoAcessoAtual = codigoAleatorio; } }
         iniciarOuvinteRealtime(window.partidaAtualId); exibirBoxCodigoSorteio(window.codigoAcessoAtual);
@@ -1144,7 +1161,7 @@ async function adicionarJogoNaSumula() {
         }
 
         window.timesSorteadosObjs.forEach(t => { t.coringas = window.coringasAtivos[t.id] || []; });
-        if(window.partidaAtualId) { window.suprimirProximoEventoRealtime = true; await db.from('partidas').update({ jogos_json: window.jogosDaRodada, artilheiros_json: artilheiros, fila_json: window.filaEquipes, times_json: window.timesSorteadosObjs, reservas_json: window.reservasSorteados }).eq('id', window.partidaAtualId); }
+        if(window.partidaAtualId) { window.suprimirProximoEventoRealtime = true; await db.from('partidas').update({ jogos_json: window.jogosDaRodada, artilheiros_json: artilheiros, fila_json: window.filaEquipes, times_json: timesParaBanco(), reservas_json: reservasParaBanco() }).eq('id', window.partidaAtualId); }
         limparGolsTemp('A'); limparGolsTemp('B'); atualizarSelectsEquipes(); atualizarFilaUI(); atualizarListaJogosDaRodada(); renderizarEscalacaoPublicaSumula(); salvarEstadoCompleto(); zerarCronometro();
     } finally { if(btnConfirmar) { btnConfirmar.innerText = textoOriginal; btnConfirmar.disabled = false; btnConfirmar.style.opacity = "1"; } }
 }
@@ -1194,7 +1211,7 @@ async function salvarLesao() {
     
     if(window.coringasAtivos) { for(let key in window.coringasAtivos) { window.coringasAtivos[key] = window.coringasAtivos[key].filter(c => c.jogador.id !== jogador.id); } }
     window.timesSorteadosObjs.forEach(t => { t.coringas = window.coringasAtivos[t.id] || []; });
-    if(window.partidaAtualId) { window.suprimirProximoEventoRealtime = true; await db.from('partidas').update({ times_json: window.timesSorteadosObjs, reservas_json: window.reservasSorteados }).eq('id', window.partidaAtualId); }
+    if(window.partidaAtualId) { window.suprimirProximoEventoRealtime = true; await db.from('partidas').update({ times_json: timesParaBanco(), reservas_json: reservasParaBanco() }).eq('id', window.partidaAtualId); }
     
     fecharModalLesao(); salvarEstadoCompleto(); renderizarEscalacaoPublicaSumula(); atualizarFilaUI();
 }
@@ -1252,7 +1269,7 @@ async function darAltaDM() {
         await customAlert("🩺 Alta Médica", msgAlert, "OK", "var(--primary)");
         
         window.timesSorteadosObjs.forEach(t => { t.coringas = window.coringasAtivos[t.id] || []; });
-        if(window.partidaAtualId) { window.suprimirProximoEventoRealtime = true; await db.from('partidas').update({ times_json: window.timesSorteadosObjs, reservas_json: window.reservasSorteados }).eq('id', window.partidaAtualId); }
+        if(window.partidaAtualId) { window.suprimirProximoEventoRealtime = true; await db.from('partidas').update({ times_json: timesParaBanco(), reservas_json: reservasParaBanco() }).eq('id', window.partidaAtualId); }
         
         fecharModalLesao(); salvarEstadoCompleto(); renderizarEscalacaoPublicaSumula(); atualizarFilaUI();
     }
@@ -1303,7 +1320,7 @@ async function sortearCoringasFila(idTimeIncompleto) {
     window.coringasAtivos[idTimeIncompleto].push(...escolhidos);
     window.timesSorteadosObjs.forEach(t => { t.coringas = window.coringasAtivos[t.id] || []; });
     
-    if(window.partidaAtualId) { window.suprimirProximoEventoRealtime = true; await db.from('partidas').update({ times_json: window.timesSorteadosObjs, reservas_json: window.reservasSorteados }).eq('id', window.partidaAtualId); }
+    if(window.partidaAtualId) { window.suprimirProximoEventoRealtime = true; await db.from('partidas').update({ times_json: timesParaBanco(), reservas_json: reservasParaBanco() }).eq('id', window.partidaAtualId); }
 
     let msg = ``; escolhidos.forEach(c => msg += `<strong>${escapeHTML(c.jogador.nome)}</strong> (do ${escapeHTML(c.timeOriginalNome)})<br>`); 
     await customAlert("🎭 Coringas Sorteados", msg, "Continuar", "var(--primary)");
@@ -1598,15 +1615,17 @@ async function salvarPartidaComPlacares() {
         window.suprimirProximoEventoRealtime = true;
         const { error: errP } = await db.from('partidas').update({ 
             renda_convidados: convidadosPagantes, valor_por_convidado: valorConv, valor_por_mensalista: valorMens, custos_json: window.custosDaRodada,
-            artilheiros_json: artilheiros, jogos_json: window.jogosDaRodada, times_json: window.timesSorteadosObjs, fila_json: window.filaEquipes, reservas_json: window.reservasSorteados
+            artilheiros_json: artilheiros, jogos_json: window.jogosDaRodada, times_json: timesParaBanco(), fila_json: window.filaEquipes, reservas_json: reservasParaBanco()
         }).eq('id', window.partidaAtualId);
         
         if(errP) throw errP;
 
         await db.from('presencas').delete().eq('partida_id', window.partidaAtualId);
+        // O pagamento vem do elenco (a partida gravada no banco não guarda mais esse dado).
+        const pagouNoElenco = (j) => { let doElenco = jogadores.find(x => x.id === j.id); return !!(doElenco ? doElenco.pagou : j.pagou); };
         let presencasToInsert = [];
-        window.timesSorteadosObjs.forEach((t) => { t.jogadores.forEach(j => presencasToInsert.push({ partida_id: window.partidaAtualId, jogador_id: j.id, pagou: j.pagou || false, equipe: t.nome })); });
-        if (window.reservasSorteados) window.reservasSorteados.forEach(j => presencasToInsert.push({ partida_id: window.partidaAtualId, jogador_id: j.id, pagou: j.pagou || false, equipe: "Reserva" }));
+        window.timesSorteadosObjs.forEach((t) => { t.jogadores.forEach(j => presencasToInsert.push({ partida_id: window.partidaAtualId, jogador_id: j.id, pagou: pagouNoElenco(j), equipe: t.nome })); });
+        if (window.reservasSorteados) window.reservasSorteados.forEach(j => presencasToInsert.push({ partida_id: window.partidaAtualId, jogador_id: j.id, pagou: pagouNoElenco(j), equipe: "Reserva" }));
         if(presencasToInsert.length > 0) await db.from('presencas').insert(presencasToInsert);
 
         await db.from('jogadores').delete().eq('tipo', 'Convidado').eq('user_id', currentUser.id);
