@@ -229,6 +229,8 @@ async function carregarElencoDaNuvem() {
         const { data, error } = await db.from('jogadores').select('*').eq('user_id', currentUser.id).order('nome', { ascending: true }); if (error) throw error;
         let estadoLocal = {}; try { estadoLocal = JSON.parse(localStorage.getItem('baba_presencas_temp')) || {}; } catch(e) { localStorage.removeItem('baba_presencas_temp'); }
         jogadores = data.map(j => ({ ...j, presente: estadoLocal[j.id]?.presente || false, ordemChegada: estadoLocal[j.id]?.ordemChegada || 0, pagou: estadoLocal[j.id]?.pagou || false, pagamentos_json: safeParse(j.pagamentos_json) || {} }));
+        // A diária paga fica no caixa (banco), então vale em qualquer aparelho mesmo sem o registro local.
+        jogadores.forEach(j => { if (j.tipo === 'Convidado' && diariaDoConvidado(j)) j.pagou = true; });
         if(dbStatus) { dbStatus.innerText = "Online"; dbStatus.style.backgroundColor = "var(--supabase)"; } atualizarListas(); atualizarFinanceiro(); await checarPartidaAtivaAdmin();
     } catch(err) { if(dbStatus) { dbStatus.innerText = "Off-line"; dbStatus.style.backgroundColor = "var(--danger)"; } }
 }
@@ -263,14 +265,39 @@ async function checarPartidaAtivaAdmin() {
 function prepararEdicao(indexArray) { const j = jogadores[indexArray]; let nomeInp = document.getElementById('nome'); if(nomeInp) nomeInp.value = j.nome; let tipoInp = document.getElementById('tipo'); if(tipoInp) tipoInp.value = j.tipo; let posInp = document.getElementById('posicao'); if(posInp) posInp.value = j.posicao; let nivInp = document.getElementById('nivel'); if(nivInp) nivInp.value = j.nivel; jogadorEdicaoId = j.id; let titForm = document.getElementById('titulo-form'); if(titForm) titForm.innerText = "Editando Jogador"; let cardForm = document.getElementById('card-formulario'); if(cardForm) cardForm.classList.add("editando"); let btnAd = document.getElementById('btn-adicionar'); if(btnAd) btnAd.innerText = "Salvar Alterações"; let btnCanc = document.getElementById('btn-cancelar-edicao'); if(btnCanc) btnCanc.style.display = "block"; window.scrollTo({ top: 0, behavior: 'smooth' }); }
 function cancelarEdicao() { jogadorEdicaoId = null; let nomeInp = document.getElementById('nome'); if(nomeInp) nomeInp.value = ""; let tipoInp = document.getElementById('tipo'); if(tipoInp) tipoInp.value = "Mensalista"; let posInp = document.getElementById('posicao'); if(posInp) posInp.value = "Meia"; let nivInp = document.getElementById('nivel'); if(nivInp) nivInp.value = "3"; let titForm = document.getElementById('titulo-form'); if(titForm) titForm.innerText = "Adicionar ao Elenco"; let cardForm = document.getElementById('card-formulario'); if(cardForm) cardForm.classList.remove("editando"); let btnAd = document.getElementById('btn-adicionar'); if(btnAd) btnAd.innerText = "Incluir Jogador"; let btnCanc = document.getElementById('btn-cancelar-edicao'); if(btnCanc) btnCanc.style.display = "none"; }
 
+// Datas no horário do aparelho (o toISOString puro usa o horário de Londres e, depois das 21h, já "vira" o dia/mês).
+function dataLocalDe(data) { if (typeof data === 'string' && data.length <= 10) return data; let d = data ? new Date(data) : new Date(); if (isNaN(d.getTime())) return String(data).substring(0, 10); return (new Date(d.getTime() - d.getTimezoneOffset() * 60000)).toISOString().substring(0, 10); }
+function hojeLocal() { return dataLocalDe(); }
+function mesLocal() { return hojeLocal().substring(0, 7); }
+
+// Lançamentos do caixa com papel especial: mensalidade de quem foi excluído do elenco e diária de convidado.
+function ehHistoricoMensalidade(c) { return c.categoria === 'mensalidade' || (c.desc || '').startsWith('Mensalidade (histórico)'); }
+function ehDiariaConvidado(c) { return c.categoria === 'diaria' || (c.desc || '').startsWith('Diária de convidado'); }
+
+// Diária do convidado no baba atual (feita hoje ou ontem, para o baba que passa da meia-noite).
+function diariaDoConvidado(jogador) {
+    let ontem = dataLocalDe(Date.now() - 24 * 60 * 60 * 1000);
+    return (window.despesasMensaisGlobais || []).find(c => ehDiariaConvidado(c) && c.jogador_id === jogador.id && (c.data || '') >= ontem) || null;
+}
+
+// Altera o caixa a partir da versão mais recente do banco, para não apagar o que outro aparelho lançou.
+async function alterarCaixaNaNuvem(alterar) {
+    const { data: prof, error: errLer } = await db.from('profiles').select('despesas_mensais_json').eq('id', currentUser.id).single();
+    if (errLer || !prof) return errLer || new Error('Perfil não encontrado');
+    let lista = safeParse(prof.despesas_mensais_json) || []; alterar(lista);
+    const { error } = await db.from('profiles').update({ despesas_mensais_json: lista }).eq('id', currentUser.id);
+    if (!error) window.despesasMensaisGlobais = lista;
+    return error;
+}
+
 function arquivarHistoricoMensalidade(jogador) {
     if (!jogador || !jogador.pagamentos_json) return [];
-    let elMens = document.getElementById('valor-mensalista'); let valorAtual = elMens ? (parseFloat(elMens.value) || 0) : 0;
+    let elMens = document.getElementById('valor-mensalista'); let valorAtual = elMens ? (parseFloat(elMens.value) || 70) : 70;
     let entradas = [];
     for (let mesKeyHist in jogador.pagamentos_json) {
         let v = jogador.pagamentos_json[mesKeyHist]; if (!v) continue;
         let valorHistorico = typeof v === 'number' ? v : valorAtual;
-        entradas.push({ id: Date.now() + entradas.length, desc: `Mensalidade (histórico) - ${jogador.nome}`, valor: valorHistorico, tipo: 'diario', operacao: 'entrada', data: mesKeyHist });
+        entradas.push({ id: Date.now() + entradas.length, desc: `Mensalidade (histórico) - ${jogador.nome}`, valor: valorHistorico, tipo: 'diario', operacao: 'entrada', data: mesKeyHist, categoria: 'mensalidade', jogador_nome: jogador.nome });
     }
     return entradas;
 }
@@ -289,7 +316,7 @@ async function adicionarJogador() {
 
         const { error } = await db.from('jogadores').update(payloadUpdate).eq('id', jogadorEdicaoId);
         if (!error) {
-            if (entradasArquivo.length > 0 && currentUser) { window.despesasMensaisGlobais.push(...entradasArquivo); const { error: errArq } = await db.from('profiles').update({ despesas_mensais_json: window.despesasMensaisGlobais }).eq('id', currentUser.id); if (errArq) console.error("Falha ao arquivar histórico financeiro:", errArq); }
+            if (entradasArquivo.length > 0 && currentUser) { const errArq = await alterarCaixaNaNuvem(lista => lista.push(...entradasArquivo)); if (errArq) console.error("Falha ao arquivar histórico financeiro:", errArq); }
             if (jIndex !== -1) { jogadores[jIndex].nome = nome; jogadores[jIndex].tipo = tipo; jogadores[jIndex].posicao = posicao; jogadores[jIndex].nivel = nivel; if (entradasArquivo.length > 0) jogadores[jIndex].pagamentos_json = {}; }
             cancelarEdicao(); atualizarListas(); atualizarFinanceiro();
         } else alert("Erro: " + error.message);
@@ -305,15 +332,14 @@ async function removerJogador(idNuvem, indexArray) {
     // Antes de excluir, guarda no caixa o que essa pessoa já pagou, para o dinheiro não sumir do relatório.
     let entradasArquivo = [];
     if (jogador.tipo === 'Mensalista') { entradasArquivo = arquivarHistoricoMensalidade(jogador); }
-    else if (jogador.tipo === 'Convidado' && jogador.pagou) {
+    else if (jogador.tipo === 'Convidado' && jogador.pagou && !diariaDoConvidado(jogador)) {
+        // Só para diária marcada antes de ela ir direto para o caixa (quando já está no caixa, continua lá).
         let elConv = document.getElementById('valor-convidado'); let valorDiaria = elConv ? (parseFloat(elConv.value) || 0) : 0;
-        if (valorDiaria > 0) { let tz = (new Date()).getTimezoneOffset() * 60000; let hoje = (new Date(Date.now() - tz)).toISOString().split('T')[0]; entradasArquivo.push({ id: Date.now(), desc: `Diária de convidado (excluído) - ${jogador.nome}`, valor: valorDiaria, tipo: 'diario', operacao: 'entrada', data: hoje }); }
+        if (valorDiaria > 0) { entradasArquivo.push({ id: Date.now(), desc: `Diária de convidado - ${jogador.nome}`, valor: valorDiaria, tipo: 'diario', operacao: 'entrada', data: hojeLocal(), categoria: 'diaria', jogador_id: jogador.id }); }
     }
     if (entradasArquivo.length > 0 && currentUser) {
-        let backup = [...window.despesasMensaisGlobais];
-        window.despesasMensaisGlobais.push(...entradasArquivo);
-        const { error: errArq } = await db.from('profiles').update({ despesas_mensais_json: window.despesasMensaisGlobais }).eq('id', currentUser.id);
-        if (errArq) { window.despesasMensaisGlobais = backup; return alert("Não foi possível preservar o histórico financeiro antes de remover. O jogador NÃO foi excluído — tente novamente."); }
+        const errArq = await alterarCaixaNaNuvem(lista => lista.push(...entradasArquivo));
+        if (errArq) return alert("Não foi possível preservar o histórico financeiro antes de remover. O jogador NÃO foi excluído — tente novamente.");
     }
 
     const { error } = await db.from('jogadores').delete().eq('id', idNuvem);
@@ -323,24 +349,44 @@ function salvarEstadoLocal() { let estado = {}; jogadores.forEach(j => { if (j.p
 
 async function marcarPresenca(indexArray) { if (jogadores[indexArray].tipo === 'Convidado' && !jogadores[indexArray].pagou) return await customAlert("Pagamento Pendente", "O convidado precisa efetuar o pagamento da diária antes de entrar na lista de sorteio.", "Entendi", "var(--warning)"); jogadores[indexArray].presente = true; jogadores[indexArray].ordemChegada = Date.now(); salvarEstadoLocal(); atualizarListas(); }
 async function marcarTodosPresentes() { let convidadosPendentes = 0; let countAdicionados = 0; let agora = Date.now(); jogadores.forEach((j) => { if (!j.presente) { if (j.tipo === 'Convidado' && !j.pagou) convidadosPendentes++; else { j.presente = true; j.ordemChegada = agora++; countAdicionados++; } } }); if (countAdicionados > 0) { salvarEstadoLocal(); atualizarListas(); } if (convidadosPendentes > 0) await customAlert("Aviso", `<strong>${convidadosPendentes} convidado(s)</strong> não adicionados pois precisam pagar a diária primeiro.`, "Entendi", "var(--warning)"); else if (countAdicionados === 0) await customAlert("Elenco Completo", "Todos os jogadores do elenco já estão prontos pro jogo!", "OK", "var(--primary)"); }
-function desmarcarPresenca(indexArray) { jogadores[indexArray].presente = false; jogadores[indexArray].ordemChegada = 0; jogadores[indexArray].pagou = false; salvarEstadoLocal(); atualizarListas(); atualizarFinanceiro(); }
+// Retirar da lista não desfaz o pagamento: a diária de quem foi embora mais cedo continua no caixa.
+function desmarcarPresenca(indexArray) { jogadores[indexArray].presente = false; jogadores[indexArray].ordemChegada = 0; salvarEstadoLocal(); atualizarListas(); atualizarFinanceiro(); }
 async function alternarMensalidade(idNuvem, indexArray) {
-    const j = jogadores[indexArray]; const mesKey = new Date().toISOString().substring(0, 7);
+    const j = jogadores[indexArray]; const mesKey = mesLocal();
     if (!j.pagamentos_json) j.pagamentos_json = {};
     if (j.pagamentos_json[mesKey]) { delete j.pagamentos_json[mesKey]; }
     else { let elMens = document.getElementById('valor-mensalista'); let valorPagoAgora = elMens ? (parseFloat(elMens.value) || 0) : 0; j.pagamentos_json[mesKey] = valorPagoAgora; }
     atualizarListas(); atualizarFinanceiro();
     await db.from('jogadores').update({ pagamentos_json: j.pagamentos_json }).eq('id', idNuvem);
 }
-function alternarPagamentoDiaria(indexArray) { jogadores[indexArray].pagou = !jogadores[indexArray].pagou; if (jogadores[indexArray].tipo === 'Convidado' && !jogadores[indexArray].pagou && jogadores[indexArray].presente) { jogadores[indexArray].presente = false; jogadores[indexArray].ordemChegada = 0; } salvarEstadoLocal(); atualizarListas(); atualizarFinanceiro(); }
-async function zerarPresencas() { let conf = await customConfirm("Iniciar Nova Rodada", "Deseja preparar o aplicativo para um <strong>NOVO BABA</strong>?<br><br>Isso vai retirar todos da quadra e zerar as diárias.<br>(A Súmula atual continuará salva até você sortear).", "Sim, Iniciar Novo Baba", "Cancelar", "var(--primary)"); if(conf) { jogadores.forEach(j => { j.presente = false; j.ordemChegada = 0; j.pagou = false; }); salvarEstadoLocal(); atualizarListas(); atualizarFinanceiro(); let res = document.getElementById('resultado'); if(res) res.innerHTML = ""; } }
+// Diária do convidado vai direto para o caixa (banco) ao marcar "Pago" e sai dele ao desmarcar.
+async function alternarPagamentoDiaria(indexArray) {
+    const j = jogadores[indexArray]; if (!j || window.alterandoDiaria) return;
+    let vaiPagar = !j.pagou;
+    if (j.tipo === 'Convidado' && currentUser) {
+        window.alterandoDiaria = true;
+        try {
+            let elConv = document.getElementById('valor-convidado'); let valorDiaria = elConv ? (parseFloat(elConv.value) || 0) : 0;
+            let ontem = dataLocalDe(Date.now() - 24 * 60 * 60 * 1000); let ehDoConvidado = (c) => ehDiariaConvidado(c) && c.jogador_id === j.id && (c.data || '') >= ontem;
+            let erro = await alterarCaixaNaNuvem(lista => {
+                for (let i = lista.length - 1; i >= 0; i--) if (ehDoConvidado(lista[i])) lista.splice(i, 1);
+                if (vaiPagar && valorDiaria > 0) lista.push({ id: Date.now(), desc: `Diária de convidado - ${j.nome}`, valor: valorDiaria, tipo: 'diario', operacao: 'entrada', data: hojeLocal(), categoria: 'diaria', jogador_id: j.id });
+            });
+            if (erro) return alert("Não foi possível salvar a diária no caixa. Verifique a internet e tente de novo.");
+        } finally { window.alterandoDiaria = false; }
+    }
+    j.pagou = vaiPagar;
+    if (j.tipo === 'Convidado' && !j.pagou && j.presente) { j.presente = false; j.ordemChegada = 0; }
+    salvarEstadoLocal(); atualizarListas(); atualizarFinanceiro();
+}
+async function zerarPresencas() { let conf = await customConfirm("Iniciar Nova Rodada", "Deseja preparar o aplicativo para um <strong>NOVO BABA</strong>?<br><br>Isso vai retirar todos da quadra e zerar as diárias.<br>(A Súmula atual continuará salva até você sortear).", "Sim, Iniciar Novo Baba", "Cancelar", "var(--primary)"); if(conf) { jogadores.forEach(j => { j.presente = false; j.ordemChegada = 0; j.pagou = (j.tipo === 'Convidado' && !!diariaDoConvidado(j)); }); salvarEstadoLocal(); atualizarListas(); atualizarFinanceiro(); let res = document.getElementById('resultado'); if(res) res.innerHTML = ""; } }
 function filtrarElencoAdmin() { let inp = document.getElementById('busca-jogador-elenco'); if(!inp) return; let termo = inp.value.toLowerCase(); document.querySelectorAll('#lista-elenco-admin .linha-jogador').forEach(linha => { linha.style.display = linha.getAttribute('data-nome').toLowerCase().includes(termo) ? 'grid' : 'none'; }); }
 function filtrarSorteioAusentes() { let inp = document.getElementById('busca-jogador-sorteio'); if(!inp) return; let termo = inp.value.toLowerCase(); document.querySelectorAll('#lista-aguardando .linha-jogador').forEach(linha => { linha.style.display = linha.getAttribute('data-nome').toLowerCase().includes(termo) ? 'grid' : 'none'; }); }
 async function exportarElencoPorPosicao() { if (!jogadores || jogadores.length === 0) return await customAlert("Aviso", "Não há jogadores cadastrados no elenco.", "OK", "var(--warning)"); let grupos = { "Goleiro": [], "Zagueiro": [], "Lateral": [], "Meia": [], "Atacante": [], "Linha": [] }; jogadores.forEach(j => { let pos = j.posicao || "Linha"; if (!grupos[pos]) grupos[pos] = []; grupos[pos].push(j.nome); }); let nomeBaba = currentProfile && currentProfile.nome_baba ? currentProfile.nome_baba : "Pega o Baba"; let texto = `📋 *Resumo do Elenco - ${nomeBaba}*\n`; texto += `👥 Total de Jogadores: ${jogadores.length}\n\n`; const icones = { "Goleiro": "🧤", "Zagueiro": "🛡️", "Lateral": "🏃", "Meia": "🧠", "Atacante": "🎯", "Linha": "⚽" }; for (let pos in grupos) { if (grupos[pos].length > 0) { grupos[pos].sort((a, b) => a.localeCompare(b)); texto += `${icones[pos] || "⚽"} *${pos}s (${grupos[pos].length})*:\n`; grupos[pos].forEach(nome => { texto += `• ${nome}\n`; }); texto += `\n`; } } texto += `🔗 Gerado pelo app Pega o Baba`; let textoEncoded = encodeURIComponent(texto); let querCompartilhar = await customConfirm("📊 Elenco Exportado", "O resumo foi gerado com sucesso!<br><br>Escolha como deseja exportar:", "📱 WhatsApp", "📋 Copiar Texto", "var(--supabase)"); if (querCompartilhar) { window.open(`https://api.whatsapp.com/send?text=${textoEncoded}`, '_blank'); } else { try { await navigator.clipboard.writeText(texto); customAlert("Copiado!", "O resumo do elenco foi copiado para a área de transferência.", "OK", "var(--primary)"); } catch(err) { alert("Não foi possível copiar automaticamente para o seu dispositivo."); } } }
 
 function atualizarListas() {
     const listaElenco = document.getElementById('lista-elenco-admin'); const listaAguardando = document.getElementById('lista-aguardando'); const listaPresentes = document.getElementById('lista-presentes');
-    let htmlElenco = ""; let htmlAguardando = ""; let htmlPresentes = ""; let presentes = []; const mesKey = new Date().toISOString().substring(0, 7);
+    let htmlElenco = ""; let htmlAguardando = ""; let htmlPresentes = ""; let presentes = []; const mesKey = mesLocal();
     let todosOrdenados = [...jogadores].sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
     todosOrdenados.forEach((j) => {
         let indexArray = jogadores.findIndex(jog => jog.id === j.id); let isPago = j.tipo === 'Mensalista' ? !!(j.pagamentos_json && j.pagamentos_json[mesKey]) : j.pagou;
@@ -741,7 +787,7 @@ async function gerarRelatorioMensal() {
     if (!mesKey) { let tzoffset = (new Date()).getTimezoneOffset() * 60000; mesKey = (new Date(Date.now() - tzoffset)).toISOString().substring(0, 7); if(filtroInput) filtroInput.value = mesKey; }
     let partes = mesKey.split('-'); let elMens = document.getElementById('valor-mensalista'); let valMens = elMens ? parseFloat(elMens.value) || 70 : 70; let elConv = document.getElementById('valor-convidado'); let defConv = elConv ? parseFloat(elConv.value) || 25 : 25;
     let partidasDoMes = []; let saldoAnterior = 0; 
-    if(currentUser) { const { data: partidas } = await db.from('partidas').select('data_sorteio, created_at, valor_por_convidado, renda_convidados, custos_json').eq('user_id', currentUser.id); if(partidas) { partidas.forEach(p => { let dataRef = p.data_sorteio || p.created_at; if (!dataRef) return; let pMes = dataRef.substring(0, 7); if(pMes === mesKey) partidasDoMes.push(p); else if (pMes < mesKey) { let vConv = p.valor_por_convidado || defConv; saldoAnterior += ((p.renda_convidados || 0) * vConv); (p.custos_json || []).forEach(c => { saldoAnterior -= c.valor; }); } }); } }
+    if(currentUser) { const { data: partidas } = await db.from('partidas').select('data_sorteio, created_at, valor_por_convidado, renda_convidados, custos_json').eq('user_id', currentUser.id); if(partidas) { partidas.forEach(p => { let dataRef = p.data_sorteio || p.created_at; if (!dataRef) return; let pMes = dataLocalDe(dataRef).substring(0, 7); if(pMes === mesKey) partidasDoMes.push(p); else if (pMes < mesKey) { let vConv = p.valor_por_convidado || defConv; saldoAnterior += ((p.renda_convidados || 0) * vConv); (safeParse(p.custos_json) || []).forEach(c => { saldoAnterior -= c.valor; }); } }); } }
     let mensalistas = jogadores.filter(j => j.tipo === 'Mensalista');
     mensalistas.forEach(j => { if(j.pagamentos_json) { for(let mKey in j.pagamentos_json) { let v = j.pagamentos_json[mKey]; if(mKey < mesKey && v) { saldoAnterior += (typeof v === 'number' ? v : valMens); } } } });
     // Cada lançamento (despesa ou entrada) vale uma única vez, no mês em que foi feito.
@@ -751,24 +797,36 @@ async function gerarRelatorioMensal() {
         if (op === 'entrada') saldoAnterior += c.valor; else saldoAnterior -= c.valor;
     });
 
+    let lancamentosDoMes = (window.despesasMensaisGlobais || []).filter(c => (c.data || '').substring(0, 7) === mesKey);
+    // Mensalidades de quem já saiu do elenco continuam na seção de mensalidades (o valor ficou guardado no caixa ao excluir).
+    let historicoMensalidades = lancamentosDoMes.filter(c => (c.operacao || 'saida') === 'entrada' && ehHistoricoMensalidade(c));
+
     let html = `<table class="relatorio-tabela"><tr><th colspan="2">👥 Mensalidades Pagas no Mês</th></tr>`; let totalMensalidades = 0;
-    if(mensalistas.length === 0) html += `<tr><td colspan="2" style="color:var(--text-muted);">Nenhum mensalista cadastrado.</td></tr>`;
-    else { let htmlMensalistas = `<div class="grid-mensalistas">`; mensalistas.forEach(j => { let vPago = j.pagamentos_json && j.pagamentos_json[mesKey]; let pago = !!vPago; if(pago) totalMensalidades += (typeof vPago === 'number' ? vPago : valMens); let statusText = pago ? `<span style="color:var(--supabase); font-weight:bold;">✅ Pago</span>` : `<span style="color:var(--danger); font-weight:bold;">❌ Pendente</span>`; htmlMensalistas += `<div class="item-mensalista"><span>${escapeHTML(j.nome)}</span> <span>${statusText}</span></div>`; }); htmlMensalistas += `</div>`; html += `<tr><td colspan="2" style="padding: 0;">${htmlMensalistas}</td></tr>`; }
+    if(mensalistas.length === 0 && historicoMensalidades.length === 0) html += `<tr><td colspan="2" style="color:var(--text-muted);">Nenhum mensalista cadastrado.</td></tr>`;
+    else { let htmlMensalistas = `<div class="grid-mensalistas">`; mensalistas.forEach(j => { let vPago = j.pagamentos_json && j.pagamentos_json[mesKey]; let pago = !!vPago; if(pago) totalMensalidades += (typeof vPago === 'number' ? vPago : valMens); let statusText = pago ? `<span style="color:var(--supabase); font-weight:bold;">✅ Pago</span>` : `<span style="color:var(--danger); font-weight:bold;">❌ Pendente</span>`; htmlMensalistas += `<div class="item-mensalista"><span>${escapeHTML(j.nome)}</span> <span>${statusText}</span></div>`; });
+        historicoMensalidades.forEach(c => { totalMensalidades += c.valor; let nome = c.jogador_nome || (c.desc || '').replace(/^Mensalidade \(histórico\) - /, ''); htmlMensalistas += `<div class="item-mensalista"><span>${escapeHTML(nome)} <span style="color:var(--text-muted); font-size:10px;">(excluído)</span></span> <span><span style="color:var(--supabase); font-weight:bold;">✅ Pago</span></span></div>`; });
+        htmlMensalistas += `</div>`; html += `<tr><td colspan="2" style="padding: 0;">${htmlMensalistas}</td></tr>`; }
     html += `<tr><td><strong>Subtotal Mensalidades:</strong></td><td style="text-align:right; font-weight:bold; color:var(--supabase);">R$ ${totalMensalidades.toFixed(2)}</td></tr><tr><th colspan="2" style="padding-top:12px;">🎟️ Arrecadação de Convidados (Por Rodada)</th></tr>`;
-    let totalConvidados = 0;
-    if(partidasDoMes.length > 0) { partidasDoMes.forEach((p, idx) => { let vConv = p.valor_por_convidado || defConv; let qtdConv = p.renda_convidados || 0; let subConv = qtdConv * vConv; totalConvidados += subConv; let dataF = p.data_sorteio ? p.data_sorteio.split('T')[0].split('-').reverse().join('/') : `Rodada ${idx+1}`; if(qtdConv > 0) html += `<tr><td>Rodada (${escapeHTML(dataF)}): ${qtdConv} convidados</td><td style="text-align:right;">R$ ${subConv.toFixed(2)}</td></tr>`; }); } else html += `<tr><td colspan="2" style="color:var(--text-muted);">Nenhuma rodada finalizada neste mês.</td></tr>`;
+    let totalConvidados = 0; let linhasConvidados = [];
+    // Rodadas antigas: o total de convidados era gravado só ao finalizar o baba.
+    partidasDoMes.forEach(p => { let vConv = p.valor_por_convidado || defConv; let qtdConv = p.renda_convidados || 0; if (qtdConv <= 0) return; let subConv = qtdConv * vConv; totalConvidados += subConv; let dataRef = p.data_sorteio || p.created_at; linhasConvidados.push({ data: dataLocalDe(dataRef), qtd: qtdConv, valor: subConv, nomes: [] }); });
+    // Diárias lançadas no caixa no momento do pagamento, agrupadas por dia.
+    let diariasPorDia = {}; lancamentosDoMes.filter(c => (c.operacao || 'saida') === 'entrada' && ehDiariaConvidado(c)).forEach(c => { let dia = (c.data || '').substring(0, 10); if (!diariasPorDia[dia]) diariasPorDia[dia] = { data: dia, qtd: 0, valor: 0, nomes: [] }; diariasPorDia[dia].qtd++; diariasPorDia[dia].valor += c.valor; diariasPorDia[dia].nomes.push((c.desc || '').replace(/^Diária de convidado( \(excluído\))? - /, '')); totalConvidados += c.valor; });
+    linhasConvidados.push(...Object.values(diariasPorDia)); linhasConvidados.sort((a, b) => a.data.localeCompare(b.data));
+    if (linhasConvidados.length === 0) html += `<tr><td colspan="2" style="color:var(--text-muted);">Nenhuma diária de convidado neste mês.</td></tr>`;
+    linhasConvidados.forEach(l => { let dataF = l.data.length >= 10 ? l.data.split('-').reverse().join('/') : l.data; let nomesHtml = l.nomes.length > 0 ? `<br><span style="color:var(--text-muted); font-size:10px;">${escapeHTML(l.nomes.join(', '))}</span>` : ''; html += `<tr><td>Rodada (${escapeHTML(dataF)}): ${l.qtd} convidado${l.qtd > 1 ? 's' : ''}${nomesHtml}</td><td style="text-align:right;">R$ ${l.valor.toFixed(2)}</td></tr>`; });
     html += `<tr><td><strong>Subtotal Convidados:</strong></td><td style="text-align:right; font-weight:bold; color:var(--supabase);">R$ ${totalConvidados.toFixed(2)}</td></tr>`;
 
     let totalCustos = 0; let totalEntradasExtras = 0; let htmlCustosDiarios = `<div class="grid-relatorio-custos">`; let htmlEntradasExtras = `<div class="grid-relatorio-custos">`; let temCustos = false; let temEntradaExtra = false;
     (window.despesasMensaisGlobais || []).forEach((c, indexReal) => {
         let dIso = c.data || ""; let cMes = dIso.substring(0, 7);
-        let aplicaEsteMes = (cMes === mesKey);
+        let aplicaEsteMes = (cMes === mesKey) && !((c.operacao || 'saida') === 'entrada' && (ehHistoricoMensalidade(c) || ehDiariaConvidado(c)));
         if (aplicaEsteMes) { let dataBr = (c.data && c.data.length > 7) ? c.data.split('-').reverse().join('/') : ''; let dStr = dataBr ? ` <span style="color:var(--text-muted); font-size:10px;">(${dataBr})</span>` : ''; let idUnico = c.id || indexReal; let op = c.operacao || 'saida'; let descSafe = escapeHTML(c.desc);
             if (op === 'entrada') { totalEntradasExtras += c.valor; temEntradaExtra = true; htmlEntradasExtras += `<div class="item-custo-relatorio"><span>${descSafe}${dStr}</span> <span style="display:flex; align-items:center;"><strong class="valor-positivo" style="white-space:nowrap;">+ R$ ${c.valor.toFixed(2)}</strong> <button class="btn-excluir-mini no-print" style="margin-left:8px;" onclick="removerCusto(${idUnico}, ${indexReal})">X</button></span></div>`; } else { totalCustos += c.valor; temCustos = true; htmlCustosDiarios += `<div class="item-custo-relatorio"><span>${descSafe}${dStr}</span> <span style="display:flex; align-items:center;"><strong class="valor-negativo" style="white-space:nowrap;">- R$ ${c.valor.toFixed(2)}</strong> <button class="btn-excluir-mini no-print" style="margin-left:8px;" onclick="removerCusto(${idUnico}, ${indexReal})">X</button></span></div>`; }
         }
     });
 
-    if(partidasDoMes.length > 0) { partidasDoMes.forEach(p => { let c_json = safeParse(p.custos_json) || []; c_json.forEach(c => { totalCustos += c.valor; temCustos = true; let rawDate = p.data_sorteio || p.created_at || ""; let dData = rawDate ? rawDate.split('T')[0].split('-').reverse().join('/') : "Antigo"; htmlCustosDiarios += `<div class="item-custo-relatorio"><span>${escapeHTML(c.desc)} <span style="color:var(--text-muted); font-size:10px;">(${escapeHTML(dData)})</span></span> <strong class="valor-negativo" style="white-space:nowrap;">- R$ ${c.valor.toFixed(2)}</strong></div>`; }); }); }
+    if(partidasDoMes.length > 0) { partidasDoMes.forEach(p => { let c_json = safeParse(p.custos_json) || []; c_json.forEach(c => { totalCustos += c.valor; temCustos = true; let rawDate = p.data_sorteio || p.created_at || ""; let dData = rawDate ? dataLocalDe(rawDate).split('-').reverse().join('/') : "Antigo"; htmlCustosDiarios += `<div class="item-custo-relatorio"><span>${escapeHTML(c.desc)} <span style="color:var(--text-muted); font-size:10px;">(${escapeHTML(dData)})</span></span> <strong class="valor-negativo" style="white-space:nowrap;">- R$ ${c.valor.toFixed(2)}</strong></div>`; }); }); }
     htmlCustosDiarios += `</div>`; htmlEntradasExtras += `</div>`;
     html += `<tr><th colspan="2" style="padding-top:12px;">📈 Entradas Extras (Manuais)</th></tr>`; if(temEntradaExtra) html += `<tr><td colspan="2" style="padding: 0 0 10px 0;">${htmlEntradasExtras}</td></tr>`; else html += `<tr><td colspan="2" style="color:var(--text-muted);">Nenhuma entrada extra neste mês.</td></tr>`;
     html += `<tr><td><strong>Subtotal Extras:</strong></td><td style="text-align:right; font-weight:bold; color:var(--supabase);">R$ ${totalEntradasExtras.toFixed(2)}</td></tr><tr><th colspan="2" style="padding-top:12px;">📉 Detalhamento de Despesas (Saídas)</th></tr>`;
@@ -1487,14 +1545,13 @@ async function adicionarCusto() {
     if(!dataInput) { let tzoffset = (new Date()).getTimezoneOffset() * 60000; dataInput = (new Date(Date.now() - tzoffset)).toISOString().split('T')[0]; }
 
     let novaDespesa = { id: Date.now(), desc: desc, valor: val, tipo: 'diario', operacao: operacao, data: dataInput };
-    window.despesasMensaisGlobais.push(novaDespesa);
 
     if(currentUser) {
         try {
             const btn = document.querySelector('button[onclick="adicionarCusto()"]'); let txtOrigin = ""; if(btn) { txtOrigin = btn.innerText; btn.innerText = "Salvando..."; btn.disabled = true; }
-            const { error } = await db.from('profiles').update({ despesas_mensais_json: window.despesasMensaisGlobais }).eq('id', currentUser.id);
+            const error = await alterarCaixaNaNuvem(lista => lista.push(novaDespesa));
             if(btn) { btn.innerText = txtOrigin; btn.disabled = false; }
-            if (error) { alert("Erro ao salvar movimentação: " + error.message); window.despesasMensaisGlobais.pop(); } 
+            if (error) { alert("Erro ao salvar movimentação: " + error.message); }
             else { if(elDesc) elDesc.value = ''; if(elVal) elVal.value = ''; if(elData) elData.value = ''; gerarRelatorioMensal(); }
         } catch(e) {}
     }
@@ -1508,12 +1565,13 @@ async function removerCusto(idUnico, indexArrayFallback) {
     if (indexReal === -1) indexReal = indexArrayFallback;
     if (indexReal === -1 || indexReal === undefined) return alert("Erro: Movimentação não encontrada.");
 
-    let removido = window.despesasMensaisGlobais.splice(indexReal, 1)[0];
+    let alvo = window.despesasMensaisGlobais[indexReal]; if (!alvo) return alert("Erro: Movimentação não encontrada.");
+    const mesmoLancamento = (c) => alvo.id ? c.id === alvo.id : (c.desc === alvo.desc && c.valor === alvo.valor && c.data === alvo.data);
 
     if(currentUser) {
         try {
-            const { error } = await db.from('profiles').update({ despesas_mensais_json: window.despesasMensaisGlobais }).eq('id', currentUser.id);
-            if(error) { alert("Erro ao remover do banco: " + error.message); window.despesasMensaisGlobais.splice(indexReal, 0, removido); } 
+            const error = await alterarCaixaNaNuvem(lista => { let i = lista.findIndex(mesmoLancamento); if (i !== -1) lista.splice(i, 1); });
+            if(error) { alert("Erro ao remover do banco: " + error.message); }
             else { gerarRelatorioMensal(); }
         } catch(e) {}
     }
@@ -1531,7 +1589,8 @@ async function salvarPartidaComPlacares() {
             if(jogo.tipo === 'ajuste') { artilheiros[jogo.jogador] = (artilheiros[jogo.jogador] || 0) + jogo.gols; } 
             else if (jogo.tipo !== 'modo') { jogo.gols_a.forEach(nome => { if(nome !== 'Gol Contra') artilheiros[nome] = (artilheiros[nome] || 0) + 1; }); jogo.gols_b.forEach(nome => { if(nome !== 'Gol Contra') artilheiros[nome] = (artilheiros[nome] || 0) + 1; }); }
         });
-        let presentesPagantes = jogadores.filter(j => j.presente && j.pagou && j.tipo === 'Convidado'); let convidadosPagantes = presentesPagantes.length;
+        // Diárias já lançadas no caixa não entram aqui (contariam em dobro); só as marcadas antes dessa mudança.
+        let presentesPagantes = jogadores.filter(j => j.presente && j.pagou && j.tipo === 'Convidado' && !diariaDoConvidado(j)); let convidadosPagantes = presentesPagantes.length;
         let vConv = document.getElementById('valor-convidado'); let valorConv = vConv ? parseFloat(vConv.value) || 0 : 0; 
         let vMens = document.getElementById('valor-mensalista'); let valorMens = vMens ? parseFloat(vMens.value) || 0 : 0;
 
